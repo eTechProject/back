@@ -28,14 +28,11 @@ class UserService
         if (empty($data['password'])) {
             throw new \InvalidArgumentException('Le champ "password" est obligatoire.');
         }
-        if (empty($data['role'])) {
-            throw new \InvalidArgumentException('Le champ "role" est obligatoire.');
-        }
 
         $user = new User();
         $user->setName($data['name']);
         $user->setEmail($data['email']);
-        $user->setRole($data['role']);
+        $user->setRole('ROLE_USER');
 
         $hashedPassword = $this->passwordHasher->hashPassword($user, $data['password']);
         $user->setPassword($hashedPassword);

@@ -111,7 +111,14 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     public function getRoles(): array
     {
         // Convertit le champ role en tableau
-        return [$this->role ?: 'ROLE_USER'];
+        $roles = [$this->role];
+
+    // Ajoute ROLE_USER si ce n’est pas déjà présent
+    if (!in_array('ROLE_USER', $roles)) {
+        $roles[] = 'ROLE_USER';
+    }
+
+    return array_unique($roles);
     }
 
     public function eraseCredentials(): void
