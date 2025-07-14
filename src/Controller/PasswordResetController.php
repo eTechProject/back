@@ -29,4 +29,4 @@ class PasswordResetController
         return new JsonResponse(['message' => 'Mot de passe réinitialisé avec succès']);
     }
 }
-?>
+
