@@ -1,3 +1,0 @@
-lexik_jwt_authentication:
-    resource: "@LexikJWTAuthenticationBundle/Resources/config/routing/login.yaml"
-    prefix: /api
