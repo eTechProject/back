@@ -1,4 +1,4 @@
-<?php 
+<?php
 namespace App\EventListener;
 
 use Lexik\Bundle\JWTAuthenticationBundle\Event\JWTCreatedEvent;
@@ -14,4 +14,3 @@ class JWTCreatedListener
         $event->setData($payload);
     }
 }
-?>

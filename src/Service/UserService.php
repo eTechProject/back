@@ -2,46 +2,35 @@
 
 namespace App\Service;
 
+use App\Dto\RegisterRequest;
 use App\Entity\User;
-use Doctrine\ORM\EntityManagerInterface;
+use App\Repository\UserRepository;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 
 class UserService
 {
-    private EntityManagerInterface $em;
-    private UserPasswordHasherInterface $passwordHasher;
+    public function __construct(
+        private UserPasswordHasherInterface $passwordHasher,
+        private UserRepository $userRepository
+    ) {}
 
-    public function __construct(EntityManagerInterface $em, UserPasswordHasherInterface $passwordHasher)
+    public function createUserFromRequest(RegisterRequest $request): User
     {
-        $this->em = $em;
-        $this->passwordHasher = $passwordHasher;
-    }
-
-    public function createUser(array $data): User
-    {
-        if (empty($data['name'])) {
-            throw new \InvalidArgumentException('Le champ "name" est obligatoire.');
-        }
-        if (empty($data['email'])) {
-            throw new \InvalidArgumentException('Le champ "email" est obligatoire.');
-        }
-        if (empty($data['password'])) {
-            throw new \InvalidArgumentException('Le champ "password" est obligatoire.');
+        if ($this->userRepository->findOneByEmail($request->email)) {
+            throw new \InvalidArgumentException('Email already exists');
         }
 
         $user = new User();
-        $user->setName($data['name']);
-        $user->setEmail($data['email']);
+        $user->setName($request->name);
+        $user->setEmail($request->email);
+        $user->setPhone($request->phone);
         $user->setRole('ROLE_USER');
 
-        $hashedPassword = $this->passwordHasher->hashPassword($user, $data['password']);
+        $hashedPassword = $this->passwordHasher->hashPassword(
+            $user,
+            $request->password
+        );
         $user->setPassword($hashedPassword);
-
-        $user->setCreatedAt(new \DateTime());
-
-        if (!empty($data['phone'])) {
-            $user->setPhone($data['phone']);
-        }
 
         return $user;
     }

@@ -2,12 +2,13 @@
 
 namespace App\Entity;
 
+use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
 use Symfony\Component\Security\Core\User\UserInterface;
-use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Validator\Constraints as Assert;
 
-#[ORM\Entity]
-#[ORM\Table(name: "users")]
+#[ORM\Entity(repositoryClass: 'App\Repository\UserRepository')]
+#[ORM\Table(name: 'users')]
 class User implements UserInterface, PasswordAuthenticatedUserInterface
 {
     #[ORM\Id]
@@ -16,24 +17,32 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     private ?int $id = null;
 
     #[ORM\Column(type: 'string', length: 255)]
+    #[Assert\NotBlank]
+    #[Assert\Length(min: 2, max: 255)]
     private string $name;
 
     #[ORM\Column(type: 'string', length: 255, unique: true)]
+    #[Assert\NotBlank]
+    #[Assert\Email]
     private string $email;
 
     #[ORM\Column(type: 'string', length: 50, nullable: true)]
+    #[Assert\Regex(pattern: '/^\+?[0-9\s\-\(\)]{7,}$/')]
     private ?string $phone = null;
 
     #[ORM\Column(type: 'string', length: 255)]
     private string $password;
 
     #[ORM\Column(type: 'string', length: 20)]
-    private string $role;
+    private string $role = 'ROLE_USER';
 
     #[ORM\Column(type: 'datetime')]
-    private \DateTimeInterface $created_at;
+    private \DateTimeInterface $createdAt;
 
-    // --- Getters & Setters ---
+    public function __construct()
+    {
+        $this->createdAt = new \DateTime();
+    }
 
     public function getId(): ?int
     {
@@ -44,6 +53,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     {
         return $this->name;
     }
+
     public function setName(string $name): self
     {
         $this->name = $name;
@@ -54,6 +64,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     {
         return $this->email;
     }
+
     public function setEmail(string $email): self
     {
         $this->email = $email;
@@ -64,6 +75,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     {
         return $this->phone;
     }
+
     public function setPhone(?string $phone): self
     {
         $this->phone = $phone;
@@ -74,6 +86,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     {
         return $this->password;
     }
+
     public function setPassword(string $password): self
     {
         $this->password = $password;
@@ -84,6 +97,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     {
         return $this->role;
     }
+
     public function setRole(string $role): self
     {
         $this->role = $role;
@@ -92,37 +106,22 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
 
     public function getCreatedAt(): \DateTimeInterface
     {
-        return $this->created_at;
-    }
-    public function setCreatedAt(\DateTimeInterface $created_at): self
-    {
-        $this->created_at = $created_at;
-        return $this;
+        return $this->createdAt;
     }
 
-    // --- Méthode requise pour UserInterface ---
+    // UserInterface methods
+    public function getRoles(): array
+    {
+        return [$this->role];
+    }
+
     public function getUserIdentifier(): string
     {
         return $this->email;
     }
 
-    // On doit fournir la méthode getRoles() à Symfony
-    // Comme on n'a plus le champ roles, on retourne un tableau basé sur $role
-    public function getRoles(): array
-    {
-        // Convertit le champ role en tableau
-        $roles = [$this->role];
-
-    // Ajoute ROLE_USER si ce n’est pas déjà présent
-    if (!in_array('ROLE_USER', $roles)) {
-        $roles[] = 'ROLE_USER';
-    }
-
-    return array_unique($roles);
-    }
-
     public function eraseCredentials(): void
     {
-        // Rien à faire ici pour l'instant
+        // If you store any temporary, sensitive data on the user, clear it here
     }
 }

@@ -26,7 +26,7 @@ services:
         tags:
             - { name: kernel.event_listener, event: lexik_jwt_authentication.on_jwt_created, method: onJWTCreated }
 
-    # Ajout explicite de AuthController pour qu'il soit public et tagué
-    App\Controller\AuthController:
+    # Ajout explicite de UserController pour qu'il soit public et tagué
+    App\Controller\UserController:
         public: true
         tags: ['controller.service_arguments']

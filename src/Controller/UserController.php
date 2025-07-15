@@ -1,0 +1,74 @@
+<?php
+
+namespace App\Controller;
+
+use App\Dto\RegisterRequest;
+use App\Service\UserService;
+use Doctrine\ORM\EntityManagerInterface;
+use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\HttpFoundation\JsonResponse;
+use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\Routing\Annotation\Route;
+use Symfony\Component\Serializer\SerializerInterface;
+use Symfony\Component\Validator\Validator\ValidatorInterface;
+
+#[Route('/api', name: 'api_')]
+class UserController extends AbstractController
+{
+    #[Route('/register', name: 'register', methods: ['POST'])]
+    public function register(
+        Request $request,
+        SerializerInterface $serializer,
+        ValidatorInterface $validator,
+        UserService $userService,
+        EntityManagerInterface $em
+    ): JsonResponse {
+        try {
+            $registerRequest = $serializer->deserialize(
+                $request->getContent(),
+                RegisterRequest::class,
+                'json'
+            );
+        } catch (\Exception $e) {
+            return $this->json([
+                'status' => 'error',
+                'message' => 'Invalid request data',
+                'errors' => ['Invalid JSON format']
+            ], 400);
+        }
+
+        $errors = $validator->validate($registerRequest);
+        if (count($errors) > 0) {
+            $errorMessages = [];
+            foreach ($errors as $error) {
+                $errorMessages[$error->getPropertyPath()] = $error->getMessage();
+            }
+
+            return $this->json([
+                'status' => 'error',
+                'message' => 'Validation failed',
+                'errors' => $errorMessages
+            ], 422);
+        }
+
+        try {
+            $user = $userService->createUserFromRequest($registerRequest);
+            $em->persist($user);
+            $em->flush();
+
+            return $this->json([
+                'status' => 'success',
+                'message' => 'User registered successfully',
+                'data' => [
+                    'id' => $user->getId(),
+                    'email' => $user->getEmail()
+                ]
+            ], 201);
+        } catch (\InvalidArgumentException $e) {
+            return $this->json([
+                'status' => 'error',
+                'message' => $e->getMessage()
+            ], 400);
+        }
+    }
+}
