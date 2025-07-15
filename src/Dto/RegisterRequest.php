@@ -21,11 +21,11 @@ class RegisterRequest
 
     #[Assert\NotBlank(message: 'Le mot de passe est requis')]
     #[Assert\Length(
-        min: 12,
+        min: 8,
         minMessage: 'Le mot de passe doit contenir au moins {{ limit }} caractères'
     )]
     #[Assert\Regex(
-        pattern: '/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{12,}$/',
+        pattern: '/^(?=.*?[A-Z])(?=.*?[a-z])(?=.*?[0-9])(?=.*?[#?!@$ %^&*-]).{8,}$/',
         message: 'Le mot de passe doit contenir au moins une majuscule, une minuscule, un chiffre et un caractère spécial'
     )]
     public string $password;
