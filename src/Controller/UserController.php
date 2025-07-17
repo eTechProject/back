@@ -2,7 +2,7 @@
 
 namespace App\Controller;
 
-use App\Dto\RegisterRequest;
+use App\DTO\User\RegisterUserDTO;
 use App\Service\UserService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -26,7 +26,7 @@ class UserController extends AbstractController
         try {
             $registerRequest = $serializer->deserialize(
                 $request->getContent(),
-                RegisterRequest::class,
+                RegisterUserDTO::class,
                 'json'
             );
         } catch (\Exception $e) {

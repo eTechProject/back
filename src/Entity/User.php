@@ -2,6 +2,7 @@
 
 namespace App\Entity;
 
+use App\Enum\UserRole;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
 use Symfony\Component\Security\Core\User\UserInterface;
@@ -33,8 +34,8 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Column(type: 'string', length: 255)]
     private string $password;
 
-    #[ORM\Column(type: 'string', length: 20)]
-    private string $role = 'ROLE_USER';
+    #[ORM\Column(type: 'string', length: 20, enumType: UserRole::class)]
+    private UserRole $role = UserRole::CLIENT;
 
     #[ORM\Column(type: 'datetime')]
     private \DateTimeInterface $createdAt;
@@ -93,12 +94,12 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         return $this;
     }
 
-    public function getRole(): string
+    public function getRole(): UserRole
     {
         return $this->role;
     }
 
-    public function setRole(string $role): self
+    public function setRole(UserRole $role): self
     {
         $this->role = $role;
         return $this;
@@ -112,7 +113,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     // UserInterface methods
     public function getRoles(): array
     {
-        return [$this->role];
+        return [$this->role->value];
     }
 
     public function getUserIdentifier(): string

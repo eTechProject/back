@@ -1,10 +1,10 @@
 <?php
 
-namespace App\Dto;
+namespace App\DTO\User;
 
 use Symfony\Component\Validator\Constraints as Assert;
 
-class RegisterRequest
+class RegisterUserDTO
 {
     #[Assert\NotBlank(message: 'Le nom est requis')]
     #[Assert\Length(

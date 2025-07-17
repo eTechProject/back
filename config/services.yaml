@@ -26,7 +26,15 @@ services:
         tags:
             - { name: kernel.event_listener, event: lexik_jwt_authentication.on_jwt_created, method: onJWTCreated }
 
+    App\EventListener\JwtLoginSuccessHandler:
+        tags:
+            - { name: kernel.event_listener, event: lexik_jwt_authentication.on_authentication_success, method: onAuthenticationSuccess }
+            
     # Ajout explicite de UserController pour qu'il soit public et tagué
     App\Controller\UserController:
         public: true
         tags: ['controller.service_arguments']
+
+    App\Service\CryptService:
+        arguments:
+            $appSecret: '%env(APP_SECRET)%'
