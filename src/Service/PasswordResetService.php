@@ -9,6 +9,8 @@ use Symfony\Component\Mailer\MailerInterface;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 use SymfonyCasts\Bundle\ResetPassword\ResetPasswordHelperInterface;
 use SymfonyCasts\Bundle\ResetPassword\Exception\ResetPasswordExceptionInterface;
+use Symfony\Component\Mailer\Exception\TransportExceptionInterface;
+use Symfony\Component\Mime\Address;
 
 class PasswordResetService
 {
@@ -16,31 +18,36 @@ class PasswordResetService
         private EntityManagerInterface $entityManager,
         private ResetPasswordHelperInterface $resetPasswordHelper,
         private MailerInterface $mailer,
-        private UserPasswordHasherInterface $passwordHasher
+        private UserPasswordHasherInterface $passwordHasher,
     ) {}
 
     public function handleResetRequest(string $email): void
     {
-        $user = $this->entityManager->getRepository(User::class)->findOneBy(['email' => $email]);
+        try {
+            $user = $this->entityManager->getRepository(User::class)->findOneBy(['email' => $email]);
 
-        if (!$user) {
+            if (!$user) {
+                return;
+            }
+
+            $token = $this->resetPasswordHelper->generateResetToken($user);
+            $this->entityManager->flush();
+
+            $emailObject = (new TemplatedEmail())
+                ->from(new Address('no-reply@guard-info.com', 'Guard Security Service'))
+                ->to($user->getEmail())
+                ->subject('Your password reset request')
+                ->htmlTemplate('reset_password/email.html.twig')
+                ->context([
+                    'user' => $user,
+                    'resetToken' => $token,
+                ]);
+
+
+            $this->mailer->send($emailObject);
+        } catch (ResetPasswordExceptionInterface $e) {
             return;
         }
-
-        $token = $this->resetPasswordHelper->generateResetToken($user);
-        $this->entityManager->flush();
-
-        $email = (new TemplatedEmail())
-            ->from('pokaneliot@gmail.com')
-            ->to($user->getEmail())
-            ->subject('Your password reset request')
-            ->htmlTemplate('emails/reset_password.html.twig')
-            ->context([
-                'user' => $user,
-                'token' => $token,
-            ]);
-
-        $this->mailer->send($email);
     }
 
     public function resetPassword(string $token, string $newPassword): true|string
