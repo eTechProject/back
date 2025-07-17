@@ -8,7 +8,7 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\Routing\Annotation\Route;
 
-#[Route('/api', name: 'api_')]
+#[Route('/api/public', name: 'api_')]
 class ResetPasswordController extends AbstractController
 {
     public function __construct(private PasswordResetService $passwordResetService) {}

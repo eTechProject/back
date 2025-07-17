@@ -31,7 +31,7 @@ security:
             security: false
 
         reset_password:
-            pattern: ^/api/request-reset-password$
+            pattern: ^/api/public
             stateless: true
             security: false
 
@@ -42,7 +42,7 @@ security:
             jwt: ~
 
     access_control:
-        - { path: ^/api/request-reset-password, roles: IS_AUTHENTICATED_ANONYMOUSLY }
+        - { path: ^/api/public, roles: IS_AUTHENTICATED_ANONYMOUSLY }
 
         # accès libre au login
         - { path: ^/api/login_check, roles: IS_AUTHENTICATED_ANONYMOUSLY }
