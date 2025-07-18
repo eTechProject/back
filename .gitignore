@@ -10,6 +10,8 @@
 /vendor/
 ###< symfony/framework-bundle ###
 
+/migrations/
+
 ###> phpunit/phpunit ###
 /phpunit.xml
 /.phpunit.cache/
@@ -69,3 +71,7 @@
 
 # Embedded web-server pid file
 /.web-server-pid
+
+###> lexik/jwt-authentication-bundle ###
+/config/jwt/*.pem
+###< lexik/jwt-authentication-bundle ###

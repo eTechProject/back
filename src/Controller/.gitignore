@@ -1,0 +1,34 @@
+# Symfony / PHP
+/vendor/
+.env
+.env.local
+.env.*.local
+/.idea/
+/node_modules/
+var/
+public/bundles/
+/config/secrets/
+/translations/*.db
+
+# Cache / Logs
+var/cache/
+var/log/
+
+# Tests
+.phpunit.result.cache
+
+# IDE / OS
+*.log
+*.DS_Store
+*.swp
+*.swo
+*.bak
+*.tmp
+*.~*
+*.orig
+*.sass-cache
+*.vscode/
+*.phpunit.result.cache
+
+# Composer
+composer.lock

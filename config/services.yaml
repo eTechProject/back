@@ -1,20 +1,40 @@
-# This file is the entry point to configure your own services.
-# Files in the packages/ subdirectory configure your dependencies.
-
-# Put parameters here that don't need to change on each machine where the app is deployed
-# https://symfony.com/doc/current/best_practices.html#use-parameters-for-application-configuration
 parameters:
+    # Ici tu peux définir tes paramètres personnalisés si besoin
 
 services:
-    # default configuration for services in *this* file
+    # Configuration par défaut pour tous les services
     _defaults:
-        autowire: true      # Automatically injects dependencies in your services.
-        autoconfigure: true # Automatically registers your services as commands, event subscribers, etc.
+        autowire: true      # injection automatique des dépendances
+        autoconfigure: true # auto-ajout de tags selon interface/type
 
-    # makes classes in src/ available to be used as services
-    # this creates a service per class whose id is the fully-qualified class name
+    # Rend toutes les classes du dossier src/ disponibles comme services
     App\:
         resource: '../src/'
+        exclude:
+            - '../src/DependencyInjection/'
+            - '../src/Kernel.php'
 
-    # add more service definitions when explicit configuration is needed
-    # please note that last definitions always *replace* previous ones
+    # Déclaration explicite des repositories Doctrine comme services avec tag obligatoire
+    App\Repository\:
+        resource: '../src/Repository'
+        tags: ['doctrine.repository_service']
+        autowire: true
+        autoconfigure: true
+
+    # Déclaration explicite du listener JWT avec méthode obligatoire
+    App\EventListener\JWTCreatedListener:
+        tags:
+            - { name: kernel.event_listener, event: lexik_jwt_authentication.on_jwt_created, method: onJWTCreated }
+
+    App\EventListener\JwtLoginSuccessHandler:
+        tags:
+            - { name: kernel.event_listener, event: lexik_jwt_authentication.on_authentication_success, method: onAuthenticationSuccess }
+            
+    # Ajout explicite de UserController pour qu'il soit public et tagué
+    App\Controller\UserController:
+        public: true
+        tags: ['controller.service_arguments']
+
+    App\Service\CryptService:
+        arguments:
+            $appSecret: '%env(APP_SECRET)%'
