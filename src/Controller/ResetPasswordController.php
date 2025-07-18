@@ -27,7 +27,15 @@ class ResetPasswordController extends AbstractController
             ], 400);
         }
 
-        $this->passwordResetService->handleResetRequest($email);
+        try {
+            $this->passwordResetService->handleResetRequest($email);
+        } catch (\Exception $e) {
+            return $this->json([
+                'success' => false,
+                'message' => $e->getMessage(),
+                'data' => null
+            ], 400);
+        }
 
         return $this->json([
             'success' => true,
@@ -46,7 +54,7 @@ class ResetPasswordController extends AbstractController
         if (!$token || !$newPassword) {
             return $this->json([
                 'success' => false,
-                'message' => 'Token and new password are required.',
+                'message' => 'Le token et le nouveau mot de passe sont requis.',
                 'data' => null
             ], 400);
         }
@@ -63,7 +71,7 @@ class ResetPasswordController extends AbstractController
 
         return $this->json([
             'success' => true,
-            'message' => 'Password has been reset successfully.',
+            'message' => 'Le mot de passe a été réinitialisé avec succès.',
             'data' => null
         ]);
     }

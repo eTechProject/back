@@ -37,7 +37,7 @@ class JwtLoginSuccessHandler
 
         $event->setData([
             'status' => 200,
-            'message' => 'OK',
+            'message' => 'Connecté avec succès',
             'data' => $data,
         ]);
     }

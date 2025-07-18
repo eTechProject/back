@@ -27,7 +27,7 @@ class PasswordResetService
             $user = $this->entityManager->getRepository(User::class)->findOneBy(['email' => $email]);
 
             if (!$user) {
-                return;
+                throw new \Exception('Utilisateur non trouvé.');
             }
 
             $token = $this->resetPasswordHelper->generateResetToken($user);
@@ -46,7 +46,9 @@ class PasswordResetService
 
             $this->mailer->send($emailObject);
         } catch (ResetPasswordExceptionInterface $e) {
-            return;
+            throw new \Exception('Vous avez déjà demandé un mot de passe oublié. Veuillez vérifier votre boîte de réception pour le lien de réinitialisation.');
+        } catch (\Exception $e) {
+            throw $e;
         }
     }
 
@@ -55,11 +57,24 @@ class PasswordResetService
         try {
             $user = $this->resetPasswordHelper->validateTokenAndFetchUser($token);
         } catch (\Exception $e) {
-            return 'Invalid or expired token.';
+            return 'Token invalide ou expiré.';
+        }
+
+        $resetRequest = $this->entityManager
+            ->getRepository(\App\Entity\ResetPasswordRequest::class)
+            ->findOneBy(
+                ['user' => $user, 'used' => false],
+                ['requestedAt' => 'DESC']
+            );
+
+        if (!$resetRequest || $resetRequest->isUsed()) {
+            return 'Le Lien de réinitialisation a déjà été utilisé.';
         }
 
         $hashedPassword = $this->passwordHasher->hashPassword($user, $newPassword);
         $user->setPassword($hashedPassword);
+
+        $resetRequest->setUsed(true);
 
         $this->entityManager->flush();
 

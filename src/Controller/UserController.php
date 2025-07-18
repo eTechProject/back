@@ -32,7 +32,7 @@ class UserController extends AbstractController
         } catch (\Exception $e) {
             return $this->json([
                 'status' => 'error',
-                'message' => 'Invalid request data',
+                'message' => 'Le format de la requête est invalide',
                 'errors' => ['Invalid JSON format']
             ], 400);
         }
@@ -46,7 +46,7 @@ class UserController extends AbstractController
 
             return $this->json([
                 'status' => 'error',
-                'message' => 'Validation failed',
+                'message' => 'Échec de la validation',
                 'errors' => $errorMessages
             ], 422);
         }
@@ -58,11 +58,7 @@ class UserController extends AbstractController
 
             return $this->json([
                 'status' => 'success',
-                'message' => 'User registered successfully',
-                'data' => [
-                    'id' => $user->getId(),
-                    'email' => $user->getEmail()
-                ]
+                'message' => 'Utilisateur enregistré avec succès'
             ], 201);
         } catch (\InvalidArgumentException $e) {
             return $this->json([
