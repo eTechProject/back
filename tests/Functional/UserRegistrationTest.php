@@ -8,10 +8,22 @@ use Symfony\Component\HttpFoundation\Response;
 class UserRegistrationTest extends WebTestCase
 {
     private string $baseUrl = '/api/register';
+    private $client;
+
+    protected function setUp(): void
+    {
+        $this->client = static::createClient();
+        
+        // Clear the test database before each test
+        $em = static::getContainer()->get(\Doctrine\ORM\EntityManagerInterface::class);
+        $connection = $em->getConnection();
+        $connection->executeStatement('TRUNCATE TABLE users RESTART IDENTITY CASCADE');
+        $connection->executeStatement('TRUNCATE TABLE reset_password_request RESTART IDENTITY CASCADE');
+    }
 
     private function post(array $payload): void
-    {
-        static::createClient()->request(
+    {        
+        $this->client->request(
             'POST',
             $this->baseUrl,
             server: ['CONTENT_TYPE' => 'application/json'],
@@ -29,7 +41,7 @@ class UserRegistrationTest extends WebTestCase
             'password' => 'StrongPassword123!',
         ]);
 
-        $response = static::getClient()->getResponse();
+        $response = $this->client->getResponse();
         $this->assertSame(Response::HTTP_CREATED, $response->getStatusCode());
 
         $data = json_decode($response->getContent(), true);
@@ -45,7 +57,7 @@ class UserRegistrationTest extends WebTestCase
             'role' => 'client',
         ]);
 
-        $response = static::getClient()->getResponse();
+        $response = $this->client->getResponse();
         $this->assertSame(Response::HTTP_UNPROCESSABLE_ENTITY, $response->getStatusCode());
 
         $data = json_decode($response->getContent(), true);
@@ -62,7 +74,7 @@ class UserRegistrationTest extends WebTestCase
             'role' => 'client',
         ]);
 
-        $response = static::getClient()->getResponse();
+        $response = $this->client->getResponse();
         $this->assertSame(Response::HTTP_UNPROCESSABLE_ENTITY, $response->getStatusCode());
 
         $data = json_decode($response->getContent(), true);
@@ -81,7 +93,8 @@ class UserRegistrationTest extends WebTestCase
             'password' => 'Password123!',
             'role' => 'client',
         ]);
-        $this->assertSame(Response::HTTP_CREATED, static::getClient()->getResponse()->getStatusCode());
+        $firstResponse = $this->client->getResponse();
+        $this->assertSame(Response::HTTP_CREATED, $firstResponse->getStatusCode());
 
         // Second registration with same email
         $this->post([
@@ -90,7 +103,7 @@ class UserRegistrationTest extends WebTestCase
             'password' => 'Password123!',
             'role' => 'client',
         ]);
-        $response = static::getClient()->getResponse();
+        $response = $this->client->getResponse();
         $this->assertSame(Response::HTTP_BAD_REQUEST, $response->getStatusCode());
 
         $data = json_decode($response->getContent(), true);
@@ -99,15 +112,15 @@ class UserRegistrationTest extends WebTestCase
     }
 
     public function testRegisterFailsWithInvalidJson(): void
-    {
-        static::createClient()->request(
+    {        
+        $this->client->request(
             'POST',
             $this->baseUrl,
             server: ['CONTENT_TYPE' => 'application/json'],
             content: '{"name": "Invalid JSON",' // Missing closing }
         );
 
-        $response = static::getClient()->getResponse();
+        $response = $this->client->getResponse();
         $this->assertSame(Response::HTTP_BAD_REQUEST, $response->getStatusCode());
 
         $data = json_decode($response->getContent(), true);

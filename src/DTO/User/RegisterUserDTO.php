@@ -35,4 +35,10 @@ class RegisterUserDTO
         message: 'Le numéro de téléphone n\'est pas valide'
     )]
     public ?string $phone = null;
+
+    #[Assert\Choice(
+        choices: ['admin', 'agent', 'client'],
+        message: 'Le rôle doit être admin, agent ou client'
+    )]
+    public string $role = 'client';
 }

@@ -11,32 +11,26 @@ use Doctrine\ORM\EntityManagerInterface;
 
 class AuthTest extends WebTestCase
 {
-    private EntityManagerInterface $em;
-    private UserPasswordHasherInterface $hasher;
-
-    protected function setUp(): void
+    public function testLoginReturnsToken(): void
     {
-        $kernel = self::bootKernel();
-        $this->em = static::getContainer()->get(EntityManagerInterface::class);
-        $this->hasher = static::getContainer()->get(UserPasswordHasherInterface::class);
+        $client = static::createClient();
+        
+        // Set up test user if it doesn't exist
+        $em = static::getContainer()->get(EntityManagerInterface::class);
+        $hasher = static::getContainer()->get(UserPasswordHasherInterface::class);
 
-        $user = $this->em->getRepository(User::class)->findOneBy(['email' => 'john@example.com']);
+        $user = $em->getRepository(User::class)->findOneBy(['email' => 'john@example.com']);
         if (!$user) {
             $user = new User();
             $user->setName('John Doe');
             $user->setEmail('john@example.com');
             $user->setRole(UserRole::CLIENT);
-            $user->setPassword($this->hasher->hashPassword($user, 'password'));
-            $this->em->persist($user);
-            $this->em->flush();
+            $user->setPassword($hasher->hashPassword($user, 'password'));
+            $em->persist($user);
+            $em->flush();
         }
-    }
 
-    public function testLoginReturnsToken(): void
-    {
-        $client = static::createClient();
-
-        $client->request('POST', '/login', [], [], [
+        $client->request('POST', '/api/login_check', [], [], [
             'CONTENT_TYPE' => 'application/json'
         ], json_encode([
             'email' => 'john@example.com',
@@ -48,7 +42,9 @@ class AuthTest extends WebTestCase
         $this->assertEquals(Response::HTTP_OK, $response->getStatusCode());
 
         $data = json_decode($response->getContent(), true);
-        $this->assertArrayHasKey('token', $data);
-        $this->assertIsString($data['token']);
+        
+        $this->assertArrayHasKey('data', $data);
+        $this->assertArrayHasKey('token', $data['data']);
+        $this->assertIsString($data['data']['token']);
     }
 }

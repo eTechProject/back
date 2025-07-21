@@ -28,9 +28,10 @@ class UserService
         $user->setEmail($request->email);
         $user->setPhone($request->phone);
 
-        $role = match (strtolower($request->role ?? 'client')) {
+        $role = match (strtolower($request->role)) {
             'admin' => UserRole::ADMIN,
             'agent' => UserRole::AGENT,
+            'client' => UserRole::CLIENT,
             default => UserRole::CLIENT,
         };
         $user->setRole($role);
