@@ -4,6 +4,8 @@ namespace App\Entity;
 
 use App\Repository\AgentLocationsArchiveRepository;
 use Doctrine\ORM\Mapping as ORM;
+use App\Entity\Agents;
+use App\Entity\Tasks;
 use CrEOF\Spatial\PHP\Types\Geometry\LineString;
 
 #[ORM\Entity(repositoryClass: AgentLocationsArchiveRepository::class)]
@@ -14,29 +16,31 @@ class AgentLocationsArchive
     #[ORM\Column]
     private ?int $id = null;
 
-    #[ORM\Column(type: 'geometry', options: ['geometry_type' => 'LINESTRING', 'srid' => 4326])]
-    private ?LineString $geom = null;
+    #[ORM\Column(type: 'linestring', options: ['srid' => 4326])]
+    private LineString $geom;
 
     #[ORM\Column]
-    private ?\DateTimeImmutable $start_time = null;
+    private \DateTimeImmutable $start_time;
 
     #[ORM\Column]
-    private ?\DateTimeImmutable $end_time = null;
+    private \DateTimeImmutable $end_time;
 
     #[ORM\Column]
-    private ?int $point_count = null;
+    private int $point_count;
 
-    #[ORM\Column]
+    #[ORM\Column(nullable: true)]
     private ?float $avg_speed = null;
 
-    #[ORM\Column]
+    #[ORM\Column(nullable: true)]
     private ?float $path_length = null;
 
-    #[ORM\Column]
-    private ?int $agent_id = null;
+    #[ORM\ManyToOne(targetEntity: Agents::class)]
+    #[ORM\JoinColumn(name: 'agent_id', referencedColumnName: 'id', nullable: false)]
+    private Agents $agent;
 
-    #[ORM\Column]
-    private ?int $task_id = null;
+    #[ORM\ManyToOne(targetEntity: Tasks::class)]
+    #[ORM\JoinColumn(name: 'task_id', referencedColumnName: 'id', nullable: false)]
+    private Tasks $task;
 
     public function getId(): ?int
     {
@@ -49,7 +53,7 @@ class AgentLocationsArchive
         return $this;
     }
 
-    public function getGeom(): ?LineString
+    public function getGeom(): LineString
     {
         return $this->geom;
     }
@@ -60,7 +64,7 @@ class AgentLocationsArchive
         return $this;
     }
 
-    public function getStartTime(): ?\DateTimeImmutable
+    public function getStartTime(): \DateTimeImmutable
     {
         return $this->start_time;
     }
@@ -71,7 +75,7 @@ class AgentLocationsArchive
         return $this;
     }
 
-    public function getEndTime(): ?\DateTimeImmutable
+    public function getEndTime(): \DateTimeImmutable
     {
         return $this->end_time;
     }
@@ -82,7 +86,7 @@ class AgentLocationsArchive
         return $this;
     }
 
-    public function getPointCount(): ?int
+    public function getPointCount(): int
     {
         return $this->point_count;
     }
@@ -98,7 +102,7 @@ class AgentLocationsArchive
         return $this->avg_speed;
     }
 
-    public function setAvgSpeed(float $avg_speed): static
+    public function setAvgSpeed(?float $avg_speed): static
     {
         $this->avg_speed = $avg_speed;
         return $this;
@@ -109,31 +113,31 @@ class AgentLocationsArchive
         return $this->path_length;
     }
 
-    public function setPathLength(float $path_length): static
+    public function setPathLength(?float $path_length): static
     {
         $this->path_length = $path_length;
         return $this;
     }
 
-    public function getAgentId(): ?int
+    public function getAgent(): Agents
     {
-        return $this->agent_id;
+        return $this->agent;
     }
 
-    public function setAgentId(int $agent_id): static
+    public function setAgent(Agents $agent): static
     {
-        $this->agent_id = $agent_id;
+        $this->agent = $agent;
         return $this;
     }
 
-    public function getTaskId(): ?int
+    public function getTask(): Tasks
     {
-        return $this->task_id;
+        return $this->task;
     }
 
-    public function setTaskId(int $task_id): static
+    public function setTask(Tasks $task): static
     {
-        $this->task_id = $task_id;
+        $this->task = $task;
         return $this;
     }
 }

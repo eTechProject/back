@@ -5,6 +5,8 @@ namespace App\Entity;
 use App\Repository\TasksRepository;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
+use App\Entity\ServiceOrders;
+use App\Entity\Agents;
 
 #[ORM\Entity(repositoryClass: TasksRepository::class)]
 class Tasks
@@ -15,22 +17,24 @@ class Tasks
     private ?int $id = null;
 
     #[ORM\Column(length: 20)]
-    private ?string $status = null;
+    private string $status;
 
-    #[ORM\Column(type: Types::TEXT)]
+    #[ORM\Column(type: Types::TEXT, nullable: true)]
     private ?string $description = null;
 
-    #[ORM\Column]
+    #[ORM\Column(nullable: true)]
     private ?\DateTimeImmutable $end_date = null;
 
     #[ORM\Column]
-    private ?\DateTimeImmutable $start_date = null;
+    private \DateTimeImmutable $start_date;
 
-    #[ORM\Column]
-    private ?int $order_id = null;
+    #[ORM\ManyToOne(targetEntity: ServiceOrders::class)]
+    #[ORM\JoinColumn(name: 'order_id', referencedColumnName: 'id', nullable: false)]
+    private ServiceOrders $order;
 
-    #[ORM\Column]
-    private ?int $agent_id = null;
+    #[ORM\ManyToOne(targetEntity: Agents::class)]
+    #[ORM\JoinColumn(name: 'agent_id', referencedColumnName: 'id', nullable: false)]
+    private Agents $agent;
 
     public function getId(): ?int
     {
@@ -44,7 +48,7 @@ class Tasks
         return $this;
     }
 
-    public function getStatus(): ?string
+    public function getStatus(): string
     {
         return $this->status;
     }
@@ -61,7 +65,7 @@ class Tasks
         return $this->description;
     }
 
-    public function setDescription(string $description): static
+    public function setDescription(?string $description): static
     {
         $this->description = $description;
 
@@ -73,14 +77,14 @@ class Tasks
         return $this->end_date;
     }
 
-    public function setEndDate(\DateTimeImmutable $end_date): static
+    public function setEndDate(?\DateTimeImmutable $end_date): static
     {
         $this->end_date = $end_date;
 
         return $this;
     }
 
-    public function getStartDate(): ?\DateTimeImmutable
+    public function getStartDate(): \DateTimeImmutable
     {
         return $this->start_date;
     }
@@ -92,26 +96,26 @@ class Tasks
         return $this;
     }
 
-    public function getOrderId(): ?int
+    public function getOrder(): ServiceOrders
     {
-        return $this->order_id;
+        return $this->order;
     }
 
-    public function setOrderId(int $order_id): static
+    public function setOrder(ServiceOrders $order): static
     {
-        $this->order_id = $order_id;
+        $this->order = $order;
 
         return $this;
     }
 
-    public function getAgentId(): ?int
+    public function getAgent(): Agents
     {
-        return $this->agent_id;
+        return $this->agent;
     }
 
-    public function setAgentId(int $agent_id): static
+    public function setAgent(Agents $agent): static
     {
-        $this->agent_id = $agent_id;
+        $this->agent = $agent;
 
         return $this;
     }

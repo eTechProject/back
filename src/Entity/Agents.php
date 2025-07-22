@@ -14,18 +14,18 @@ class Agents
     #[ORM\Column]
     private ?int $id = null;
 
-    #[ORM\Column(length: 255)]
+    #[ORM\Column(length: 255, nullable: true)]
     private ?string $address = null;
 
-    #[ORM\Column(length: 20, enumType: Genre::class)]
-    private ?Genre $genre = null;
+    #[ORM\Column(length: 1, enumType: Genre::class)]
+    private Genre $sexe;
 
-    #[ORM\Column(length: 255)]
+    #[ORM\Column(length: 255, nullable: true)]
     private ?string $profile_picture_url = null;
 
     #[ORM\ManyToOne(inversedBy: 'agents')]
     #[ORM\JoinColumn(name: 'user_id', referencedColumnName: 'id', nullable: false)]
-    private ?User $user = null;
+    private User $user;
 
     public function getId(): ?int
     {
@@ -37,20 +37,20 @@ class Agents
         return $this->address;
     }
 
-    public function setAddress(string $address): static
+    public function setAddress(?string $address): static
     {
         $this->address = $address;
         return $this;
     }
 
-    public function getGenre(): ?Genre
+    public function getSexe(): Genre
     {
-        return $this->genre;
+        return $this->sexe;
     }
 
-    public function setGenre(Genre $genre): static
+    public function setSexe(Genre $sexe): static
     {
-        $this->genre = $genre;
+        $this->sexe = $sexe;
         return $this;
     }
 
@@ -59,18 +59,18 @@ class Agents
         return $this->profile_picture_url;
     }
 
-    public function setProfilePictureUrl(string $profile_picture_url): static
+    public function setProfilePictureUrl(?string $profile_picture_url): static
     {
         $this->profile_picture_url = $profile_picture_url;
         return $this;
     }
 
-    public function getUser(): ?Users
+    public function getUser(): User
     {
         return $this->user;
     }
 
-    public function setUser(Users $user): static
+    public function setUser(User $user): static
     {
         $this->user = $user;
         return $this;

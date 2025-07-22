@@ -13,6 +13,7 @@ doctrine:
           geography: CrEOF\Spatial\DBAL\Types\GeographyType
           point: CrEOF\Spatial\DBAL\Types\Geometry\PointType
           polygon: CrEOF\Spatial\DBAL\Types\Geometry\PolygonType
+          linestring: CrEOF\Spatial\DBAL\Types\Geometry\LineStringType
     orm:
         auto_generate_proxy_classes: true
         enable_lazy_ghost_objects: true

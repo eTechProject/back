@@ -4,7 +4,9 @@ namespace App\Entity;
 
 use App\Repository\AgentLocationsRawRepository;
 use Doctrine\ORM\Mapping as ORM;
-use CrEOF\Spatial\PHP\Types\Geometry\Polygon;
+use App\Entity\Tasks;
+use App\Entity\Agents;
+use CrEOF\Spatial\PHP\Types\Geometry\Point;
 
 #[ORM\Entity(repositoryClass: AgentLocationsRawRepository::class)]
 class AgentLocationsRaw
@@ -14,29 +16,31 @@ class AgentLocationsRaw
     #[ORM\Column]
     private ?int $id = null;
 
-    #[ORM\Column(type: 'polygon', options: ['srid' => 4326])]
-    private ?Polygon $geom = null;
+    #[ORM\Column(type: 'point', options: ['srid' => 4326])]
+    private Point $geom;
 
     #[ORM\Column]
-    private ?\DateTimeImmutable $recorded_at = null;
+    private \DateTimeImmutable $recorded_at;
 
     #[ORM\Column]
-    private ?float $accuracy = null;
+    private float $accuracy;
 
-    #[ORM\Column]
+    #[ORM\Column(nullable: true)]
     private ?float $speed = null;
 
-    #[ORM\Column]
+    #[ORM\Column(nullable: true)]
     private ?float $battery_level = null;
 
-    #[ORM\Column]
+    #[ORM\Column(nullable: true)]
     private ?bool $is_significant = null;
 
-    #[ORM\Column]
-    private ?int $tasks_id = null;
+    #[ORM\ManyToOne(targetEntity: Tasks::class)]
+    #[ORM\JoinColumn(name: 'tasks_id', referencedColumnName: 'id', nullable: false)]
+    private Tasks $task;
 
-    #[ORM\Column]
-    private ?int $agent_id = null;
+    #[ORM\ManyToOne(targetEntity: Agents::class)]
+    #[ORM\JoinColumn(name: 'agent_id', referencedColumnName: 'id', nullable: false)]
+    private Agents $agent;
 
     // Getters & Setters
 
@@ -51,18 +55,18 @@ class AgentLocationsRaw
         return $this;
     }
 
-    public function getGeom(): ?Polygon
+    public function getGeom(): Point
     {
         return $this->geom;
     }
 
-    public function setGeom(?Polygon $geom): static
+    public function setGeom(Point $geom): static
     {
         $this->geom = $geom;
         return $this;
     }
 
-    public function getRecordedAt(): ?\DateTimeImmutable
+    public function getRecordedAt(): \DateTimeImmutable
     {
         return $this->recorded_at;
     }
@@ -73,7 +77,7 @@ class AgentLocationsRaw
         return $this;
     }
 
-    public function getAccuracy(): ?float
+    public function getAccuracy(): float
     {
         return $this->accuracy;
     }
@@ -89,7 +93,7 @@ class AgentLocationsRaw
         return $this->speed;
     }
 
-    public function setSpeed(float $speed): static
+    public function setSpeed(?float $speed): static
     {
         $this->speed = $speed;
         return $this;
@@ -100,7 +104,7 @@ class AgentLocationsRaw
         return $this->battery_level;
     }
 
-    public function setBatteryLevel(float $battery_level): static
+    public function setBatteryLevel(?float $battery_level): static
     {
         $this->battery_level = $battery_level;
         return $this;
@@ -111,31 +115,31 @@ class AgentLocationsRaw
         return $this->is_significant;
     }
 
-    public function setIsSignificant(bool $is_significant): static
+    public function setIsSignificant(?bool $is_significant): static
     {
         $this->is_significant = $is_significant;
         return $this;
     }
 
-    public function getTasksId(): ?int
+    public function getTask(): Tasks
     {
-        return $this->tasks_id;
+        return $this->task;
     }
 
-    public function setTasksId(int $tasks_id): static
+    public function setTask(Tasks $task): static
     {
-        $this->tasks_id = $tasks_id;
+        $this->task = $task;
         return $this;
     }
 
-    public function getAgentId(): ?int
+    public function getAgent(): Agents
     {
-        return $this->agent_id;
+        return $this->agent;
     }
 
-    public function setAgentId(int $agent_id): static
+    public function setAgent(Agents $agent): static
     {
-        $this->agent_id = $agent_id;
+        $this->agent = $agent;
         return $this;
     }
 }

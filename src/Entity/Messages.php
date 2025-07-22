@@ -5,7 +5,8 @@ namespace App\Entity;
 use App\Repository\MessagesRepository;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
-use App\Entity\User; // N'oublie pas d'importer User
+use App\Entity\User;
+use App\Entity\ServiceOrders;
 
 #[ORM\Entity(repositoryClass: MessagesRepository::class)]
 class Messages
@@ -16,28 +17,29 @@ class Messages
     private ?int $id = null;
 
     #[ORM\Column(type: Types::TEXT)]
-    private ?string $content = null;
+    private string $content;
 
     #[ORM\Column]
-    private ?\DateTimeImmutable $sent_at = null;
+    private \DateTimeImmutable $sent_at;
 
-    #[ORM\Column]
-    private ?int $order_id = null;
+    #[ORM\ManyToOne(targetEntity: ServiceOrders::class)]
+    #[ORM\JoinColumn(name: 'order_id', referencedColumnName: 'id', nullable: false)]
+    private ServiceOrders $order;
 
     #[ORM\ManyToOne(targetEntity: User::class)]
     #[ORM\JoinColumn(nullable: false)]
-    private ?User $sender = null;
+    private User $sender;
 
     #[ORM\ManyToOne(targetEntity: User::class)]
     #[ORM\JoinColumn(nullable: false)]
-    private ?User $receiver = null;
+    private User $receiver;
 
     public function getId(): ?int
     {
         return $this->id;
     }
 
-    public function getContent(): ?string
+    public function getContent(): string
     {
         return $this->content;
     }
@@ -49,7 +51,7 @@ class Messages
         return $this;
     }
 
-    public function getSentAt(): ?\DateTimeImmutable
+    public function getSentAt(): \DateTimeImmutable
     {
         return $this->sent_at;
     }
@@ -61,19 +63,19 @@ class Messages
         return $this;
     }
 
-    public function getOrderId(): ?int
+    public function getOrder(): ServiceOrders
     {
-        return $this->order_id;
+        return $this->order;
     }
 
-    public function setOrderId(int $order_id): static
+    public function setOrder(ServiceOrders $order): static
     {
-        $this->order_id = $order_id;
+        $this->order = $order;
 
         return $this;
     }
 
-    public function getSender(): ?User
+    public function getSender(): User
     {
         return $this->sender;
     }
@@ -85,7 +87,7 @@ class Messages
         return $this;
     }
 
-    public function getReceiver(): ?User
+    public function getReceiver(): User
     {
         return $this->receiver;
     }
