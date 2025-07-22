@@ -15,16 +15,16 @@ class SecuredZones
     private ?int $id = null;
 
     #[ORM\Column(type: 'string', length: 255)]
-    private ?string $name = null;
+    private string $name;
 
     /**
      * Zone géographique sécurisée, type Polygon avec SRID 4326 (WGS84)
      */
     #[ORM\Column(type: 'polygon', options: ['srid' => 4326])]
-    private ?Polygon $geom = null;
+    private Polygon $geom;
 
     #[ORM\Column(type: 'datetime_immutable')]
-    private ?\DateTimeImmutable $created_at = null;
+    private \DateTimeImmutable $created_at;
 
     /**
      * Constructeur : initialise la date de création automatiquement
@@ -43,7 +43,7 @@ class SecuredZones
         return $this->id;
     }
 
-    public function getName(): ?string
+    public function getName(): string
     {
         return $this->name;
     }
@@ -54,18 +54,18 @@ class SecuredZones
         return $this;
     }
 
-    public function getGeom(): ?Polygon
+    public function getGeom(): Polygon
     {
         return $this->geom;
     }
 
-    public function setGeom(?Polygon $geom): static
+    public function setGeom(Polygon $geom): static
     {
         $this->geom = $geom;
         return $this;
     }
 
-    public function getCreatedAt(): ?\DateTimeImmutable
+    public function getCreatedAt(): \DateTimeImmutable
     {
         return $this->created_at;
     }

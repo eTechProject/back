@@ -5,7 +5,9 @@ namespace App\Entity;
 use App\Repository\AgentLocationSignificantRepository;
 use Doctrine\ORM\Mapping as ORM;
 use App\Enum\Reason;
-use CrEOF\Spatial\PHP\Types\Geometry\Polygon;
+use App\Entity\Agents;
+use App\Entity\Tasks;
+use CrEOF\Spatial\PHP\Types\Geometry\Point;
 
 #[ORM\Entity(repositoryClass: AgentLocationSignificantRepository::class)]
 class AgentLocationSignificant
@@ -15,20 +17,22 @@ class AgentLocationSignificant
     #[ORM\Column]
     private ?int $id = null;
 
-    #[ORM\Column(type: 'polygon', options: ['srid' => 4326])]
-    private ?Polygon $geom = null;
+    #[ORM\Column(type: 'point', options: ['srid' => 4326])]
+    private Point $geom;
 
     #[ORM\Column]
-    private ?\DateTimeImmutable $recorded_at = null;
+    private \DateTimeImmutable $recorded_at;
 
-    #[ORM\Column(length: 20, enumType: Reason::class)]
-    private ?Reason $reason = null;
+    #[ORM\Column(enumType: Reason::class)]
+    private Reason $reason;
 
-    #[ORM\Column]
-    private ?int $agent_id = null;
+    #[ORM\ManyToOne(targetEntity: Agents::class)]
+    #[ORM\JoinColumn(name: 'agent_id', referencedColumnName: 'id', nullable: false)]
+    private Agents $agent;
 
-    #[ORM\Column]
-    private ?int $task_id = null;
+    #[ORM\ManyToOne(targetEntity: Tasks::class)]
+    #[ORM\JoinColumn(name: 'task_id', referencedColumnName: 'id', nullable: false)]
+    private Tasks $task;
 
     public function getId(): ?int
     {
@@ -42,19 +46,19 @@ class AgentLocationSignificant
         return $this;
     }
 
-    public function getGeom(): ?string
+    public function getGeom(): Point
     {
         return $this->geom;
     }
 
-    public function setGeom(string $geom): static
+    public function setGeom(Point $geom): static
     {
         $this->geom = $geom;
 
         return $this;
     }
 
-    public function getRecordedAt(): ?\DateTimeImmutable
+    public function getRecordedAt(): \DateTimeImmutable
     {
         return $this->recorded_at;
     }
@@ -66,38 +70,38 @@ class AgentLocationSignificant
         return $this;
     }
 
-    public function getReason(): ?string
+    public function getReason(): Reason
     {
         return $this->reason;
     }
 
-    public function setReason(string $reason): static
+    public function setReason(Reason $reason): static
     {
         $this->reason = $reason;
 
         return $this;
     }
 
-    public function getAgentId(): ?int
+    public function getAgent(): Agents
     {
-        return $this->agent_id;
+        return $this->agent;
     }
 
-    public function setAgentId(int $agent_id): static
+    public function setAgent(Agents $agent): static
     {
-        $this->agent_id = $agent_id;
+        $this->agent = $agent;
 
         return $this;
     }
 
-    public function getTaskId(): ?int
+    public function getTask(): Tasks
     {
-        return $this->task_id;
+        return $this->task;
     }
 
-    public function setTaskId(int $task_id): static
+    public function setTask(Tasks $task): static
     {
-        $this->task_id = $task_id;
+        $this->task = $task;
 
         return $this;
     }

@@ -5,7 +5,9 @@ namespace App\Entity;
 use App\Repository\ServiceOrdersRepository;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
-use App\Enum\Status; // Assure-toi que le namespace est correct
+use App\Enum\Status;
+use App\Entity\SecuredZones;
+use App\Entity\User;
 
 #[ORM\Entity(repositoryClass: ServiceOrdersRepository::class)]
 class ServiceOrders
@@ -15,21 +17,27 @@ class ServiceOrders
     #[ORM\Column]
     private ?int $id = null;
 
-    #[ORM\Column(type: Types::TEXT)]
+    #[ORM\Column(type: Types::TEXT, nullable: true)]
     private ?string $description = null;
 
     #[ORM\Column(length: 20, enumType: Status::class)]
-    private ?Status $status = null;
+    private Status $status;
 
     #[ORM\Column]
-    private ?\DateTimeImmutable $created_at = null;
+    private \DateTimeImmutable $created_at;
 
-    // Relations recommandées (remplace par ManyToOne si tu as les entités)
-    #[ORM\Column]
-    private ?int $secured_zone_id = null;
+    #[ORM\ManyToOne(targetEntity: SecuredZones::class)]
+    #[ORM\JoinColumn(name: 'secured_zone_id', referencedColumnName: 'id', nullable: false)]
+    private SecuredZones $secured_zone;
 
-    #[ORM\Column]
-    private ?int $client_id = null;
+    #[ORM\ManyToOne(targetEntity: User::class)]
+    #[ORM\JoinColumn(name: 'client_id', referencedColumnName: 'id', nullable: false)]
+    private User $client;
+
+    public function __construct()
+    {
+        $this->created_at = new \DateTimeImmutable();
+    }
 
     // Getters et setters
 
@@ -49,13 +57,13 @@ class ServiceOrders
         return $this->description;
     }
 
-    public function setDescription(string $description): static
+    public function setDescription(?string $description): static
     {
         $this->description = $description;
         return $this;
     }
 
-    public function getStatus(): ?Status
+    public function getStatus(): Status
     {
         return $this->status;
     }
@@ -66,7 +74,7 @@ class ServiceOrders
         return $this;
     }
 
-    public function getCreatedAt(): ?\DateTimeImmutable
+    public function getCreatedAt(): \DateTimeImmutable
     {
         return $this->created_at;
     }
@@ -77,25 +85,25 @@ class ServiceOrders
         return $this;
     }
 
-    public function getSecuredZoneId(): ?int
+    public function getSecuredZone(): SecuredZones
     {
-        return $this->secured_zone_id;
+        return $this->secured_zone;
     }
 
-    public function setSecuredZoneId(int $secured_zone_id): static
+    public function setSecuredZone(SecuredZones $secured_zone): static
     {
-        $this->secured_zone_id = $secured_zone_id;
+        $this->secured_zone = $secured_zone;
         return $this;
     }
 
-    public function getClientId(): ?int
+    public function getClient(): User
     {
-        return $this->client_id;
+        return $this->client;
     }
 
-    public function setClientId(int $client_id): static
+    public function setClient(User $client): static
     {
-        $this->client_id = $client_id;
+        $this->client = $client;
         return $this;
     }
 }
