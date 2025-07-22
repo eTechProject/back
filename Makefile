@@ -1,16 +1,18 @@
 build:
-	sudo docker compose -f ../compose.yaml build
+	sudo docker compose build
 
 up:
-	sudo docker compose -f ../compose.yaml up -d
+	sudo docker compose up -d
 
 down:
-	sudo docker compose -f ../compose.yaml down
+	sudo docker compose down
 
-restart: down up
+restart:
+	make down
+	make up
 
 logs:
-	sudo docker compose -f ../compose.yaml logs -f
+	sudo docker compose logs -f
 
 bash:
-	sudo docker compose -f ../compose.yaml exec backend bash
+	sudo docker compose exec php bash
