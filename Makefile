@@ -2,12 +2,14 @@ build:
 	sudo docker compose build
 
 up:
-	sudo docker compose up -d --build
+	sudo docker compose up -d
 
 down:
 	sudo docker compose down
 
-restart: down up
+restart:
+	make down
+	make up
 
 logs:
 	sudo docker compose logs -f
