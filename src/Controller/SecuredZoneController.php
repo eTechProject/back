@@ -130,28 +130,4 @@ class SecuredZoneController extends AbstractController
             ], 500);
         }
     }
-
-    #[Route('/client/{clientEncryptedId}', name: 'get_by_client', methods: ['GET'])]
-    public function getByClient(string $clientEncryptedId): JsonResponse
-    {
-        try {
-            $clientId = $this->cryptService->decryptId($clientEncryptedId);
-            $securedZones = $this->securedZoneService->findByClientId($clientId);
-            
-            $securedZoneDTOs = array_map(
-                fn($zone) => $this->securedZoneService->toDTO($zone),
-                $securedZones
-            );
-
-            return $this->json([
-                'status' => 'success',
-                'data' => $securedZoneDTOs
-            ]);
-        } catch (\Exception $e) {
-            return $this->json([
-                'status' => 'error',
-                'message' => 'Erreur lors de la récupération des zones sécurisées du client'
-            ], 500);
-        }
-    }
 }

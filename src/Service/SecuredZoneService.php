@@ -49,13 +49,6 @@ class SecuredZoneService
         return $this->securedZonesRepository->findAll();
     }
 
-    public function findByClientId(int $clientId): array
-    {
-        // This would need to be implemented based on your business logic
-        // For now, returning all zones as an example
-        return $this->securedZonesRepository->findAll();
-    }
-
     private function createPolygonFromCoordinates(array $coordinates): Polygon
     {
         $points = [];
