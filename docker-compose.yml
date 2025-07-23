@@ -15,7 +15,7 @@ services:
       - symfony
 
   db:
-    image: postgis/postgis:16-3.3
+    image: postgis/postgis:16-master
     container_name: symfony_postgres
     restart: unless-stopped
     environment:
