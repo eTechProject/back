@@ -13,7 +13,7 @@ use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\Serializer\SerializerInterface;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
 
-#[Route('/api/secured-zones', name: 'api_secured_zones_')]
+#[Route('/api/public/secured-zones', name: 'api_secured_zones_')]
 class SecuredZoneController extends AbstractController
 {
     public function __construct(
