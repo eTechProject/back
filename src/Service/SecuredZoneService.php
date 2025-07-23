@@ -6,15 +6,14 @@ use App\DTO\SecuredZone\CreateSecuredZoneDTO;
 use App\DTO\SecuredZone\SecuredZoneDTO;
 use App\Entity\SecuredZones;
 use App\Repository\SecuredZonesRepository;
-use CrEOF\Spatial\PHP\Types\Geometry\Polygon;
-use CrEOF\Spatial\PHP\Types\Geometry\LineString;
-use CrEOF\Spatial\PHP\Types\Geometry\Point;
+use Doctrine\DBAL\Connection;
 
 class SecuredZoneService
 {
     public function __construct(
         private SecuredZonesRepository $securedZonesRepository,
-        private CryptService $cryptService
+        private CryptService $cryptService,
+        private Connection $connection
     ) {}
 
     public function createSecuredZoneFromRequest(CreateSecuredZoneDTO $request): SecuredZones
@@ -22,9 +21,9 @@ class SecuredZoneService
         $securedZone = new SecuredZones();
         $securedZone->setName($request->name);
 
-        // Convert coordinates array to Polygon
-        $polygon = $this->createPolygonFromCoordinates($request->coordinates);
-        $securedZone->setGeom($polygon);
+        // Convert coordinates array to WKT Polygon string
+        $wkt = $this->createPolygonWKTFromCoordinates($request->coordinates);
+        $securedZone->setGeom($wkt);
 
         return $securedZone;
     }
@@ -34,7 +33,7 @@ class SecuredZoneService
         return new SecuredZoneDTO(
             encryptedId: $this->cryptService->encryptId($securedZone->getId()),
             name: $securedZone->getName(),
-            coordinates: $this->extractCoordinatesFromPolygon($securedZone->getGeom()),
+            coordinates: $this->extractCoordinatesFromPolygonWKT($securedZone->getGeom()),
             createdAt: $securedZone->getCreatedAt()
         );
     }
@@ -48,19 +47,42 @@ class SecuredZoneService
     {
         return $this->securedZonesRepository->findAll();
     }
+    
+    /**
+     * Debug method to inspect the raw WKT format stored in database
+     */
+    public function debugWktFormat(int $id): ?array
+    {
+        $zone = $this->findById($id);
+        if (!$zone) {
+            return null;
+        }
+        
+        return [
+            'id' => $zone->getId(),
+            'name' => $zone->getName(),
+            'raw_wkt' => $zone->getGeom(),
+            'parsed_coordinates' => $this->extractCoordinatesFromPolygonWKT($zone->getGeom())
+        ];
+    }
 
-    private function createPolygonFromCoordinates(array $coordinates): Polygon
+    /**
+     * Creates a WKT (Well-Known Text) polygon string from array of coordinates
+     */
+    private function createPolygonWKTFromCoordinates(array $coordinates): string
     {
         $points = [];
         foreach ($coordinates as $coordinate) {
             if (!isset($coordinate[0]) || !isset($coordinate[1])) {
-                throw new \InvalidArgumentException('Coordonnées invalides. Format attendu: [[lat, lng], ...]');
+                throw new \InvalidArgumentException('Coordonnées invalides. Format attendu: [[lng, lat], ...]');
             }
-            $points[] = new Point($coordinate[0], $coordinate[1]);
+            // Ensure coordinates are properly formatted as floats
+            // Note: WKT format for PostGIS expects longitude (X) then latitude (Y): "X Y"
+            $points[] = sprintf("%.6f %.6f", (float)$coordinate[0], (float)$coordinate[1]);
         }
 
         // Ensure the polygon is closed (first point = last point)
-        if (count($points) > 0 && !$this->arePointsEqual($points[0], $points[count($points) - 1])) {
+        if (count($points) > 0 && $points[0] !== $points[count($points) - 1]) {
             $points[] = $points[0];
         }
 
@@ -68,27 +90,50 @@ class SecuredZoneService
             throw new \InvalidArgumentException('Un polygone doit avoir au moins 3 points distincts (4 points avec la fermeture)');
         }
 
-        $lineString = new LineString($points);
-        return new Polygon([$lineString]);
+        // Create WKT polygon string: POLYGON((x1 y1, x2 y2, x3 y3, ...))
+        return 'POLYGON((' . implode(',', $points) . '))';
     }
 
-    private function extractCoordinatesFromPolygon(Polygon $polygon): array
+    /**
+     * Extracts coordinates array from WKT polygon string
+     */
+    private function extractCoordinatesFromPolygonWKT(string $wkt): array
     {
         $coordinates = [];
-        $rings = $polygon->getRings();
         
-        if (count($rings) > 0) {
-            $points = $rings[0]->getPoints();
-            foreach ($points as $point) {
-                $coordinates[] = [$point->getX(), $point->getY()];
-            }
+        // Debug the actual WKT format we're receiving
+        if (empty($wkt)) {
+            return [];
         }
-
+        
+        // Use a more robust regex to extract coordinates from any WKT polygon format
+        if (preg_match('/POLYGON\(\((.*?)\)\)/i', $wkt, $matches)) {
+            $pointsStr = $matches[1];
+            $pointStrings = explode(',', $pointsStr);
+            
+            foreach ($pointStrings as $pointString) {
+                // Clean up any extra spaces
+                $pointString = trim($pointString);
+                $parts = preg_split('/\s+/', $pointString);
+                
+                if (count($parts) >= 2) {
+                    // Make sure we're parsing as floats
+                    $coordinates[] = [(float)$parts[0], (float)$parts[1]];
+                }
+            }
+            
+            // Remove the last point if it's the same as the first (closing point)
+            $count = count($coordinates);
+            if ($count > 1 && 
+                $coordinates[0][0] === $coordinates[$count - 1][0] && 
+                $coordinates[0][1] === $coordinates[$count - 1][1]) {
+                array_pop($coordinates);
+            }
+        } else {
+            // For debugging: log or add to response what the actual format was
+            error_log("Failed to parse WKT string: " . $wkt);
+        }
+        
         return $coordinates;
-    }
-
-    private function arePointsEqual(Point $point1, Point $point2): bool
-    {
-        return $point1->getX() === $point2->getX() && $point1->getY() === $point2->getY();
     }
 }

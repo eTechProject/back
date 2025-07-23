@@ -35,6 +35,15 @@
             "migrations/.gitignore"
         ]
     },
+    "jsor/doctrine-postgis": {
+        "version": "2.3",
+        "recipe": {
+            "repo": "github.com/symfony/recipes-contrib",
+            "branch": "main",
+            "version": "1.7",
+            "ref": "211979f7917bf6edb8fc5006a17b2e84e8e84d50"
+        }
+    },
     "lexik/jwt-authentication-bundle": {
         "version": "3.1",
         "recipe": {

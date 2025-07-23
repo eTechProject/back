@@ -4,7 +4,7 @@ namespace App\Entity;
 
 use App\Repository\SecuredZonesRepository;
 use Doctrine\ORM\Mapping as ORM;
-use CrEOF\Spatial\PHP\Types\Geometry\Polygon;
+use Jsor\Doctrine\PostGIS\Types\PostGISType;
 
 #[ORM\Entity(repositoryClass: SecuredZonesRepository::class)]
 class SecuredZones
@@ -20,8 +20,8 @@ class SecuredZones
     /**
      * Zone géographique sécurisée, type Polygon avec SRID 4326 (WGS84)
      */
-    #[ORM\Column(type: 'polygon', options: ['srid' => 4326])]
-    private Polygon $geom;
+    #[ORM\Column(type: PostGISType::GEOMETRY, options: ['geometry_type' => 'polygon', 'srid' => 4326])]
+    private string $geom;
 
     #[ORM\Column(type: 'datetime_immutable')]
     private \DateTimeImmutable $created_at;
@@ -54,12 +54,12 @@ class SecuredZones
         return $this;
     }
 
-    public function getGeom(): Polygon
+    public function getGeom(): string
     {
         return $this->geom;
     }
 
-    public function setGeom(Polygon $geom): static
+    public function setGeom(string $geom): static
     {
         $this->geom = $geom;
         return $this;
