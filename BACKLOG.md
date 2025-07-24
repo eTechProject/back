@@ -1,5 +1,8 @@
 # 🧾 Changelog - eTechProject/back
 
+## 📅 2025-07-24
+- 📦 `feature/4-order` merged — Implemented order functionality (#8)
+
 ## 📅 2025-07-22
 - 🔒 `feature/4-secured-zone` merged — Implemented secured zone functionality (#7)
 - 🏗️ `feature/dockerbestpractice` merged — Enhanced Docker configuration with best practices (#6)
