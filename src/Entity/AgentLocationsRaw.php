@@ -6,7 +6,7 @@ use App\Repository\AgentLocationsRawRepository;
 use Doctrine\ORM\Mapping as ORM;
 use App\Entity\Tasks;
 use App\Entity\Agents;
-use CrEOF\Spatial\PHP\Types\Geometry\Point;
+use Jsor\Doctrine\PostGIS\Types\PostGISType;
 
 #[ORM\Entity(repositoryClass: AgentLocationsRawRepository::class)]
 class AgentLocationsRaw
@@ -16,8 +16,11 @@ class AgentLocationsRaw
     #[ORM\Column]
     private ?int $id = null;
 
-    #[ORM\Column(type: 'point', options: ['srid' => 4326])]
-    private Point $geom;
+    /**
+     * Position géographique de l'agent, type Point avec SRID 4326 (WGS84)
+     */
+    #[ORM\Column(type: PostGISType::GEOMETRY, options: ['geometry_type' => 'point', 'srid' => 4326])]
+    private string $geom;
 
     #[ORM\Column]
     private \DateTimeImmutable $recorded_at;
@@ -55,12 +58,12 @@ class AgentLocationsRaw
         return $this;
     }
 
-    public function getGeom(): Point
+    public function getGeom(): string
     {
         return $this->geom;
     }
 
-    public function setGeom(Point $geom): static
+    public function setGeom(string $geom): static
     {
         $this->geom = $geom;
         return $this;

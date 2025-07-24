@@ -6,7 +6,7 @@ use App\Repository\AgentLocationsArchiveRepository;
 use Doctrine\ORM\Mapping as ORM;
 use App\Entity\Agents;
 use App\Entity\Tasks;
-use CrEOF\Spatial\PHP\Types\Geometry\LineString;
+use Jsor\Doctrine\PostGIS\Types\PostGISType;
 
 #[ORM\Entity(repositoryClass: AgentLocationsArchiveRepository::class)]
 class AgentLocationsArchive
@@ -16,8 +16,11 @@ class AgentLocationsArchive
     #[ORM\Column]
     private ?int $id = null;
 
-    #[ORM\Column(type: 'linestring', options: ['srid' => 4326])]
-    private LineString $geom;
+    /**
+     * Trajectoire de l'agent archivée, type LineString avec SRID 4326 (WGS84)
+     */
+    #[ORM\Column(type: PostGISType::GEOMETRY, options: ['geometry_type' => 'linestring', 'srid' => 4326])]
+    private string $geom;
 
     #[ORM\Column]
     private \DateTimeImmutable $start_time;
@@ -53,12 +56,12 @@ class AgentLocationsArchive
         return $this;
     }
 
-    public function getGeom(): LineString
+    public function getGeom(): string
     {
         return $this->geom;
     }
 
-    public function setGeom(LineString $geom): static
+    public function setGeom(string $geom): static
     {
         $this->geom = $geom;
         return $this;
