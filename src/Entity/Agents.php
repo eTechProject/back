@@ -5,25 +5,31 @@ namespace App\Entity;
 use App\Repository\AgentsRepository;
 use Doctrine\ORM\Mapping as ORM;
 use App\Enum\Genre;
+use Symfony\Component\Serializer\Annotation\Groups;
 
 #[ORM\Entity(repositoryClass: AgentsRepository::class)]
 class Agents
 {
+    #[Groups(['agent:read'])]
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
     private ?int $id = null;
 
+    #[Groups(['agent:read'])]
     #[ORM\Column(length: 255, nullable: true)]
     private ?string $address = null;
 
+    #[Groups(['agent:read'])]
     #[ORM\Column(length: 1, enumType: Genre::class)]
     private Genre $sexe;
 
+    #[Groups(['agent:read'])]
     #[ORM\Column(length: 255, nullable: true)]
     private ?string $profile_picture_url = null;
 
-    #[ORM\ManyToOne(inversedBy: 'agents')]
+    #[Groups(['agent:read'])]
+    #[ORM\OneToOne(targetEntity: User::class)]
     #[ORM\JoinColumn(name: 'user_id', referencedColumnName: 'id', nullable: false)]
     private User $user;
 
