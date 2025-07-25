@@ -17,11 +17,9 @@ Avant de démarrer, assurez-vous d’avoir les outils suivants installés sur vo
 ---
 
 ## 🚀 Lancer le projet
-
-### 1. Récupérer la branche d’authentification :
-
-```bash
-git pull origin feature/authentification
+### 1.Cloner le projet 
+git clone https://github.com/eTechProject/back.git
+cd back
 
 ### 2. Créer le fichier .env dans la racine du projet puis lance
 composer install
@@ -46,7 +44,6 @@ openssl genpkey -algorithm RSA -out config/jwt/private.pem -aes256 -pass pass:yo
 
 # Générer la clé publique
 openssl rsa -pubout -in config/jwt/private.pem -out config/jwt/public.pem -passin pass:your_passphrase
-
 
 
 
