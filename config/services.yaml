@@ -22,3 +22,7 @@ services:
         arguments:
             - '%env(MERCURE_PUBLISH_URL)%'
             - '@mercure.jwt_provider'
+    
+    App\Service\CryptService:
+        arguments:
+            $appSecret: '%env(APP_SECRET)%'
