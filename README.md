@@ -37,13 +37,13 @@ php bin/console make:migration
 php bin/console doctrine:migration:migrate
 
 ###genère les clés JWT
-# Créer le dossier s’il n’existe pas
+Créer le dossier s’il n’existe pas
 mkdir -p config/jwt
 
-# Générer la clé privée (avec passphrase)
+Générer la clé privée (avec passphrase)
 openssl genpkey -algorithm RSA -out config/jwt/private.pem -aes256 -pass pass:your_passphrase
 
-# Générer la clé publique
+Générer la clé publique
 openssl rsa -pubout -in config/jwt/private.pem -out config/jwt/public.pem -passin pass:your_passphrase
 
 
