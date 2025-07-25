@@ -18,12 +18,6 @@ class RegisterAgentDTO
     #[Assert\Type(type: 'integer', message: 'L\'ID utilisateur doit être un entier')]
     public int $userId;
 
-    public function __construct(array $data)
-    {
-        $this->sexe = $data['sexe'] ?? '';
-        $this->userId = (int) ($data['userId'] ?? 0);
-    }
-
     public function getEnumSexe(): Genre
     {
         return Genre::from($this->sexe);

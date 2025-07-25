@@ -71,6 +71,13 @@ class AgentService
         $agent = $this->agentsRepository->find($id);
         if (!$agent) return false;
 
+        // Ajout : remettre le rôle de l'utilisateur à CLIENT si c'était AGENT
+        $user = $agent->getUser();
+        if ($user && $user->getRole() === UserRole::AGENT) {
+            $user->setRole(UserRole::CLIENT);
+            $this->em->persist($user);
+        }
+
         $this->em->remove($agent);
         $this->em->flush();
         return true;

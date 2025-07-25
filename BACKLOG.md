@@ -5,6 +5,7 @@
 
 ## 📅 2025-07-24
 - 📦 `feature/4-order` merged — Implemented order functionality (#8)
+- 🧾 `feature/3-agent-crud` merged — Implemented agent CRUD (#9)
 
 ## 📅 2025-07-22
 - 🔒 `feature/4-secured-zone` merged — Implemented secured zone functionality (#7)
