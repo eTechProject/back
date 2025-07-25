@@ -6,6 +6,7 @@ use App\DTO\SecuredZone\CreateSecuredZoneDTO;
 use App\DTO\SecuredZone\SecuredZoneDTO;
 use App\Entity\SecuredZones;
 use App\Repository\SecuredZonesRepository;
+use App\Enum\EntityType;
 use Doctrine\DBAL\Connection;
 
 class SecuredZoneService
@@ -31,7 +32,7 @@ class SecuredZoneService
     public function toDTO(SecuredZones $securedZone): SecuredZoneDTO
     {
         return new SecuredZoneDTO(
-            encryptedId: $this->cryptService->encryptId($securedZone->getId()),
+            securedZoneId: $this->cryptService->encryptId($securedZone->getId(), EntityType::SECURED_ZONE->value),
             name: $securedZone->getName(),
             coordinates: $this->extractCoordinatesFromPolygonWKT($securedZone->getGeom()),
             createdAt: $securedZone->getCreatedAt()

@@ -1,0 +1,10 @@
+<?php
+
+namespace App\Enum;
+
+enum EntityType: string
+{
+    case USER = 'user';
+    case SECURED_ZONE = 'secured_zone';
+    case SERVICE_ORDER = 'service_order';
+}

@@ -9,7 +9,7 @@ use DateTimeImmutable;
 class ServiceOrderDTO
 {
     public function __construct(
-        public string $encryptedId,
+        public string $serviceOrderId,
         public ?string $description,
         public Status $status,
         public DateTimeImmutable $createdAt,
