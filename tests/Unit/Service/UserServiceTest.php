@@ -80,12 +80,12 @@ class UserServiceTest extends TestCase
 
         $this->cryptService->expects($this->once())
             ->method('encryptId')
-            ->with(1)
+            ->with(1, 'user')
             ->willReturn('encrypted_id');
 
         $dto = $this->userService->toDTO($user);
 
-        $this->assertSame('encrypted_id', $dto->encryptedId);
+        $this->assertSame('encrypted_id', $dto->userId);
         $this->assertSame('john@example.com', $dto->email);
         $this->assertSame('John Doe', $dto->name);
         $this->assertSame(UserRole::CLIENT, $dto->role);

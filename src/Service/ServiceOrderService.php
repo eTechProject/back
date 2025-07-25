@@ -8,6 +8,7 @@ use App\DTO\SecuredZone\CreateSecuredZoneDTO;
 use App\Entity\ServiceOrders;
 use App\Entity\User;
 use App\Enum\Status;
+use App\Enum\EntityType;
 use App\Repository\ServiceOrdersRepository;
 use App\Repository\UserRepository;
 use Doctrine\ORM\EntityManagerInterface;
@@ -25,7 +26,7 @@ class ServiceOrderService
     public function createServiceOrderFromRequest(CreateServiceOrderDTO $request): ServiceOrders
     {
         // Decrypt and find the client
-        $clientId = $this->cryptService->decryptId($request->clientId);
+        $clientId = $this->cryptService->decryptId($request->clientId, EntityType::USER->value);
         $client = $this->userRepository->find($clientId);
         
         if (!$client) {
@@ -77,12 +78,12 @@ class ServiceOrderService
         $securedZoneDTO = $this->securedZoneService->toDTO($serviceOrder->getSecuredZone());
         
         return new ServiceOrderDTO(
-            encryptedId: $this->cryptService->encryptId($serviceOrder->getId()),
+            serviceOrderId: $this->cryptService->encryptId($serviceOrder->getId(), EntityType::SERVICE_ORDER->value),
             description: $serviceOrder->getDescription(),
             status: $serviceOrder->getStatus(),
             createdAt: $serviceOrder->getCreatedAt(),
             securedZone: $securedZoneDTO,
-            clientId: $this->cryptService->encryptId($serviceOrder->getClient()->getId()),
+            clientId: $this->cryptService->encryptId($serviceOrder->getClient()->getId(), EntityType::USER->value),
             clientName: $serviceOrder->getClient()->getName()
         );
     }

@@ -5,6 +5,7 @@ namespace App\Controller;
 use App\DTO\SecuredZone\CreateSecuredZoneDTO;
 use App\Service\SecuredZoneService;
 use App\Service\CryptService;
+use App\Enum\EntityType;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -107,7 +108,7 @@ class SecuredZoneController extends AbstractController
     public function getById(string $encryptedId): JsonResponse
     {
         try {
-            $id = $this->cryptService->decryptId($encryptedId);
+            $id = $this->cryptService->decryptId($encryptedId, EntityType::SECURED_ZONE->value);
             $securedZone = $this->securedZoneService->findById($id);
 
             if (!$securedZone) {

@@ -7,6 +7,7 @@ use App\Entity\User;
 use App\Repository\UserRepository;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 use App\Enum\UserRole;
+use App\Enum\EntityType;
 use App\DTO\User\UserDTO;
 
 class UserService
@@ -47,7 +48,7 @@ class UserService
     public function toDTO(User $user): UserDTO
     {
         return new UserDTO(
-            encryptedId: $this->cryptService->encryptId($user->getId()),
+            userId: $this->cryptService->encryptId($user->getId(), EntityType::USER->value),
             email: $user->getEmail(),
             name: $user->getName(),
             role: $user->getRole()

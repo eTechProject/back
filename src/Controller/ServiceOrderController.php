@@ -5,6 +5,7 @@ namespace App\Controller;
 use App\DTO\ServiceOrder\CreateServiceOrderDTO;
 use App\Service\ServiceOrderService;
 use App\Service\CryptService;
+use App\Enum\EntityType;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -12,7 +13,7 @@ use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\Serializer\SerializerInterface;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
 
-#[Route('/api/service-orders', name: 'api_service_orders_')]
+#[Route('/api/public/service-orders', name: 'api_service_orders_')]
 class ServiceOrderController extends AbstractController
 {
     public function __construct(
@@ -102,7 +103,7 @@ class ServiceOrderController extends AbstractController
     public function getById(string $encryptedId): JsonResponse
     {
         try {
-            $id = $this->cryptService->decryptId($encryptedId);
+            $id = $this->cryptService->decryptId($encryptedId, EntityType::SERVICE_ORDER->value);
             $serviceOrder = $this->serviceOrderService->findById($id);
 
             if (!$serviceOrder) {
@@ -130,7 +131,7 @@ class ServiceOrderController extends AbstractController
     public function getByClient(string $clientEncryptedId): JsonResponse
     {
         try {
-            $clientId = $this->cryptService->decryptId($clientEncryptedId);
+            $clientId = $this->cryptService->decryptId($clientEncryptedId, EntityType::USER->value);
             $serviceOrders = $this->serviceOrderService->findByClientId($clientId);
             
             $serviceOrderDTOs = array_map(
