@@ -209,18 +209,30 @@ class AgentController extends AbstractController
             ], 400);
         }
 
-        $deleted = $this->agentService->deleteAgent($id);
-
-        if (!$deleted) {
+        $agent = $this->agentService->getAgent($id);
+        if (!$agent) {
             return $this->json([
                 'status' => 'error',
                 'message' => 'Agent non trouvé'
             ], 404);
         }
 
+        // Récupérer le rôle de l'utilisateur avant suppression
+        $role = $agent->getUser() ? $agent->getUser()->getRole()->value : null;
+
+        $deleted = $this->agentService->deleteAgent($id);
+
+        if (!$deleted) {
+            return $this->json([
+                'status' => 'error',
+                'message' => 'Erreur lors de la suppression'
+            ], 500);
+        }
+
         return $this->json([
             'status' => 'success',
-            'message' => 'Agent supprimé avec succès'
+            'message' => 'Agent et utilisateur supprimés',
+            'deletedUserRole' => $role
         ]);
     }
 }
