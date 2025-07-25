@@ -1,3 +1,5 @@
+version: '3.8'
+
 services:
   php:
     build:
@@ -6,11 +8,16 @@ services:
     container_name: symfony_php
     volumes:
       - .:/var/www/app
+    env_file:
+      - .env
     working_dir: /var/www/app
     depends_on:
       - db
+      - mercure
     environment:
       DATABASE_URL: "pgsql://app:app@db:5432/guard"
+      MERCURE_URL: "http://mercure/.well-known/mercure"
+      MERCURE_JWT_TOKEN: "a-string-secret-at-least-256-bits-long"
     networks:
       - symfony
 
@@ -42,8 +49,25 @@ services:
     networks:
       - symfony
 
+  mercure:
+    image: dunglas/mercure
+    container_name: symfony_mercure
+    restart: unless-stopped
+    environment:
+      SERVER_NAME: ':80'
+      MERCURE_PUBLISHER_JWT_KEY: "a-string-secret-at-least-256-bits-long"
+      MERCURE_SUBSCRIBER_JWT_KEY: "a-string-secret-at-least-256-bits-long"
+      MERCURE_EXTRA_DIRECTIVES: |
+        cors_origins *
+        anonymous 1
+    ports:
+      - "3000:80"
+    networks:
+      - symfony
+
 volumes:
   db_data:
 
 networks:
   symfony:
+    driver: bridge

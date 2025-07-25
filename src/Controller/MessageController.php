@@ -6,12 +6,14 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\Mercure\HubInterface;
+use Symfony\Component\Mercure\Update;
 
 class MessageController extends AbstractController
 {
     public function __construct(private MessageService $messageService) {}
 
-    #[Route('/api/messages', name: 'api_messages_post', methods: ['POST'])]
+    #[Route('/api/public/messages', name: 'api_messages_post', methods: ['POST'])]
     public function postMessage(Request $request): JsonResponse
     {
         $data = json_decode($request->getContent(), true);
