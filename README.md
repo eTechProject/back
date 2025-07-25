@@ -31,12 +31,14 @@ make build
 make up
 
 ### 4-faire la migration vers la base de données
+
 make bash
 php bin/console doctrine:database:create
 php bin/console make:migration
 php bin/console doctrine:migration:migrate
 
-###genère les clés JWT
+### 5-genère les clés JWT
+
 Créer le dossier s’il n’existe pas
 mkdir -p config/jwt
 
