@@ -19,6 +19,7 @@ Avant de démarrer, assurez-vous d’avoir les outils suivants installés sur vo
 ## 🚀 Lancer le projet
 ### 1.Cloner le projet 
 git clone https://github.com/eTechProject/back.git
+
 cd back
 
 ### 2. Créer le fichier .env dans la racine du projet puis lance
