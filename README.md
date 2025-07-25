@@ -18,8 +18,7 @@ Avant de démarrer, assurez-vous d’avoir les outils suivants installés sur vo
 
 ## 🚀 Lancer le projet
 
-### 1. Récupérer la branche d’authentification :
-
+###Récupérer la branche d’authentification :
 ```bash
 git pull origin feature/authentification
 
