@@ -113,7 +113,8 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     // UserInterface methods
     public function getRoles(): array
     {
-        return [$this->role->value];
+        // Convert enum values to Symfony role format
+        return ['ROLE_' . strtoupper($this->role->value)];
     }
 
     public function getUserIdentifier(): string

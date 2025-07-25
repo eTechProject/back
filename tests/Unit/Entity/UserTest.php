@@ -26,7 +26,7 @@ class UserTest extends TestCase
         $this->assertSame('1234567890', $user->getPhone());
         $this->assertSame(UserRole::AGENT, $user->getRole());
         $this->assertSame('secret', $user->getPassword());
-        $this->assertSame([UserRole::AGENT->value], $user->getRoles());
+        $this->assertSame(['ROLE_AGENT'], $user->getRoles());
         $this->assertSame('john@example.com', $user->getUserIdentifier());
     }
 }
