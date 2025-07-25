@@ -13,7 +13,7 @@ class MessageController extends AbstractController
 {
     public function __construct(private MessageService $messageService) {}
 
-    #[Route('/api/public/messages', name: 'api_messages_post', methods: ['POST'])]
+    #[Route('/api/messages', name: 'api_messages_post', methods: ['POST'])]
     public function postMessage(Request $request): JsonResponse
     {
         $data = json_decode($request->getContent(), true);
