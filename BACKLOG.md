@@ -1,5 +1,8 @@
 # 🧾 Changelog - eTechProject/back
 
+## 📅 2025-07-25
+- 📦 `feature/4-order` merged — Enhanced order functionality with entity-specific encryption (#9)
+
 ## 📅 2025-07-24
 - 📦 `feature/4-order` merged — Implemented order functionality (#8)
 
