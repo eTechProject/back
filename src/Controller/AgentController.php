@@ -54,7 +54,7 @@ class AgentController extends AbstractController
     /**
      * Afficher un agent
      */
-    #[Route('/{id}', name: 'api_agents_show', methods: ['GET'])]
+    #[Route('/{id}/num', name: 'api_agents_show', methods: ['GET'])]
     public function show(int $id): JsonResponse
     {
         $agent = $this->agentService->getAgent($id);
@@ -69,7 +69,7 @@ class AgentController extends AbstractController
     /**
      * Récupérer le profil sécurisé d'un agent
      */
-    #[Route('/{id}/profile', name: 'api_agents_profile', methods: ['GET'])]
+    #[Route('/{id}', name: 'api_agents_profile', methods: ['GET'])]
     public function getProfile(int $id): JsonResponse
     {
         $agent = $this->agentService->getAgent($id); // ou getAgentById si tu préfères
