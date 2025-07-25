@@ -27,7 +27,9 @@ composer install
 
 ### 3-lancer le conteneur docker
 '''bash
+
 make build
+
 make up
 
 ### 4-faire la migration vers la base de données
