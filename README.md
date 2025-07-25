@@ -35,8 +35,11 @@ make up
 ### 4-faire la migration vers la base de données
 
 make bash
+
 php bin/console doctrine:database:create
+
 php bin/console make:migration
+
 php bin/console doctrine:migration:migrate
 
 ### 5-genère les clés JWT
