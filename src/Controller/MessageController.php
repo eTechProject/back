@@ -19,9 +19,18 @@ class MessageController extends AbstractController
     ) {}
 
     #[Route('/api/messages', name: 'api_messages_post', methods: ['POST'])]
+    /**
+     * Crée un nouveau message
+     *
+     * @param Request $request La requête HTTP contenant les données du message
+     * @return JsonResponse Réponse JSON avec le message créé
+     */
     public function postMessage(Request $request): JsonResponse
     {
         $data = json_decode($request->getContent(), true);
+        if (!$data) {
+            return $this->json(['error' => 'JSON invalide'], 400);
+        }
 
         try {
             $message = $this->messageService->createMessage($data);
@@ -37,23 +46,39 @@ class MessageController extends AbstractController
             );
 
             return $this->json([
-                'status' => 'Message envoyé',
-                'message' => $messageDTO,
+                'data' => $messageDTO,
+                'status' => 'success',
+                'message' => 'Message envoyé avec succès'
             ]);
         } catch (\InvalidArgumentException $e) {
             return $this->json(['error' => $e->getMessage()], 400);
+        } catch (\RuntimeException $e) {
+            return $this->json(['error' => $e->getMessage()], 500);
         }
     }
 
     #[Route('/api/messages/{orderId}', name: 'api_messages_get', methods: ['GET'])]
+    /**
+     * Récupère les messages associés à une commande avec pagination, tri et filtrage
+     *
+     * @param int $orderId Identifiant de la commande
+     * @param Request $request La requête HTTP contenant les paramètres de filtrage
+     * @return JsonResponse Réponse JSON avec les messages paginés
+     */
     public function getMessages(int $orderId, Request $request): JsonResponse
     {
         try {
             // Paramètres optionnels pour filtrage/pagination
-            $page = $request->query->getInt('page', 1);
-            $limit = $request->query->getInt('limit', 20);
-            $sortBy = $request->query->get('sort', 'sent_at');
-            $sortOrder = $request->query->get('order', 'DESC');
+            $page = max(1, $request->query->getInt('page', 1));
+            $limit = max(1, min(100, $request->query->getInt('limit', 20))); // Limite entre 1 et 100
+            
+            // Validation des paramètres de tri
+            $allowedSortFields = ['sent_at', 'content', 'sender_id', 'receiver_id'];
+            $sortBy = in_array($request->query->get('sort'), $allowedSortFields) 
+                ? $request->query->get('sort') 
+                : 'sent_at';
+            
+            $sortOrder = strtoupper($request->query->get('order', 'DESC')) === 'ASC' ? 'ASC' : 'DESC';
             $senderId = $request->query->get('sender_id');
             $fromDate = $request->query->get('from_date');
             
@@ -70,7 +95,12 @@ class MessageController extends AbstractController
             }
             
             if ($fromDate) {
-                $criteria['from_date'] = $fromDate;
+                try {
+                    new \DateTime($fromDate); // Valider le format de date
+                    $criteria['from_date'] = $fromDate;
+                } catch (\Exception $e) {
+                    // Ignorer la date si le format est invalide
+                }
             }
             
             // Récupérer les messages avec pagination et filtrage
@@ -97,10 +127,19 @@ class MessageController extends AbstractController
                 'data' => $messageDTOs,
                 'total' => $totalItems,
                 'page' => $page,
-                'pages' => $totalPages
+                'pages' => $totalPages,
+                'status' => 'success'
             ]);
         } catch (\InvalidArgumentException $e) {
-            return $this->json(['error' => $e->getMessage()], 404);
+            return $this->json([
+                'error' => $e->getMessage(),
+                'status' => 'error'
+            ], 404);
+        } catch (\Exception $e) {
+            return $this->json([
+                'error' => 'Une erreur inattendue s\'est produite',
+                'status' => 'error'
+            ], 500);
         }
     }
 }
