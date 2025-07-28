@@ -10,12 +10,15 @@ use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\Mercure\HubInterface;
 use Symfony\Component\Mercure\Update;
+use App\Entity\User;
+use App\Service\MercureTokenGenerator;
 
 class MessageController extends AbstractController
 {
     public function __construct(
         private MessageService $messageService,
-        private CryptService $cryptService
+        private CryptService $cryptService,
+        private MercureTokenGenerator $mercureTokenGenerator
     ) {}
 
     #[Route('/api/messages', name: 'api_messages_post', methods: ['POST'])]
@@ -56,18 +59,59 @@ class MessageController extends AbstractController
             return $this->json(['error' => $e->getMessage()], 500);
         }
     }
+    
+    #[Route('/api/messages/mercure-token', name: 'api_messages_mercure_token', methods: ['GET'], priority: 10)]
+    /**
+     * Génère un JWT Mercure sécurisé pour l'utilisateur courant
+     * Contient uniquement les topics autorisés pour les commandes de l'utilisateur
+     *
+     * @return JsonResponse Réponse contenant le JWT Mercure
+     */
+    public function generateMercureToken(): JsonResponse
+    {
+        /** @var User $user */
+        $user = $this->getUser();
+        
+        if (!$user) {
+            return $this->json([
+                'error' => 'Utilisateur non authentifié',
+                'status' => 'error'
+            ], 401);
+        }
+        
+        try {
+            // Utiliser le service pour générer le token
+            $result = $this->mercureTokenGenerator->generateTokenForUser($user);
+            
+            return $this->json([
+                'mercureToken' => $result['token'],
+                'topics' => $result['topics'],
+                'expires_in' => $result['expires_in'],
+                'status' => 'success'
+            ]);
+            
+        } catch (\Exception $e) {
+            return $this->json([
+                'error' => 'Erreur lors de la génération du token Mercure: ' . $e->getMessage(),
+                'status' => 'error'
+            ], 500);
+        }
+    }
 
-    #[Route('/api/messages/{orderId}', name: 'api_messages_get', methods: ['GET'])]
+    #[Route('/api/messages/{orderId}', name: 'api_messages_get', methods: ['GET'], priority: -10)]
     /**
      * Récupère les messages associés à une commande avec pagination, tri et filtrage
      *
-     * @param int $orderId Identifiant de la commande
+     * @param string $orderId Identifiant de la commande (sera converti en int)
      * @param Request $request La requête HTTP contenant les paramètres de filtrage
      * @return JsonResponse Réponse JSON avec les messages paginés
      */
-    public function getMessages(int $orderId, Request $request): JsonResponse
+    public function getMessages(string $orderId, Request $request): JsonResponse
     {
         try {
+            // Conversion de l'ID en entier
+            $orderIdInt = (int) $orderId;
+            
             // Paramètres optionnels pour filtrage/pagination
             $page = max(1, $request->query->getInt('page', 1));
             $limit = max(1, min(100, $request->query->getInt('limit', 20))); // Limite entre 1 et 100
@@ -104,7 +148,7 @@ class MessageController extends AbstractController
             }
             
             // Récupérer les messages avec pagination et filtrage
-            $result = $this->messageService->getMessagesForOrder($orderId, $criteria);
+            $result = $this->messageService->getMessagesForOrder($orderIdInt, $criteria);
             $messages = $result['messages'] ?? [];
             $totalItems = $result['total'] ?? count($messages);
             $totalPages = ceil($totalItems / $limit);
