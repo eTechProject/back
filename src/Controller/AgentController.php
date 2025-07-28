@@ -12,8 +12,9 @@ use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\Serializer\SerializerInterface;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
+use App\Enum\EntityType;
 
-#[Route('/api/public/agents', name: 'api_agents_')]
+#[Route('/api/agents', name: 'api_agents_')]
 class AgentController extends AbstractController
 {
     public function __construct(
@@ -95,7 +96,7 @@ class AgentController extends AbstractController
         }
 
         try {
-            $id = $this->cryptService->decryptId($encryptedId);
+            $id = $this->cryptService->decryptId($encryptedId, EntityType::AGENT->value);
 
             $agent = $this->agentService->getAgent($id);
             if (!$agent) {
@@ -134,7 +135,7 @@ class AgentController extends AbstractController
         }
 
         try {
-            $id = $this->cryptService->decryptId($encryptedId);
+            $id = $this->cryptService->decryptId($encryptedId, EntityType::AGENT->value);
         } catch (\Exception) {
             return $this->json([
                 'status' => 'error',
@@ -201,7 +202,7 @@ class AgentController extends AbstractController
         }
 
         try {
-            $id = $this->cryptService->decryptId($encryptedId);
+            $id = $this->cryptService->decryptId($encryptedId, EntityType::AGENT->value);
         } catch (\Exception) {
             return $this->json([
                 'status' => 'error',

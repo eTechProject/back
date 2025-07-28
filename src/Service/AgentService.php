@@ -4,6 +4,7 @@ namespace App\Service;
 
 use App\Entity\Agents;
 use App\Enum\UserRole;
+use App\Enum\EntityType;
 use App\DTO\Agent\RegisterAgentDTO;
 use App\DTO\Agent\AgentProfileDTO;
 use App\DTO\Agent\AgentResponseDTO; // Ajouté
@@ -89,14 +90,14 @@ class AgentService
         $user = $agent->getUser();
 
         $userDto = new UserDTO(
-            $this->cryptService->encryptId($user->getId()),
+            $this->cryptService->encryptId($user->getId(), EntityType::USER->value),
             $user->getEmail(),
             $user->getName(),
             $user->getRole()
         );
 
         return new AgentResponseDTO(
-            $this->cryptService->encryptId($agent->getId()),
+            $this->cryptService->encryptId($agent->getId(), EntityType::AGENT->value),
             $agent->getAddress(),
             $agent->getSexe(),
             $agent->getProfilePictureUrl(),
