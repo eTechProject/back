@@ -126,7 +126,7 @@ class MessageService
         }
     }
 
-    public function getMessagesForOrder(int $orderId): array
+    public function getMessagesForOrder(int $orderId, array $criteria = []): array
     {
         $order = $this->ordersRepo->find($orderId);
 
@@ -135,14 +135,82 @@ class MessageService
             throw new \InvalidArgumentException('Commande non trouvée');
         }
 
-        return array_map(function (Messages $message) {
+        // Récupérer les messages
+        $messages = $order->getMessages()->toArray();
+        
+        // Appliquer le filtrage
+        if (isset($criteria['sender_id'])) {
+            $messages = array_filter($messages, function(Messages $message) use ($criteria) {
+                return $message->getSender()->getId() == $criteria['sender_id'];
+            });
+        }
+        
+        if (isset($criteria['from_date'])) {
+            $fromDate = new \DateTime($criteria['from_date']);
+            $messages = array_filter($messages, function(Messages $message) use ($fromDate) {
+                return $message->getSentAt() >= $fromDate;
+            });
+        }
+        
+        // Appliquer le tri
+        $sortBy = $criteria['sort'] ?? 'sent_at';
+        $sortOrder = strtoupper($criteria['order'] ?? 'DESC') === 'ASC' ? 1 : -1;
+        
+        usort($messages, function(Messages $a, Messages $b) use ($sortBy, $sortOrder) {
+            $valueA = $this->getPropertyValue($a, $sortBy);
+            $valueB = $this->getPropertyValue($b, $sortBy);
+            
+            if ($valueA == $valueB) {
+                return 0;
+            }
+            
+            return ($valueA < $valueB ? -1 : 1) * $sortOrder;
+        });
+        
+        // Calculer le total
+        $totalMessages = count($messages);
+        
+        // Appliquer la pagination
+        $page = max(1, $criteria['page'] ?? 1);
+        $limit = max(1, $criteria['limit'] ?? 20);
+        $offset = ($page - 1) * $limit;
+        
+        $messages = array_slice($messages, $offset, $limit);
+        
+        // Transformer les messages en tableau
+        $messageData = array_map(function (Messages $message) {
             return [
                 'id' => $message->getId(),
-                'sender_id' => $message->getSender()->getId(),
-                'receiver_id' => $message->getReceiver()->getId(),
+                'order' => $message->getOrder(),
+                'sender' => $message->getSender(),
+                'receiver' => $message->getReceiver(),
                 'content' => $message->getContent(),
-                'sent_at' => $message->getSentAt()->format(\DateTimeInterface::ATOM),
+                'sent_at' => $message->getSentAt(),
             ];
-        }, $order->getMessages()->toArray());
+        }, $messages);
+        
+        return [
+            'messages' => $messageData,
+            'total' => $totalMessages
+        ];
+    }
+
+    /**
+     * Helper to get a property value from a message for sorting
+     */
+    private function getPropertyValue(Messages $message, string $property)
+    {
+        switch ($property) {
+            case 'sent_at':
+                return $message->getSentAt()->getTimestamp();
+            case 'sender_id':
+                return $message->getSender()->getId();
+            case 'receiver_id':
+                return $message->getReceiver()->getId();
+            case 'content':
+                return $message->getContent();
+            default:
+                return $message->getId();
+        }
     }
 }

@@ -8,6 +8,9 @@ use Doctrine\ORM\Mapping as ORM;
 use App\Enum\Status;
 use App\Entity\SecuredZones;
 use App\Entity\User;
+use Doctrine\Common\Collections\ArrayCollection;
+use Doctrine\Common\Collections\Collection;
+use App\Entity\Messages;
 
 #[ORM\Entity(repositoryClass: ServiceOrdersRepository::class)]
 class ServiceOrders
@@ -34,9 +37,14 @@ class ServiceOrders
     #[ORM\JoinColumn(name: 'client_id', referencedColumnName: 'id', nullable: false)]
     private User $client;
 
+    #[ORM\OneToMany(mappedBy: 'order', targetEntity: Messages::class)]
+    private Collection $messages;
+
     public function __construct()
     {
         $this->created_at = new \DateTimeImmutable();
+        $this->status = Status::PENDING;
+        $this->messages = new ArrayCollection();
     }
 
     // Getters et setters
@@ -104,6 +112,36 @@ class ServiceOrders
     public function setClient(User $client): static
     {
         $this->client = $client;
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, Messages>
+     */
+    public function getMessages(): Collection
+    {
+        return $this->messages;
+    }
+
+    public function addMessage(Messages $message): self
+    {
+        if (!$this->messages->contains($message)) {
+            $this->messages->add($message);
+            $message->setOrder($this);
+        }
+
+        return $this;
+    }
+
+    public function removeMessage(Messages $message): self
+    {
+        if ($this->messages->removeElement($message)) {
+            // set the owning side to null (unless already changed)
+            if ($message->getOrder() === $this) {
+                $message->setOrder(null);
+            }
+        }
+
         return $this;
     }
 }
