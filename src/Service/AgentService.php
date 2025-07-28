@@ -3,16 +3,18 @@
 namespace App\Service;
 
 use App\Entity\Agents;
+use App\Entity\User;
 use App\Enum\UserRole;
 use App\Enum\EntityType;
 use App\DTO\Agent\RegisterAgentDTO;
 use App\DTO\Agent\AgentProfileDTO;
-use App\DTO\Agent\AgentResponseDTO; // Ajouté
-use App\DTO\User\UserDTO;           // Ajouté
+use App\DTO\Agent\AgentResponseDTO;
+use App\DTO\User\UserDTO;
 use App\Repository\UserRepository;
 use App\Repository\AgentsRepository;
 use Doctrine\ORM\EntityManagerInterface;
-use App\Service\CryptService;       // Ajouté
+use App\Service\CryptService;
+use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 
 class AgentService
 {
@@ -20,27 +22,45 @@ class AgentService
         private EntityManagerInterface $em,
         private UserRepository $userRepository,
         private AgentsRepository $agentsRepository,
-        private CryptService $cryptService // Ajouté
+        private CryptService $cryptService,
+        private UserPasswordHasherInterface $passwordHasher
     ) {}
 
     public function createAgent(RegisterAgentDTO $dto): Agents
     {
-        $user = $this->userRepository->find($dto->userId);
-        if (!$user) {
-            throw new \Exception("Utilisateur introuvable");
-        }
+        $password = $dto->password ?? $this->generateRandomPassword();
 
-        if ($user->getRole() !== UserRole::AGENT) {
-            $user->setRole(UserRole::AGENT);
-            $this->em->persist($user);
-        }
+        $user = new User();
+        $user->setEmail($dto->email);
+        $user->setPassword($this->passwordHasher->hashPassword($user, $password));
+        $user->setRole(UserRole::AGENT);
+        $user->setName($dto->name);
+
+
+        $this->em->persist($user);
 
         $agent = new Agents();
         $agent->setSexe($dto->getEnumSexe());
+
+        if (property_exists($dto, 'firstName')) {
+            $agent->setFirstName($dto->firstName);
+        }
+        if (property_exists($dto, 'lastName')) {
+            $agent->setLastName($dto->lastName);
+        }
+        if (property_exists($dto, 'address')) {
+            $agent->setAddress($dto->address);
+        }
+        if (property_exists($dto, 'profile')) {
+            $agent->setProfilePictureUrl($dto->profile);
+        }
+
         $agent->setUser($user);
 
         $this->em->persist($agent);
         $this->em->flush();
+
+        $this->exportCredentialsToCsv($dto->email, $password);
 
         return $agent;
     }
@@ -84,7 +104,6 @@ class AgentService
         return true;
     }
 
-    // Retourne le profil d'un agent sous forme de DTO sécurisé
     public function getAgentProfile(Agents $agent): AgentResponseDTO
     {
         $user = $agent->getUser();
@@ -103,5 +122,30 @@ class AgentService
             $agent->getProfilePictureUrl(),
             $userDto
         );
+    }
+
+    private function generateRandomPassword(int $length = 12): string
+    {
+        return bin2hex(random_bytes($length / 2));
+    }
+
+    private function exportCredentialsToCsv(string $email, string $password): void
+    {
+        $dir = __DIR__ . '/../../var/secure';
+        if (!is_dir($dir)) {
+            mkdir($dir, 0700, true);
+        }
+
+        $filePath = $dir . '/credentials.csv';
+        $isNewFile = !file_exists($filePath);
+        $file = fopen($filePath, 'a');
+
+        if ($isNewFile) {
+            fputcsv($file, ['Email', 'Mot de passe temporaire', 'Date de création']);
+        }
+
+        fputcsv($file, [$email, $password, (new \DateTime())->format('Y-m-d H:i:s')]);
+
+        fclose($file);
     }
 }
