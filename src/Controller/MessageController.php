@@ -26,12 +26,12 @@ class MessageController extends AbstractController
         try {
             $message = $this->messageService->createMessage($data);
 
-            // Créer le DTO avec ID chiffré
+            // Créer le DTO avec tous les IDs chiffrés
             $messageDTO = new MessageDTO(
                 encryptedId: $this->cryptService->encryptId((string)$message->getId()),
-                order_id: $message->getOrder()->getId(),
-                sender_id: $message->getSender()->getId(),
-                receiver_id: $message->getReceiver()->getId(),
+                order_id: $this->cryptService->encryptId((string)$message->getOrder()->getId()),
+                sender_id: $this->cryptService->encryptId((string)$message->getSender()->getId()),
+                receiver_id: $this->cryptService->encryptId((string)$message->getReceiver()->getId()),
                 content: $message->getContent(),
                 sent_at: $message->getSentAt()->format('Y-m-d H:i:s')
             );
@@ -56,9 +56,9 @@ class MessageController extends AbstractController
             foreach ($messages as $message) {
                 $messageDTOs[] = new MessageDTO(
                     encryptedId: $this->cryptService->encryptId((string)$message->getId()),
-                    order_id: $message->getOrder()->getId(),
-                    sender_id: $message->getSender()->getId(),
-                    receiver_id: $message->getReceiver()->getId(),
+                    order_id: $this->cryptService->encryptId((string)$message->getOrder()->getId()),
+                    sender_id: $this->cryptService->encryptId((string)$message->getSender()->getId()),
+                    receiver_id: $this->cryptService->encryptId((string)$message->getReceiver()->getId()),
                     content: $message->getContent(),
                     sent_at: $message->getSentAt()->format('Y-m-d H:i:s')
                 );

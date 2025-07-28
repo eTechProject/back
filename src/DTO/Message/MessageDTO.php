@@ -5,9 +5,9 @@ class MessageDTO
 {
     public function __construct(
         public string $encryptedId,
-        public int $order_id,
-        public int $sender_id,
-        public int $receiver_id,
+        public string $order_id,
+        public string $sender_id,
+        public string $receiver_id,
         public string $content,
         public string $sent_at,
     ) {}
