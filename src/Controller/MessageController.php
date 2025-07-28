@@ -98,19 +98,29 @@ class MessageController extends AbstractController
         }
     }
 
-    #[Route('/api/messages/{orderId}', name: 'api_messages_get', methods: ['GET'], priority: -10)]
+    #[Route('/api/messages/{encryptedOrderId}', name: 'api_messages_get', methods: ['GET'], priority: -10)]
     /**
      * Récupère les messages associés à une commande avec pagination, tri et filtrage
+     * 
+     * L'identifiant de commande doit être chiffré avec CryptService.encryptId()
+     * Exemple: /api/messages/AbC123XyZ au lieu de /api/messages/1
      *
-     * @param string $orderId Identifiant de la commande (sera converti en int)
+     * @param string $encryptedOrderId Identifiant chiffré de la commande
      * @param Request $request La requête HTTP contenant les paramètres de filtrage
      * @return JsonResponse Réponse JSON avec les messages paginés
      */
-    public function getMessages(string $orderId, Request $request): JsonResponse
+    public function getMessages(string $encryptedOrderId, Request $request): JsonResponse
     {
         try {
-            // Conversion de l'ID en entier
-            $orderIdInt = (int) $orderId;
+            // Déchiffrer l'ID et conversion en entier
+            try {
+                $orderIdInt = (int) $this->cryptService->decryptId($encryptedOrderId);
+            } catch (\InvalidArgumentException $e) {
+                return $this->json([
+                    'error' => 'Identifiant de commande invalide',
+                    'status' => 'error'
+                ], 400);
+            }
             
             // Paramètres optionnels pour filtrage/pagination
             $page = max(1, $request->query->getInt('page', 1));
