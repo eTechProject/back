@@ -26,3 +26,7 @@ services:
     App\Service\CryptService:
         arguments:
             $appSecret: '%env(APP_SECRET)%'
+
+    App\Service\MercureTokenGenerator:
+        arguments:
+            $mercureJwtSecret: '%env(MERCURE_JWT_SECRET)%'
