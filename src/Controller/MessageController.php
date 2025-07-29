@@ -12,13 +12,15 @@ use Symfony\Component\Mercure\HubInterface;
 use Symfony\Component\Mercure\Update;
 use App\Entity\User;
 use App\Service\MercureTokenGenerator;
+use Psr\Log\LoggerInterface;
 
 class MessageController extends AbstractController
 {
     public function __construct(
         private MessageService $messageService,
         private CryptService $cryptService,
-        private MercureTokenGenerator $mercureTokenGenerator
+        private MercureTokenGenerator $mercureTokenGenerator,
+        private LoggerInterface $logger
     ) {}
 
     #[Route('/api/messages', name: 'api_messages_post', methods: ['POST'])]
@@ -36,6 +38,38 @@ class MessageController extends AbstractController
         }
 
         try {
+            // Vérifier si l'utilisateur a le droit d'accéder à cette commande
+            /** @var User $user */
+            $user = $this->getUser();
+            if (!$user) {
+                return $this->json([
+                    'error' => 'Utilisateur non authentifié',
+                    'status' => 'error'
+                ], 401);
+            }
+            
+            $orderId = $data['order_id'] ?? null;
+            
+            if ($orderId) {
+                // Vérifier si l'utilisateur a accès à cette commande
+                if (!$this->messageService->userHasAccessToOrder(
+                    $orderId, 
+                    $user->getId(), 
+                    $user->getRole()->value
+                )) {
+                    $this->logger->warning('Tentative d\'envoi de message non autorisé', [
+                        'user_id' => $user->getId(),
+                        'role' => $user->getRole()->value,
+                        'order_id' => $orderId
+                    ]);
+                    
+                    return $this->json([
+                        'error' => 'Vous n\'êtes pas autorisé à envoyer des messages pour cette commande',
+                        'status' => 'error'
+                    ], 403);
+                }
+            }
+            
             $message = $this->messageService->createMessage($data);
 
             // Créer le DTO avec tous les IDs chiffrés
@@ -120,6 +154,34 @@ class MessageController extends AbstractController
                     'error' => 'Identifiant de commande invalide',
                     'status' => 'error'
                 ], 400);
+            }
+            
+            // Vérification des droits d'accès
+            /** @var User $user */
+            $user = $this->getUser();
+            if (!$user) {
+                return $this->json([
+                    'error' => 'Utilisateur non authentifié',
+                    'status' => 'error'
+                ], 401);
+            }
+            
+            // Vérifier si l'utilisateur a accès à cette commande
+            if (!$this->messageService->userHasAccessToOrder(
+                $orderIdInt, 
+                $user->getId(), 
+                $user->getRole()->value
+            )) {
+                $this->logger->warning('Tentative d\'accès non autorisé', [
+                    'user_id' => $user->getId(),
+                    'role' => $user->getRole()->value,
+                    'order_id' => $orderIdInt
+                ]);
+                
+                return $this->json([
+                    'error' => 'Vous n\'êtes pas autorisé à accéder à cette commande',
+                    'status' => 'error'
+                ], 403);
             }
             
             // Paramètres optionnels pour filtrage/pagination
