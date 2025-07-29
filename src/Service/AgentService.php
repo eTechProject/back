@@ -131,6 +131,23 @@ class AgentService
         );
     }
 
+    /**
+     * Get all agents who are available (no tasks or all tasks completed)
+     * 
+     * @return array<AgentResponseDTO>
+     */
+    public function getAvailableAgents(): array
+    {
+        $availableAgents = $this->agentsRepository->findAvailableAgents();
+        $availableAgentDTOs = [];
+
+        foreach ($availableAgents as $agent) {
+            $availableAgentDTOs[] = $this->getAgentProfile($agent);
+        }
+
+        return $availableAgentDTOs;
+    }
+
     private function generateRandomPassword(int $length = 12): string
     {
         return bin2hex(random_bytes($length / 2));

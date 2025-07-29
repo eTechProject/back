@@ -7,6 +7,7 @@ use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use App\Entity\ServiceOrders;
 use App\Entity\Agents;
+use App\Enum\Status;
 
 #[ORM\Entity(repositoryClass: TasksRepository::class)]
 class Tasks
@@ -16,8 +17,8 @@ class Tasks
     #[ORM\Column]
     private ?int $id = null;
 
-    #[ORM\Column(length: 20)]
-    private string $status;
+    #[ORM\Column(length: 20, enumType: Status::class)]
+    private Status $status;
 
     #[ORM\Column(type: Types::TEXT, nullable: true)]
     private ?string $description = null;
@@ -48,12 +49,12 @@ class Tasks
         return $this;
     }
 
-    public function getStatus(): string
+    public function getStatus(): Status
     {
         return $this->status;
     }
 
-    public function setStatus(string $status): static
+    public function setStatus(Status $status): static
     {
         $this->status = $status;
 
