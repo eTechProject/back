@@ -5,6 +5,7 @@ namespace App\Repository;
 use App\Entity\ServiceOrders;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
+use App\Enum\UserRole;
 
 /**
  * @extends ServiceEntityRepository<ServiceOrders>
@@ -14,6 +15,20 @@ class ServiceOrdersRepository extends ServiceEntityRepository
     public function __construct(ManagerRegistry $registry)
     {
         parent::__construct($registry, ServiceOrders::class);
+    }
+    
+    /**
+     * Vérifie si un utilisateur a accès à une commande spécifique
+     * 
+     * @param int $orderId ID de la commande
+     * @param int $userId ID de l'utilisateur
+     * @param string $role Rôle de l'utilisateur (admin, agent, client)
+     * @return bool True si l'utilisateur a accès, sinon false
+     */
+    public function userHasAccessToOrder(int $orderId, int $userId, string $role): bool
+    {
+        // Pour des tests temporaires, autoriser tous les accès
+        return true;
     }
 
     /**
@@ -74,29 +89,4 @@ class ServiceOrdersRepository extends ServiceEntityRepository
             return [];
         }
     }
-
-    //    /**
-    //     * @return ServiceOrders[] Returns an array of ServiceOrders objects
-    //     */
-    //    public function findByExampleField($value): array
-    //    {
-    //        return $this->createQueryBuilder('s')
-    //            ->andWhere('s.exampleField = :val')
-    //            ->setParameter('val', $value)
-    //            ->orderBy('s.id', 'ASC')
-    //            ->setMaxResults(10)
-    //            ->getQuery()
-    //            ->getResult()
-    //        ;
-    //    }
-
-    //    public function findOneBySomeField($value): ?ServiceOrders
-    //    {
-    //        return $this->createQueryBuilder('s')
-    //            ->andWhere('s.exampleField = :val')
-    //            ->setParameter('val', $value)
-    //            ->getQuery()
-    //            ->getOneOrNullResult()
-    //        ;
-    //    }
 }

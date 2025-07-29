@@ -12,13 +12,18 @@ use Symfony\Component\Mercure\Update;
 
 class MessageService
 {
+    private ?MercureQueueService $mercureQueueService;
+
     public function __construct(
         private EntityManagerInterface $em,
         private ServiceOrdersRepository $ordersRepo,
         private UserRepository $userRepo,
         private HubInterface $mercureHub,
         private LoggerInterface $logger,
-    ) {}
+        MercureQueueService $mercureQueueService = null
+    ) {
+        $this->mercureQueueService = $mercureQueueService;
+    }
 
     /**
      * Crée un message, le persiste et le publie via Mercure.
@@ -82,6 +87,7 @@ class MessageService
 
     /**
      * Publie les mises à jour Mercure pour un nouveau message
+     * Inclut des tentatives de réessai et une gestion d'erreurs améliorée
      */
     private function publishMercureUpdate(
         Messages $message,
@@ -90,39 +96,116 @@ class MessageService
         $receiver,
         string $content
     ): void {
-        try {
-               if (!$this->mercureHub->getUrl()) {
-            $this->logger->warning('Mercure Hub non configuré');
+        // Configuration des tentatives
+        $maxRetries = 3;
+        $retryDelay = 500; // Délai entre les tentatives en millisecondes
+        $success = false;
+        $lastException = null;
+
+        if (!$this->mercureHub->getUrl()) {
+            $this->logger->warning('Mercure Hub non configuré', [
+                'message_id' => $message->getId(),
+                'order_id' => $order->getId()
+            ]);
             return;
         }
-            $payload = [
-                'id' => $message->getId(),
-                'order_id' => $order->getId(),
-                'sender_id' => $sender->getId(),
-                'receiver_id' => $receiver->getId(),
-                'content' => $content,
-                'sent_at' => $message->getSentAt()->format(\DateTimeInterface::ATOM),
-            ];
 
-            $this->logger->debug('Préparation de la publication Mercure', ['payload' => $payload]);
+        // Préparation du payload une seule fois
+        $payload = [
+            'id' => $message->getId(),
+            'order_id' => $order->getId(),
+            'sender_id' => $sender->getId(),
+            'receiver_id' => $receiver->getId(),
+            'content' => $content,
+            'sent_at' => $message->getSentAt()->format(\DateTimeInterface::ATOM),
+        ];
 
-            $topics = [
-                sprintf('/agents/%d', $sender->getId()),
-                sprintf('/clients/%d', $receiver->getId())
-            ];
+        $this->logger->debug('Préparation de la publication Mercure', [
+            'message_id' => $message->getId(),
+            'order_id' => $order->getId(),
+            'payload' => $payload
+        ]);
 
-            foreach ($topics as $topic) {
-                $update = new Update($topic, json_encode($payload), true);
-                $this->mercureHub->publish($update);
-                $this->logger->info('Publication Mercure réussie', ['topic' => $topic]);
+        $topics = [
+            sprintf('/agents/%d', $sender->getId()),
+            sprintf('/clients/%d', $receiver->getId())
+        ];
+
+        foreach ($topics as $topicIndex => $topic) {
+            $attempt = 0;
+            $success = false;
+            
+            while (!$success && $attempt < $maxRetries) {
+                $attempt++;
+                try {
+                    $this->logger->debug('Tentative de publication Mercure', [
+                        'topic' => $topic,
+                        'attempt' => $attempt,
+                        'message_id' => $message->getId()
+                    ]);
+                    
+                    $update = new Update($topic, json_encode($payload), true);
+                    $this->mercureHub->publish($update);
+                    
+                    $this->logger->info('Publication Mercure réussie', [
+                        'topic' => $topic,
+                        'attempt' => $attempt,
+                        'message_id' => $message->getId()
+                    ]);
+                    
+                    $success = true;
+                } catch (\Throwable $e) {
+                    $lastException = $e;
+                    
+                    $this->logger->warning('Échec de la tentative de publication Mercure', [
+                        'topic' => $topic,
+                        'attempt' => $attempt,
+                        'message_id' => $message->getId(),
+                        'error' => $e->getMessage(),
+                        'retry_remaining' => ($maxRetries - $attempt)
+                    ]);
+                    
+                    // Si ce n'est pas la dernière tentative, attendre avant de réessayer
+                    if ($attempt < $maxRetries) {
+                        usleep($retryDelay * 1000); // Conversion en microsecondes
+                        
+                        // Augmenter progressivement le délai pour les tentatives suivantes (backoff exponentiel)
+                        $retryDelay *= 2;
+                    }
+                }
             }
-
-        } catch (\Throwable $e) {
-            $this->logger->error('Échec de la publication Mercure', [
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
+            
+            // Si toutes les tentatives ont échoué pour ce topic
+            if (!$success) {
+                $this->logger->error('Échec définitif de la publication Mercure', [
+                    'topic' => $topic,
+                    'message_id' => $message->getId(),
+                    'attempts' => $attempt,
+                    'error' => $lastException ? $lastException->getMessage() : 'Erreur inconnue',
+                    'trace' => $lastException ? $lastException->getTraceAsString() : ''
+                ]);
+                
+                // Ne pas interrompre la boucle, essayer le prochain topic
+            }
+        }
+        
+        // Si au moins un topic a échoué et qu'on a un service de file d'attente
+        if ($lastException !== null && !$success && $this->mercureQueueService !== null) {
+            // Ajouter le message à la file d'attente pour réessai asynchrone
+            $this->logger->notice('Échec de publication Mercure - ajout à la file d\'attente pour réessai', [
+                'message_id' => $message->getId(),
+                'order_id' => $order->getId()
             ]);
-            throw new \RuntimeException('Échec de la publication en temps réel', 0, $e);
+            
+            $this->mercureQueueService->queueMessageForRetry($message);
+            
+            // Ne pas lancer d'exception, car le message sera réessayé plus tard
+            return;
+        }
+        
+        // Si au moins un topic a échoué et qu'on n'a pas de service de file d'attente, lancer une exception
+        if ($lastException !== null && !$success) {
+            throw new \RuntimeException('Échec de la publication en temps réel après plusieurs tentatives', 0, $lastException);
         }
     }
 
@@ -212,5 +295,18 @@ class MessageService
             default:
                 return $message->getId();
         }
+    }
+    
+    /**
+     * Vérifie si un utilisateur a le droit d'accéder à une commande
+     *
+     * @param int $orderId ID de la commande
+     * @param int $userId ID de l'utilisateur
+     * @param string $role Rôle de l'utilisateur (admin, agent, client)
+     * @return bool True si l'utilisateur a accès, sinon false
+     */
+    public function userHasAccessToOrder(int $orderId, int $userId, string $role): bool
+    {
+        return $this->ordersRepo->userHasAccessToOrder($orderId, $userId, $role);
     }
 }
