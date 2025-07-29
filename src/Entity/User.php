@@ -7,6 +7,7 @@ use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
 use Symfony\Component\Security\Core\User\UserInterface;
 use Symfony\Component\Validator\Constraints as Assert;
+use Symfony\Component\Serializer\Annotation\Groups;
 
 #[ORM\Entity(repositoryClass: 'App\Repository\UserRepository')]
 #[ORM\Table(name: 'users')]
@@ -15,35 +16,43 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column(type: 'integer')]
+    #[Groups(['user:read', 'agent:read'])]
     private ?int $id = null;
 
     #[ORM\Column(type: 'string', length: 255)]
     #[Assert\NotBlank]
     #[Assert\Length(min: 2, max: 255)]
+    #[Groups(['user:read', 'agent:read'])]
     private string $name;
 
     #[ORM\Column(type: 'string', length: 255, unique: true)]
     #[Assert\NotBlank]
     #[Assert\Email]
+    #[Groups(['user:read', 'agent:read'])]
     private string $email;
 
     #[ORM\Column(type: 'string', length: 50, nullable: true)]
     #[Assert\Regex(pattern: '/^\+?[0-9\s\-\(\)]{7,}$/')]
+    #[Groups(['user:read', 'agent:read'])]
     private ?string $phone = null;
 
     #[ORM\Column(type: 'string', length: 255)]
     private string $password;
 
     #[ORM\Column(type: 'string', length: 20, enumType: UserRole::class)]
+    #[Groups(['user:read', 'agent:read'])]
     private UserRole $role = UserRole::CLIENT;
 
     #[ORM\Column(type: 'datetime')]
+    #[Groups(['user:read', 'agent:read'])]
     private \DateTimeInterface $createdAt;
 
     public function __construct()
     {
         $this->createdAt = new \DateTime();
     }
+
+    // Getters / setters classiques
 
     public function getId(): ?int
     {
@@ -111,6 +120,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     }
 
     // UserInterface methods
+
     public function getRoles(): array
     {
         // Convert enum values to Symfony role format
@@ -124,6 +134,6 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
 
     public function eraseCredentials(): void
     {
-        // If you store any temporary, sensitive data on the user, clear it here
+        // Clear sensitive temporary data if any
     }
 }

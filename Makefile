@@ -16,3 +16,6 @@ logs:
 
 bash:
 	sudo docker compose exec php bash
+
+psql:
+	sudo docker exec -it symfony_postgres psql -U app -d guard
