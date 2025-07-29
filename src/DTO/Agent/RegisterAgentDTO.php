@@ -20,14 +20,12 @@ class RegisterAgentDTO
     )]
     public string $sexe;
 
-    #[Assert\NotBlank(message: 'Le profil est requis')]
-    public string $profile;
+    public ?string $picture_url = null;
 
     #[Assert\NotBlank(message: 'L\'email est requis')]
     #[Assert\Email(message: 'Email invalide')]
     public string $email;
 
-    public ?string $password = null;
 
     public function getEnumSexe(): Genre
     {

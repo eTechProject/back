@@ -14,7 +14,7 @@ use Symfony\Component\Serializer\SerializerInterface;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
 use App\Enum\EntityType;
 
-#[Route('/api/admin/agents', name: 'api_agents_')]
+#[Route('/api/agents', name: 'api_agents_')]
 class AgentController extends AbstractController
 {
     public function __construct(
