@@ -4,6 +4,7 @@ namespace App\Controller;
 
 use App\Service\AgentService;
 use App\Service\TaskService;
+use App\Service\ClientMapService;
 use App\DTO\ServiceOrder\AssignAgentsDTO;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -18,6 +19,7 @@ class ClientController extends AbstractController
     public function __construct(
         private AgentService $agentService,
         private TaskService $taskService,
+        private ClientMapService $clientMapService,
         private SerializerInterface $serializer,
         private ValidatorInterface $validator
     ) {}
@@ -87,6 +89,28 @@ class ClientController extends AbstractController
             return $this->json([
                 'status' => 'error',
                 'message' => 'Erreur lors de l\'assignation des agents',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    #[Route('/map-data', name: 'map_data', methods: ['GET'])]
+    public function getClientMapData(): JsonResponse
+    {
+        try {
+            $mapData = $this->clientMapService->getClientMapData();
+
+            return $this->json([
+                'success' => true,
+                'data' => $mapData,
+                'message' => 'Données de la carte client récupérées avec succès',
+                'timestamp' => (new \DateTimeImmutable())->format('c')
+            ]);
+
+        } catch (\Exception $e) {
+            return $this->json([
+                'success' => false,
+                'message' => 'Erreur lors de la récupération des données de la carte',
                 'error' => $e->getMessage()
             ], 500);
         }
