@@ -6,38 +6,30 @@ use App\Entity\Agents;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
-/**
- * @extends ServiceEntityRepository<Agents>
- */
+
 class AgentsRepository extends ServiceEntityRepository
 {
     public function __construct(ManagerRegistry $registry)
     {
         parent::__construct($registry, Agents::class);
     }
+    
+    public function searchAgents(?string $name, ?string $status): array
+  {
+    $qb = $this->createQueryBuilder('a')
+               ->join('a.user', 'u');
 
-    //    /**
-    //     * @return Agents[] Returns an array of Agents objects
-    //     */
-    //    public function findByExampleField($value): array
-    //    {
-    //        return $this->createQueryBuilder('a')
-    //            ->andWhere('a.exampleField = :val')
-    //            ->setParameter('val', $value)
-    //            ->orderBy('a.id', 'ASC')
-    //            ->setMaxResults(10)
-    //            ->getQuery()
-    //            ->getResult()
-    //        ;
-    //    }
+    if ($name) {
+        $qb->andWhere('LOWER(u.name) LIKE :name')
+           ->setParameter('name', '%' . strtolower($name) . '%');
+    }
 
-    //    public function findOneBySomeField($value): ?Agents
-    //    {
-    //        return $this->createQueryBuilder('a')
-    //            ->andWhere('a.exampleField = :val')
-    //            ->setParameter('val', $value)
-    //            ->getQuery()
-    //            ->getOneOrNullResult()
-    //        ;
-    //    }
+    if ($status) {
+        $qb->andWhere('a.status = :status')
+           ->setParameter('status', $status);
+    }
+
+    return $qb->getQuery()->getResult();
+    }
+
 }

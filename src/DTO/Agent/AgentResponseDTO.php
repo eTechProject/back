@@ -8,10 +8,11 @@ use App\Enum\Genre;
 class AgentResponseDTO
 {
     public function __construct(
-        public string $encryptedId,
+        public string $agentId,
         public ?string $address,
         public Genre $sexe,
         public ?string $profilePictureUrl,
+         public ?string $status,
         public UserDTO $user,
     ) {}
 }

@@ -14,4 +14,11 @@ class AgentProfileDTO
 
     #[Assert\Url(message: 'L\'URL de la photo n\'est pas valide')]
     public ?string $profilePictureUrl;
+
+
+    #[Assert\Choice(
+        choices: ['actif', 'passif'],
+        message: 'Le status doit être "actif" ou "passif"'
+    )]
+    public ?string $status = null;
 }
