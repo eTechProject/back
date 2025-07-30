@@ -42,10 +42,10 @@ class AgentService
         $agent->setSexe($dto->getEnumSexe());
         $agent->setAddress($dto->address);
 
-        if (property_exists($dto, 'profile')) {
-            $agent->setProfilePictureUrl($dto->profile);
+        if (property_exists($dto, 'picture_url')) {
+            $agent->setProfilePictureUrl($dto->picture_url);
         }
-        if (property_exists($dto, 'status') && in_array($dto->status, ['actif', 'passif'])) {
+        if ($dto->status !== null && in_array($dto->status, ['actif', 'passif'])) {
             $agent->setStatus($dto->status);
         } else {
             $agent->setStatus('actif'); // statut par défaut
@@ -119,7 +119,7 @@ class AgentService
             $agent->getAddress(),
             $agent->getSexe(),
             $agent->getProfilePictureUrl(),
-             $agent->getstatus(),
+            $agent->getStatus(),
             $userDto
         );
     }
