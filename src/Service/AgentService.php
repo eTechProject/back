@@ -28,48 +28,37 @@ class AgentService
 
     public function createAgent(RegisterAgentDTO $dto): Agents
     {
-        $password = $this->generateRandomPassword();
-        
-        $user = $this->createUserForAgent($dto, $password);
-        $agent = $this->createAgentEntity($dto, $user);
-        
-        $this->persistEntities($user, $agent);
-        $this->exportCredentialsToCsv($dto->email, $password);
+        $password = $dto->password ?? $this->generateRandomPassword();
 
-        return $agent;
-    }
-
-    private function createUserForAgent(RegisterAgentDTO $dto, string $password): User
-    {
         $user = new User();
         $user->setEmail($dto->email);
         $user->setPassword($this->passwordHasher->hashPassword($user, $password));
         $user->setRole(UserRole::AGENT);
         $user->setName($dto->name);
 
-        return $user;
-    }
+        $this->em->persist($user);
 
-    private function createAgentEntity(RegisterAgentDTO $dto, User $user): Agents
-    {
         $agent = new Agents();
         $agent->setSexe($dto->getEnumSexe());
         $agent->setAddress($dto->address);
-        
-        if ($dto->picture_url !== null) {
-            $agent->setProfilePictureUrl($dto->picture_url);
+
+        if (property_exists($dto, 'profile')) {
+            $agent->setProfilePictureUrl($dto->profile);
         }
-        
+        if (property_exists($dto, 'status') && in_array($dto->status, ['actif', 'passif'])) {
+            $agent->setStatus($dto->status);
+        } else {
+            $agent->setStatus('actif'); // statut par défaut
+        }
+
         $agent->setUser($user);
 
-        return $agent;
-    }
-
-    private function persistEntities(User $user, Agents $agent): void
-    {
-        $this->em->persist($user);
         $this->em->persist($agent);
         $this->em->flush();
+
+        $this->exportCredentialsToCsv($dto->email, $password);
+
+        return $agent;
     }
 
     public function updateAgent(int $id, AgentProfileDTO $dto): ?Agents
@@ -79,6 +68,9 @@ class AgentService
 
         $agent->setAddress($dto->address);
         $agent->setProfilePictureUrl($dto->profilePictureUrl);
+        if ($dto->status !== null && in_array($dto->status, ['actif', 'passif'])) {
+            $agent->setStatus($dto->status ?? 'actif');
+        }
 
         $this->em->flush();
         return $agent;
@@ -111,7 +103,7 @@ class AgentService
         return true;
     }
 
-    public function getAgentProfile(Agents $agent): AgentResponseDTO
+    public function getAgentProfile(Agents $agent): AgentResponse
     {
         $user = $agent->getUser();
 
@@ -122,7 +114,7 @@ class AgentService
             $user->getRole()
         );
 
-        return new AgentResponseDTO(
+        return new AgentResponse(
             $this->cryptService->encryptId($agent->getId(), EntityType::AGENT->value),
             $agent->getAddress(),
             $agent->getSexe(),
@@ -130,11 +122,11 @@ class AgentService
             $userDto
         );
     }
-
+    
     /**
      * Get all agents who are available (no tasks or all tasks completed)
      * 
-     * @return array<AgentResponseDTO>
+     * @return array<AgentResponse>
      */
     public function getAvailableAgents(): array
     {
@@ -147,6 +139,30 @@ class AgentService
 
         return $availableAgentDTOs;
     }
+    
+    public function searchAgents(?string $name): array
+    {
+        return $this->agentsRepository->searchAgents($name);
+    }
+
+    public function getAgentsPaginated(int $page, int $limit): array 
+    {
+    $offset = ($page - 1) * $limit;
+
+    $queryBuilder = $this->agentsRepository->createQueryBuilder('a');
+
+    $query = $queryBuilder
+        ->setFirstResult($offset)
+        ->setMaxResults($limit)
+        ->getQuery();
+
+    $agents = $query->getResult();
+
+    // Compter total agents (pour pagination)
+    $total = $this->agentsRepository->count([]);
+
+    return [$agents, $total];
+  }
 
     private function generateRandomPassword(int $length = 12): string
     {

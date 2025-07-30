@@ -31,4 +31,11 @@ class RegisterAgentDTO
     {
         return Genre::from($this->sexe);
     }
+
+    #[Assert\NotBlank(message: 'Le status est requis')]
+    #[Assert\Choice(
+        choices: ['actif', 'passif'],
+        message: 'Le status doit être actif ou passif'
+    )]
+    public ?string $status = 'actif';
 }
