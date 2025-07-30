@@ -161,8 +161,21 @@ class TaskService
         $task->setStatus(Status::PENDING);
         $task->setDescription("Mission assignée aux coordonnées [{$coordinates[0]}, {$coordinates[1]}]");
         $task->setStartDate(new \DateTimeImmutable());
+        
+        // Create Point geometry from coordinates [longitude, latitude]
+        $pointWKT = $this->createPointWKTFromCoordinates($coordinates);
+        $task->setAssignPosition($pointWKT);
 
         return $task;
+    }
+
+    /**
+     * Create a WKT Point string from coordinates
+     */
+    private function createPointWKTFromCoordinates(array $coordinates): string
+    {
+        // WKT format for PostGIS Point: "POINT(longitude latitude)"
+        return sprintf('POINT(%.6f %.6f)', (float)$coordinates[0], (float)$coordinates[1]);
     }
 
     /**

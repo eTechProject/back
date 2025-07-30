@@ -8,6 +8,7 @@ use Doctrine\ORM\Mapping as ORM;
 use App\Entity\ServiceOrders;
 use App\Entity\Agents;
 use App\Enum\Status;
+use Jsor\Doctrine\PostGIS\Types\PostGISType;
 
 #[ORM\Entity(repositoryClass: TasksRepository::class)]
 class Tasks
@@ -28,6 +29,12 @@ class Tasks
 
     #[ORM\Column]
     private \DateTimeImmutable $start_date;
+
+    /**
+     * Position d'assignation de la tâche, type Point avec SRID 4326 (WGS84)
+     */
+    #[ORM\Column(type: PostGISType::GEOMETRY, options: ['geometry_type' => 'point', 'srid' => 4326])]
+    private string $assign_position;
 
     #[ORM\ManyToOne(targetEntity: ServiceOrders::class)]
     #[ORM\JoinColumn(name: 'order_id', referencedColumnName: 'id', nullable: false)]
@@ -117,6 +124,18 @@ class Tasks
     public function setAgent(Agents $agent): static
     {
         $this->agent = $agent;
+
+        return $this;
+    }
+
+    public function getAssignPosition(): string
+    {
+        return $this->assign_position;
+    }
+
+    public function setAssignPosition(string $assign_position): static
+    {
+        $this->assign_position = $assign_position;
 
         return $this;
     }

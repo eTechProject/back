@@ -430,6 +430,102 @@ class TaskServiceTest extends TestCase
         $this->assertEquals($tasks, $result);
     }
 
+    public function testCreatePointWKTFromCoordinates(): void
+    {
+        // Test the Point WKT creation using reflection since it's a private method
+        $reflection = new \ReflectionClass($this->taskService);
+        $method = $reflection->getMethod('createPointWKTFromCoordinates');
+        $method->setAccessible(true);
+
+        $coordinates = [2.3522, 48.8566];
+        $result = $method->invoke($this->taskService, $coordinates);
+
+        $this->assertEquals('POINT(2.352200 48.856600)', $result);
+    }
+
+    public function testCreatePointWKTFromCoordinatesWithNegativeValues(): void
+    {
+        // Test with negative coordinates
+        $reflection = new \ReflectionClass($this->taskService);
+        $method = $reflection->getMethod('createPointWKTFromCoordinates');
+        $method->setAccessible(true);
+
+        $coordinates = [-74.0060, 40.7128]; // New York coordinates
+        $result = $method->invoke($this->taskService, $coordinates);
+
+        $this->assertEquals('POINT(-74.006000 40.712800)', $result);
+    }
+
+    public function testTaskCreationWithAssignPosition(): void
+    {
+        // Test that tasks are created with proper assign_position
+        $encryptedOrderId = 'encrypted_order_123';
+        $agentAssignments = [
+            [
+                'agentId' => 'encrypted_agent_1',
+                'coordinates' => [2.3522, 48.8566]
+            ]
+        ];
+
+        $serviceOrder = $this->createMockServiceOrder();
+        $agent = $this->createMockAgent(1, 'Agent One');
+
+        // Setup mocks
+        $this->cryptService
+            ->expects($this->exactly(2))
+            ->method('decryptId')
+            ->willReturnCallback(function($encryptedId, $entityType) {
+                if ($encryptedId === 'encrypted_order_123' && $entityType === EntityType::SERVICE_ORDER->value) {
+                    return 1;
+                }
+                if ($encryptedId === 'encrypted_agent_1' && $entityType === EntityType::AGENT->value) {
+                    return 1;
+                }
+                return null;
+            });
+
+        $this->serviceOrdersRepository
+            ->expects($this->once())
+            ->method('find')
+            ->with(1)
+            ->willReturn($serviceOrder);
+
+        $this->agentsRepository
+            ->expects($this->once())
+            ->method('find')
+            ->with(1)
+            ->willReturn($agent);
+
+        $this->tasksRepository
+            ->expects($this->once())
+            ->method('findBy')
+            ->willReturn([]);
+
+        // Capture the task being persisted to verify its properties
+        $persistedTask = null;
+        $this->entityManager
+            ->expects($this->once())
+            ->method('persist')
+            ->with($this->callback(function($task) use (&$persistedTask) {
+                $persistedTask = $task;
+                return $task instanceof Tasks;
+            }));
+
+        $this->entityManager->expects($this->once())->method('beginTransaction');
+        $this->entityManager->expects($this->once())->method('flush');
+        $this->entityManager->expects($this->once())->method('commit');
+
+        // Execute the method
+        $result = $this->taskService->assignAgentsToOrder($encryptedOrderId, $agentAssignments);
+
+        // Verify the task was created with correct assign_position
+        $this->assertInstanceOf(Tasks::class, $persistedTask);
+        $this->assertEquals('POINT(2.352200 48.856600)', $persistedTask->getAssignPosition());
+        $this->assertEquals($serviceOrder, $persistedTask->getOrder());
+        $this->assertEquals($agent, $persistedTask->getAgent());
+        $this->assertEquals(Status::PENDING, $persistedTask->getStatus());
+    }
+
     private function createMockServiceOrder(): ServiceOrders
     {
         $serviceOrder = $this->createMock(ServiceOrders::class);
