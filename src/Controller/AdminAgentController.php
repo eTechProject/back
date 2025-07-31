@@ -16,7 +16,7 @@ use App\Enum\EntityType;
 use Sensio\Bundle\FrameworkExtraBundle\Configuration\IsGranted;
 
 #[IsGranted('ROLE_ADMIN')]
-#[Route('/api/admin/agents', name: 'api_admin_agents_')]
+#[Route('/api/public/admin/agents', name: 'api_admin_agents_')]
 class AdminAgentController extends AbstractController
 {
     public function __construct(
