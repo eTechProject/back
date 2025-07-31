@@ -9,12 +9,14 @@ use App\Service\AgentService;
 use App\Service\CryptService;
 use App\Repository\TasksRepository;
 use App\Repository\AgentLocationSignificantRepository;
+use App\Repository\AgentLocationsRawRepository;
 use App\Entity\ServiceOrders;
 use App\Entity\SecuredZones;
 use App\Entity\User;
 use App\Entity\Agents;
 use App\Entity\Tasks;
 use App\Entity\AgentLocationSignificant;
+use App\Entity\AgentLocationsRaw;
 use App\Enum\Status;
 use App\Enum\Reason;
 use App\Enum\Genre;
@@ -36,6 +38,7 @@ class ClientMapServiceTest extends TestCase
     private MockObject|CryptService $cryptService;
     private MockObject|TasksRepository $tasksRepository;
     private MockObject|AgentLocationSignificantRepository $agentLocationSignificantRepository;
+    private MockObject|AgentLocationsRawRepository $agentLocationsRawRepository;
 
     protected function setUp(): void
     {
@@ -45,6 +48,7 @@ class ClientMapServiceTest extends TestCase
         $this->cryptService = $this->createMock(CryptService::class);
         $this->tasksRepository = $this->createMock(TasksRepository::class);
         $this->agentLocationSignificantRepository = $this->createMock(AgentLocationSignificantRepository::class);
+        $this->agentLocationsRawRepository = $this->createMock(AgentLocationsRawRepository::class);
 
         $this->clientMapService = new ClientMapService(
             $this->serviceOrderService,
@@ -52,7 +56,8 @@ class ClientMapServiceTest extends TestCase
             $this->agentService,
             $this->cryptService,
             $this->tasksRepository,
-            $this->agentLocationSignificantRepository
+            $this->agentLocationSignificantRepository,
+            $this->agentLocationsRawRepository
         );
     }
 
@@ -197,16 +202,18 @@ class ClientMapServiceTest extends TestCase
             });
 
         // Setup agent locations
-        $this->agentLocationSignificantRepository
+        $this->agentLocationsRawRepository
             ->expects($this->exactly(2))
             ->method('findOneBy')
             ->willReturnMap([
                 [
-                    ['agent' => $agent1, 'task' => $task1, 'reason' => Reason::START_TASK],
+                    ['agent' => $agent1],
+                    ['recorded_at' => 'DESC'],
                     $agentLocation1
                 ],
                 [
-                    ['agent' => $agent2, 'task' => $task2, 'reason' => Reason::START_TASK],
+                    ['agent' => $agent2],
+                    ['recorded_at' => 'DESC'],
                     null
                 ]
             ]);
@@ -289,12 +296,11 @@ class ClientMapServiceTest extends TestCase
         return $task;
     }
 
-    private function createAgentLocation(Agents $agent, Tasks $task): AgentLocationSignificant
+    private function createAgentLocation(Agents $agent, Tasks $task): AgentLocationsRaw
     {
-        $agentLocation = $this->createMock(AgentLocationSignificant::class);
+        $agentLocation = $this->createMock(AgentLocationsRaw::class);
         $agentLocation->method('getAgent')->willReturn($agent);
         $agentLocation->method('getTask')->willReturn($task);
-        $agentLocation->method('getReason')->willReturn(Reason::START_TASK);
         $agentLocation->method('getGeom')->willReturn('POINT(2.3494 48.8537)');
         $agentLocation->method('getRecordedAt')->willReturn(new \DateTimeImmutable('2025-07-30T22:15:00+00:00'));
         
@@ -367,16 +373,15 @@ class ClientMapServiceTest extends TestCase
             ->willReturn($agentResponseDTO);
     }
 
-    private function setupAgentLocationRepositoryMock(Agents $agent, Tasks $task, ?AgentLocationSignificant $agentLocation): void
+    private function setupAgentLocationRepositoryMock(Agents $agent, Tasks $task, ?AgentLocationsRaw $agentLocation): void
     {
-        $this->agentLocationSignificantRepository
+        $this->agentLocationsRawRepository
             ->expects($this->once())
             ->method('findOneBy')
-            ->with([
-                'agent' => $agent,
-                'task' => $task,
-                'reason' => Reason::START_TASK
-            ])
+            ->with(
+                ['agent' => $agent],
+                ['recorded_at' => 'DESC']
+            )
             ->willReturn($agentLocation);
     }
 }

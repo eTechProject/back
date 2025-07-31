@@ -14,6 +14,7 @@ use App\Enum\EntityType;
 use App\Enum\Reason;
 use App\Enum\Status;
 use App\Repository\AgentLocationSignificantRepository;
+use App\Repository\AgentLocationsRawRepository;
 use App\Repository\TasksRepository;
 
 class ClientMapService
@@ -25,6 +26,7 @@ class ClientMapService
         private CryptService $cryptService,
         private TasksRepository $tasksRepository,
         private AgentLocationSignificantRepository $agentLocationSignificantRepository,
+        private AgentLocationsRawRepository $agentLocationsRawRepository,
     ) {}
 
     /**
@@ -101,21 +103,21 @@ class ClientMapService
         // Get agent profile
         $agentDTO = $this->agentService->getAgentProfile($task->getAgent());
 
-        // Get agent current position and status
-        $agentLocation = $this->agentLocationSignificantRepository->findOneBy([
-            'agent' => $task->getAgent(),
-            'task' => $task,
-            'reason' => Reason::START_TASK
-        ]);
+        // Get agent's most recent raw position
+        $agentRawLocation = $this->agentLocationsRawRepository->findOneBy(
+            ['agent' => $task->getAgent()],
+            ['recorded_at' => 'DESC']
+        );
 
-        $status = $agentLocation ? 'actif' : 'inactif';
-        $currentPosition = $agentLocation ? $this->buildAgentPositionDTO($agentLocation) : null;
+        // Determine status based on whether we have a recent position
+        $status = $agentRawLocation ? 'actif' : 'inactif';
+        $currentPosition = $agentRawLocation ? $this->buildAgentPositionFromRaw($agentRawLocation) : null;
 
         // Build task assignment DTO
         $taskDTO = $this->buildTaskAssignmentDTO($task);
 
         return new AssignedAgentDTO(
-            $task->getId(),
+            $this->cryptService->encryptId($task->getId(), EntityType::TASK->value),
             $status,
             $agentDTO,
             $taskDTO,
@@ -123,10 +125,10 @@ class ClientMapService
         );
     }
 
-    private function buildAgentPositionDTO($agentLocation): AgentPositionDTO
+    private function buildAgentPositionFromRaw($agentRawLocation): AgentPositionDTO
     {
         // Extract coordinates from Point geometry
-        $geom = $agentLocation->getGeom();
+        $geom = $agentRawLocation->getGeom();
         $longitude = 0.0;
         $latitude = 0.0;
 
@@ -138,23 +140,23 @@ class ClientMapService
         return new AgentPositionDTO(
             $longitude,
             $latitude,
-            $agentLocation->getRecordedAt(),
-            $agentLocation->getReason()->value
+            $agentRawLocation->getRecordedAt(),
+            'current'
         );
     }
 
     private function buildTaskAssignmentDTO(Tasks $task): TaskAssignmentDTO
     {
-        // Extract task assign position
+        // Extract task assign position coordinates
         $assignPositionGeom = $task->getAssignPosition();
-        $assignPosition = '';
+        $assignPosition = [0.0, 0.0]; // Default coordinates [longitude, latitude]
         
         if (preg_match('/POINT\(([^ ]+) ([^ ]+)\)/', $assignPositionGeom, $matches)) {
-            $assignPosition = "POINT({$matches[1]} {$matches[2]})";
+            $assignPosition = [(float)$matches[1], (float)$matches[2]];
         }
 
         return new TaskAssignmentDTO(
-            $task->getId(),
+            $this->cryptService->encryptId($task->getId(), EntityType::TASK->value),
             $task->getStatus()->value,
             $task->getDescription(),
             $task->getStartDate(),
