@@ -1,5 +1,5 @@
 <?php 
-namespace App\DTO\User;
+namespace App\DTO\User\Internal;
 
 use App\Enum\UserRole;
 

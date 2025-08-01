@@ -2,13 +2,13 @@
 
 namespace App\Service;
 
-use App\Dto\User\RegisterUserDTO;
+use App\DTO\User\Request\RegisterUserDTO;
 use App\Entity\User;
 use App\Repository\UserRepository;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 use App\Enum\UserRole;
 use App\Enum\EntityType;
-use App\DTO\User\UserDTO;
+use App\DTO\User\Internal\UserDTO;
 
 class UserService
 {

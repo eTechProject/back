@@ -2,8 +2,8 @@
 
 namespace App\Service;
 
-use App\DTO\ServiceOrder\CreateServiceOrderDTO;
-use App\DTO\ServiceOrder\ServiceOrderDTO;
+use App\DTO\ServiceOrder\Request\CreateServiceOrderDTO;
+use App\DTO\ServiceOrder\Response\ServiceOrderDTO;
 use App\DTO\SecuredZone\CreateSecuredZoneDTO;
 use App\Entity\ServiceOrders;
 use App\Entity\User;

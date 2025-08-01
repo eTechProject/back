@@ -1,6 +1,6 @@
 <?php
 
-namespace App\DTO\SecuredZone;
+namespace App\DTO\SecuredZone\Request;
 
 use Symfony\Component\Validator\Constraints as Assert;
 

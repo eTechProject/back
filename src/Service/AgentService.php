@@ -6,10 +6,10 @@ use App\Entity\Agents;
 use App\Entity\User;
 use App\Enum\UserRole;
 use App\Enum\EntityType;
-use App\DTO\Agent\RegisterAgentDTO;
-use App\DTO\Agent\AgentProfileDTO;
-use App\DTO\Agent\AgentResponseDTO;
-use App\DTO\User\UserDTO;
+use App\DTO\Agent\Request\RegisterAgentDTO;
+use App\DTO\Agent\Request\AgentProfileDTO;
+use App\DTO\Agent\Response\AgentResponseDTO;
+use App\DTO\User\Internal\UserDTO;
 use App\Repository\UserRepository;
 use App\Repository\AgentsRepository;
 use Doctrine\ORM\EntityManagerInterface;
@@ -129,6 +129,23 @@ class AgentService
             $agent->getProfilePictureUrl(),
             $userDto
         );
+    }
+
+    /**
+     * Get all agents who are available (no tasks or all tasks completed)
+     * 
+     * @return array<AgentResponseDTO>
+     */
+    public function getAvailableAgents(): array
+    {
+        $availableAgents = $this->agentsRepository->findAvailableAgents();
+        $availableAgentDTOs = [];
+
+        foreach ($availableAgents as $agent) {
+            $availableAgentDTOs[] = $this->getAgentProfile($agent);
+        }
+
+        return $availableAgentDTOs;
     }
 
     private function generateRandomPassword(int $length = 12): string

@@ -11,11 +11,17 @@ doctrine:
         types:
           geometry: Jsor\Doctrine\PostGIS\Types\GeometryType
           geography: Jsor\Doctrine\PostGIS\Types\GeographyType
+          point: Jsor\Doctrine\PostGIS\Types\GeometryType
+          linestring: Jsor\Doctrine\PostGIS\Types\GeometryType
+          polygon: Jsor\Doctrine\PostGIS\Types\GeometryType
           
         # Register PostGIS functions
         mapping_types:
             geometry: geometry
             geography: geography
+            point: geometry
+            linestring: geometry
+            polygon: geometry
     orm:
         auto_generate_proxy_classes: true
         enable_lazy_ghost_objects: true

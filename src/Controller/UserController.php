@@ -2,7 +2,7 @@
 
 namespace App\Controller;
 
-use App\DTO\User\RegisterUserDTO;
+use App\DTO\User\Request\RegisterUserDTO;
 use App\Service\UserService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
