@@ -30,3 +30,12 @@ services:
     App\Service\MercureTokenGenerator:
         arguments:
             $mercureJwtSecret: '%env(MERCURE_JWT_SECRET)%'
+
+    # JWT Authentication Event Listeners
+    App\EventListener\JwtLoginSuccessHandler:
+        tags:
+            - { name: kernel.event_listener, event: lexik_jwt_authentication.on_authentication_success, method: onAuthenticationSuccess }
+    
+    App\EventListener\JwtLoginFailureHandler:
+        tags:
+            - { name: kernel.event_listener, event: lexik_jwt_authentication.on_authentication_failure, method: onAuthenticationFailure }
