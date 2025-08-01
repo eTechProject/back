@@ -13,7 +13,7 @@ use Symfony\Component\Validator\Validator\ValidatorInterface;
 use Sensio\Bundle\FrameworkExtraBundle\Configuration\IsGranted;
 
 #[IsGranted('ROLE_ADMIN')]
-#[Route('/api/admin/agents', name: 'api_admin_agents_create', methods: ['POST'])]
+#[Route('/api/public/admin/agents', name: 'api_admin_agents_create', methods: ['POST'])]
 class CreateController extends AbstractController
 {
     public function __construct(private AgentService $agentService) {}

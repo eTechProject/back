@@ -12,7 +12,6 @@ class AgentResponseDTO
         public ?string $address,
         public Genre $sexe,
         public ?string $profilePictureUrl,
-         public ?string $status,
         public UserDTO $user,
     ) {}
 }

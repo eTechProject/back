@@ -2,7 +2,7 @@
 
 namespace App\Controller\AdminAgent;
 
-use App\DTO\Agent\AgentProfileDTO;
+use App\DTO\Agent\UpdateAgentDTO;
 use App\Service\AgentService;
 use App\Service\CryptService;
 use App\Enum\EntityType;
@@ -15,7 +15,7 @@ use Symfony\Component\Validator\Validator\ValidatorInterface;
 use Sensio\Bundle\FrameworkExtraBundle\Configuration\IsGranted;
 
 #[IsGranted('ROLE_ADMIN')]
-#[Route('/api/admin/agents/{encryptedId}', name: 'api_admin_agents_update', methods: ['PUT'])]
+#[Route('/api/public/admin/agents/{encryptedId}', name: 'api_admin_agents_update', methods: ['PUT'])]
 class UpdateController extends AbstractController
 {
     public function __construct(private AgentService $agentService, private ?CryptService $cryptService = null) {}
@@ -39,7 +39,7 @@ class UpdateController extends AbstractController
         }
 
         try {
-            $dto = $serializer->deserialize($request->getContent(), AgentProfileDTO::class, 'json');
+            $dto = $serializer->deserialize($request->getContent(), UpdateAgentDTO::class, 'json');
         } catch (\Exception) {
             return $this->json([
                 'status' => 'error',

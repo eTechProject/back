@@ -6,15 +6,19 @@ use App\Entity\Agents;
 use App\Entity\User;
 use App\Enum\UserRole;
 use App\Enum\EntityType;
-use App\DTO\Agent\Request\RegisterAgentDTO;
-use App\DTO\Agent\Request\AgentProfileDTO;
-use App\DTO\Agent\Response\AgentResponseDTO;
+use App\DTO\Agent\Request\RegisterAgentRequest;
+use App\DTO\Agent\Request\UpdateAgentRequest;
+use App\DTO\Agent\Response\AgentResponse;
 use App\DTO\User\Internal\UserDTO;
 use App\Repository\UserRepository;
 use App\Repository\AgentsRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use App\Service\CryptService;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
+use Symfony\Component\Mailer\MailerInterface;
+use Symfony\Component\Mime\Email;
+use Symfony\Bridge\Twig\Mime\TemplatedEmail;
+use Twig\Environment;
 
 class AgentService
 {
@@ -23,10 +27,12 @@ class AgentService
         private UserRepository $userRepository,
         private AgentsRepository $agentsRepository,
         private CryptService $cryptService,
-        private UserPasswordHasherInterface $passwordHasher
+        private UserPasswordHasherInterface $passwordHasher,
+        private MailerInterface $mailer,
+        private Environment $twig
     ) {}
 
-    public function createAgent(RegisterAgentDTO $dto): Agents
+    public function createAgent(RegisterAgentRequest $dto): Agents
     {
         $password = $dto->password ?? $this->generateRandomPassword();
 
@@ -45,32 +51,38 @@ class AgentService
         if (property_exists($dto, 'profile')) {
             $agent->setProfilePictureUrl($dto->profile);
         }
-        if (property_exists($dto, 'status') && in_array($dto->status, ['actif', 'passif'])) {
-            $agent->setStatus($dto->status);
-        } else {
-            $agent->setStatus('actif'); // statut par défaut
-        }
 
         $agent->setUser($user);
 
         $this->em->persist($agent);
         $this->em->flush();
 
-        $this->exportCredentialsToCsv($dto->email, $password);
+
+
+
+        // Envoi du mot de passe par email avec template Twig
+        $civilite = ($dto->sexe === 'F') ? 'Mme' : 'Mr';
+        $email = (new TemplatedEmail())
+            ->from('no-reply@guard-info.com')
+            ->to($dto->email)
+            ->subject('Votre compte agent Guard Security Service')
+            ->htmlTemplate('emails/agent_password.html.twig')
+            ->context([
+                'civilite' => $civilite,
+                'password' => $password,
+            ]);
+        $this->mailer->send($email);
 
         return $agent;
     }
 
-    public function updateAgent(int $id, AgentProfileDTO $dto): ?Agents
+    public function updateAgent(int $id, UpdateAgentRequest $dto): ?Agents
     {
         $agent = $this->agentsRepository->find($id);
         if (!$agent) return null;
 
         $agent->setAddress($dto->address);
         $agent->setProfilePictureUrl($dto->profilePictureUrl);
-        if ($dto->status !== null && in_array($dto->status, ['actif', 'passif'])) {
-            $agent->setStatus($dto->status ?? 'actif');
-        }
 
         $this->em->flush();
         return $agent;
@@ -169,23 +181,5 @@ class AgentService
         return bin2hex(random_bytes($length / 2));
     }
 
-    private function exportCredentialsToCsv(string $email, string $password): void
-    {
-        $dir = __DIR__ . '/../../var/secure';
-        if (!is_dir($dir)) {
-            mkdir($dir, 0700, true);
-        }
 
-        $filePath = $dir . '/credentials.csv';
-        $isNewFile = !file_exists($filePath);
-        $file = fopen($filePath, 'a');
-
-        if ($isNewFile) {
-            fputcsv($file, ['Email', 'Mot de passe temporaire', 'Date de création']);
-        }
-
-        fputcsv($file, [$email, $password, (new \DateTime())->format('Y-m-d H:i:s')]);
-
-        fclose($file);
-    }
 }
