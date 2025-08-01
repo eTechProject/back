@@ -2,7 +2,7 @@
 
 namespace App\Controller\AdminAgent;
 
-use App\DTO\Agent\Request\UpdateAgentRequest;
+use App\DTO\Agent\Request\UpdateAgentDTO;
 use App\Service\AgentService;
 use App\Service\CryptService;
 use App\Enum\EntityType;
@@ -39,7 +39,7 @@ class UpdateController extends AbstractController
         }
 
         try {
-            $dto = $serializer->deserialize($request->getContent(), UpdateAgentRequest::class, 'json');
+            $dto = $serializer->deserialize($request->getContent(), UpdateAgentDTO::class, 'json');
         } catch (\Exception) {
             return $this->json([
                 'status' => 'error',

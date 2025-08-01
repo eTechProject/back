@@ -6,9 +6,9 @@ use App\Entity\Agents;
 use App\Entity\User;
 use App\Enum\UserRole;
 use App\Enum\EntityType;
-use App\DTO\Agent\Request\RegisterAgentRequest;
-use App\DTO\Agent\Request\UpdateAgentRequest;
-use App\DTO\Agent\Response\AgentResponse;
+use App\DTO\Agent\Request\RegisterAgentDTO;
+use App\DTO\Agent\Request\UpdateAgentDTO;
+use App\DTO\Agent\Response\AgentResponseDTO;
 use App\DTO\User\Internal\UserDTO;
 use App\Repository\UserRepository;
 use App\Repository\AgentsRepository;
@@ -32,7 +32,7 @@ class AgentService
         private Environment $twig
     ) {}
 
-    public function createAgent(RegisterAgentRequest $dto): Agents
+    public function createAgent(RegisterAgentDTO $dto): Agents
     {
         $password = $dto->password ?? $this->generateRandomPassword();
 
@@ -76,7 +76,7 @@ class AgentService
         return $agent;
     }
 
-    public function updateAgent(int $id, UpdateAgentRequest $dto): ?Agents
+    public function updateAgent(int $id, UpdateAgentDTO $dto): ?Agents
     {
         $agent = $this->agentsRepository->find($id);
         if (!$agent) return null;
@@ -115,7 +115,7 @@ class AgentService
         return true;
     }
 
-    public function getAgentProfile(Agents $agent): AgentResponse
+    public function getAgentProfile(Agents $agent): AgentResponseDTO
     {
         $user = $agent->getUser();
 
@@ -126,7 +126,7 @@ class AgentService
             $user->getRole()
         );
 
-        return new AgentResponse(
+        return new AgentResponseDTO(
             $this->cryptService->encryptId($agent->getId(), EntityType::AGENT->value),
             $agent->getAddress(),
             $agent->getSexe(),
@@ -138,7 +138,7 @@ class AgentService
     /**
      * Get all agents who are available (no tasks or all tasks completed)
      * 
-     * @return array<AgentResponse>
+     * @return array<AgentResponseDTO>
      */
     public function getAvailableAgents(): array
     {

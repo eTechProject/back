@@ -4,7 +4,7 @@ namespace App\DTO\Agent\Request;
 
 use Symfony\Component\Validator\Constraints as Assert;
 
-class UpdateAgentRequest
+class UpdateAgentDTO
 {
     #[Assert\Length(
         max: 255,
