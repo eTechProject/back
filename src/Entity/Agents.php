@@ -33,6 +33,10 @@ class Agents
     #[ORM\JoinColumn(name: 'user_id', referencedColumnName: 'id', nullable: false)]
     private User $user;
 
+    
+    // Ajoute une propriété status (string ou enum selon ton design)
+
+
     public function getId(): ?int
     {
         return $this->id;

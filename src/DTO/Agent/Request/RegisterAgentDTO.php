@@ -26,7 +26,6 @@ class RegisterAgentDTO
     #[Assert\Email(message: 'Email invalide')]
     public string $email;
 
-
     public function getEnumSexe(): Genre
     {
         return Genre::from($this->sexe);
