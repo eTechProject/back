@@ -48,7 +48,7 @@ class UserService
     public function toDTO(User $user): UserDTO
     {
         return new UserDTO(
-            userId: $this->cryptService->encryptId($user->getId(), EntityType::USER->value),
+            userId: $this->cryptService->encryptId((string)$user->getId(), EntityType::USER->value),
             email: $user->getEmail(),
             name: $user->getName(),
             role: $user->getRole()
