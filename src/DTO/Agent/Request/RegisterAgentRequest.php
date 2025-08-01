@@ -5,7 +5,7 @@ namespace App\DTO\Agent\Request;
 use Symfony\Component\Validator\Constraints as Assert;
 use App\Enum\Genre;
 
-class RegisterAgentDTO
+class RegisterAgentRequest
 {
     #[Assert\NotBlank(message: 'Le nom est requis')]
     public string $name;

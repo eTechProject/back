@@ -2,7 +2,7 @@
 
 namespace App\Controller\AdminAgent;
 
-use App\DTO\Agent\RegisterAgentDTO;
+use App\DTO\Agent\Request\RegisterAgentRequest;
 use App\Service\AgentService;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -13,7 +13,7 @@ use Symfony\Component\Validator\Validator\ValidatorInterface;
 use Sensio\Bundle\FrameworkExtraBundle\Configuration\IsGranted;
 
 #[IsGranted('ROLE_ADMIN')]
-#[Route('/api/public/admin/agents', name: 'api_admin_agents_create', methods: ['POST'])]
+#[Route('/api/admin/agents', name: 'api_admin_agents_create', methods: ['POST'])]
 class CreateController extends AbstractController
 {
     public function __construct(private AgentService $agentService) {}
@@ -21,7 +21,7 @@ class CreateController extends AbstractController
     public function __invoke(Request $request, SerializerInterface $serializer, ValidatorInterface $validator): JsonResponse
     {
         try {
-            $dto = $serializer->deserialize($request->getContent(), RegisterAgentDTO::class, 'json');
+            $dto = $serializer->deserialize($request->getContent(), RegisterAgentRequest::class, 'json');
         } catch (\Exception) {
             return $this->json([
                 'status' => 'error',

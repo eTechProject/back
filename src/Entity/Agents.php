@@ -35,25 +35,6 @@ class Agents
 
     
     // Ajoute une propriété status (string ou enum selon ton design)
-    #[Groups(['agent:read'])]
-    #[ORM\Column(length: 10)]
-    private string $status = 'actif'; // valeur par défaut
-
-   public function getStatus(): string
-   {
-    return $this->status;
-   }
-
-   public function setStatus(string $status): self
-   {
-    // Optionnel: vérifier que c’est bien "actif" ou "passif"
-    if (!in_array($status, ['actif', 'passif'])) {
-        throw new \InvalidArgumentException("Statut invalide");
-    }
-    $this->status = $status;
-
-    return $this;
-   }
 
 
     public function getId(): ?int

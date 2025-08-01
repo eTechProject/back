@@ -19,8 +19,7 @@ class SearchController extends AbstractController
     {
         try {
             $name = $request->query->get('name');
-            $status = $request->query->get('status');
-            $agents = $this->agentService->searchAgents($name, $status);
+            $agents = $this->agentService->searchAgents($name);
             $agentDtos = [];
             foreach ($agents as $agent) {
                 $agentDtos[] = $this->agentService->getAgentProfile($agent);
