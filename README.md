@@ -1,4 +1,12 @@
-# 🔐 API Symfony - Authentification (JWT)
+# 🔐 API Symfony - ### 1.Cloner le projet 
+git clone https://github.com/eTechProject/back.git
+
+cd back
+
+### Récupérer la branche souhaitée :
+```bash
+git pull origin feature/authentification
+```cation (JWT)
 
 Ce projet est une **API construite avec Symfony 7.3** intégrant un système d’authentification via **JWT**, et entièrement conteneurisée avec **Docker**.  
 Le `Makefile` inclus permet d’automatiser les commandes courantes.
@@ -20,7 +28,13 @@ Avant de démarrer, assurez-vous d’avoir les outils suivants installés sur vo
 ### 1.Cloner le projet 
 git clone https://github.com/eTechProject/back.git
 
+<<<<<<< HEAD
 cd back
+=======
+###Récupérer la branche d’authentification :
+```bash
+git pull origin feature/authentification
+>>>>>>> 429cac1 (Update README.md)
 
 ### 2. Créer le fichier .env dans la racine du projet puis lance
 composer install

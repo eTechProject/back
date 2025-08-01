@@ -1,31 +1,37 @@
 parameters:
-    # Ici tu peux définir tes paramètres personnalisés si besoin
+    mercure_jwt_token: '%env(MERCURE_JWT_PUBLISHER)%'
 
 services:
-    # Configuration par défaut pour tous les services
     _defaults:
-        autowire: true      # injection automatique des dépendances
-        autoconfigure: true # auto-ajout de tags selon interface/type
+        autowire: true
+        autoconfigure: true
 
-    # Rend toutes les classes du dossier src/ disponibles comme services
     App\:
         resource: '../src/'
         exclude:
             - '../src/DependencyInjection/'
             - '../src/Kernel.php'
 
-    # Déclaration explicite des repositories Doctrine comme services avec tag obligatoire
-    App\Repository\:
-        resource: '../src/Repository'
-        tags: ['doctrine.repository_service']
-        autowire: true
-        autoconfigure: true
+    mercure.jwt_provider:
+        class: Symfony\Component\Mercure\Jwt\StaticTokenProvider
+        arguments:
+            - '%mercure_jwt_token%'
 
-    # Déclaration explicite du listener JWT avec méthode obligatoire
-    App\EventListener\JWTCreatedListener:
-        tags:
-            - { name: kernel.event_listener, event: lexik_jwt_authentication.on_jwt_created, method: onJWTCreated }
+    Symfony\Component\Mercure\HubInterface:
+        class: Symfony\Component\Mercure\Hub
+        arguments:
+            - '%env(MERCURE_PUBLISH_URL)%'
+            - '@mercure.jwt_provider'
+    
+    App\Service\CryptService:
+        arguments:
+            $appSecret: '%env(APP_SECRET)%'
 
+    App\Service\MercureTokenGenerator:
+        arguments:
+            $mercureJwtSecret: '%env(MERCURE_JWT_SECRET)%'
+
+    # JWT Authentication Event Listeners
     App\EventListener\JwtLoginSuccessHandler:
         tags:
             - { name: kernel.event_listener, event: lexik_jwt_authentication.on_authentication_success, method: onAuthenticationSuccess }
@@ -33,12 +39,3 @@ services:
     App\EventListener\JwtLoginFailureHandler:
         tags:
             - { name: kernel.event_listener, event: lexik_jwt_authentication.on_authentication_failure, method: onAuthenticationFailure }
-            
-    # Ajout explicite de UserController pour qu'il soit public et tagué
-    App\Controller\UserController:
-        public: true
-        tags: ['controller.service_arguments']
-
-    App\Service\CryptService:
-        arguments:
-            $appSecret: '%env(APP_SECRET)%'
