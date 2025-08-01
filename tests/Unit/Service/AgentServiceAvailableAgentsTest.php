@@ -10,8 +10,8 @@ use App\Entity\User;
 use App\Enum\Genre;
 use App\Enum\UserRole;
 use App\Enum\EntityType;
-use App\DTO\Agent\AgentResponseDTO;
-use App\DTO\User\UserDTO;
+use App\DTO\Agent\Response\AgentResponseDTO;
+use App\DTO\User\Internal\UserDTO;
 use PHPUnit\Framework\TestCase;
 use PHPUnit\Framework\MockObject\MockObject;
 

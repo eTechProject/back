@@ -1,6 +1,6 @@
 <?php
 
-namespace App\DTO\SecuredZone;
+namespace App\DTO\SecuredZone\Response;
 
 use DateTimeImmutable;
 

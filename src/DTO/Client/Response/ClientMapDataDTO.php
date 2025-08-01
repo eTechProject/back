@@ -1,8 +1,10 @@
 <?php
 
-namespace App\DTO\Client;
+namespace App\DTO\Client\Response;
 
-use App\DTO\SecuredZone\SecuredZoneDTO;
+use App\DTO\Client\Internal\ServiceOrderMapDTO;
+use App\DTO\Client\Internal\AssignedAgentDTO;
+use App\DTO\SecuredZone\Response\SecuredZoneDTO;
 
 class ClientMapDataDTO
 {

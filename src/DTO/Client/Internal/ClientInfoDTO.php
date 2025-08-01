@@ -1,6 +1,6 @@
 <?php
 
-namespace App\DTO\Client;
+namespace App\DTO\Client\Internal;
 
 class ClientInfoDTO
 {

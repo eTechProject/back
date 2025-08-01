@@ -1,8 +1,8 @@
 <?php
 
-namespace App\DTO\Client;
+namespace App\DTO\Client\Internal;
 
-use App\DTO\Agent\AgentResponseDTO;
+use App\DTO\Agent\Response\AgentResponseDTO;
 
 class AssignedAgentDTO
 {

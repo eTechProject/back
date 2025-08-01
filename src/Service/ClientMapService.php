@@ -2,12 +2,12 @@
 
 namespace App\Service;
 
-use App\DTO\Client\AgentPositionDTO;
-use App\DTO\Client\AssignedAgentDTO;
-use App\DTO\Client\ClientInfoDTO;
-use App\DTO\Client\ClientMapDataDTO;
-use App\DTO\Client\ServiceOrderMapDTO;
-use App\DTO\Client\TaskAssignmentDTO;
+use App\DTO\Client\Internal\AgentPositionDTO;
+use App\DTO\Client\Internal\AssignedAgentDTO;
+use App\DTO\Client\Internal\ClientInfoDTO;
+use App\DTO\Client\Response\ClientMapDataDTO;
+use App\DTO\Client\Internal\ServiceOrderMapDTO;
+use App\DTO\Client\Internal\TaskAssignmentDTO;
 use App\Entity\ServiceOrders;
 use App\Entity\Tasks;
 use App\Enum\EntityType;

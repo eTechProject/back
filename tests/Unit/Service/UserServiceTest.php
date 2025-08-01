@@ -7,7 +7,7 @@ use App\Service\UserService;
 use App\Repository\UserRepository;
 use App\Service\CryptService;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
-use App\Dto\User\RegisterUserDTO;
+use App\DTO\User\Request\RegisterUserDTO;
 use App\Entity\User;
 use App\Enum\UserRole;
 

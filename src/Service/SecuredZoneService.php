@@ -2,8 +2,8 @@
 
 namespace App\Service;
 
-use App\DTO\SecuredZone\CreateSecuredZoneDTO;
-use App\DTO\SecuredZone\SecuredZoneDTO;
+use App\DTO\SecuredZone\Request\CreateSecuredZoneDTO;
+use App\DTO\SecuredZone\Response\SecuredZoneDTO;
 use App\Entity\SecuredZones;
 use App\Repository\SecuredZonesRepository;
 use App\Enum\EntityType;

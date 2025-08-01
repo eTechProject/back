@@ -1,8 +1,8 @@
 <?php
 
-namespace App\DTO\ServiceOrder;
+namespace App\DTO\ServiceOrder\Response;
 
-use App\DTO\SecuredZone\SecuredZoneDTO;
+use App\DTO\SecuredZone\Response\SecuredZoneDTO;
 use App\Enum\Status;
 use DateTimeImmutable;
 

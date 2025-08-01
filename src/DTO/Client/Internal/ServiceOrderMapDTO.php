@@ -1,8 +1,8 @@
 <?php
 
-namespace App\DTO\Client;
+namespace App\DTO\Client\Internal;
 
-use App\DTO\SecuredZone\SecuredZoneDTO;
+use App\DTO\SecuredZone\Response\SecuredZoneDTO;
 use DateTimeImmutable;
 
 class ServiceOrderMapDTO

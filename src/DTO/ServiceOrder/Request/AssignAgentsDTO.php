@@ -1,6 +1,6 @@
 <?php
 
-namespace App\DTO\ServiceOrder;
+namespace App\DTO\ServiceOrder\Request;
 
 use Symfony\Component\Validator\Constraints as Assert;
 

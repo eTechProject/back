@@ -1,7 +1,7 @@
 <?php
 namespace App\EventListener;
 
-use App\DTO\User\UserDTO;
+use App\DTO\User\Internal\UserDTO;
 use App\Service\UserService;
 use Lexik\Bundle\JWTAuthenticationBundle\Event\AuthenticationSuccessEvent;
 use Symfony\Component\Serializer\SerializerInterface;

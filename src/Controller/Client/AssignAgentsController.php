@@ -2,7 +2,7 @@
 
 namespace App\Controller\Client;
 
-use App\DTO\ServiceOrder\AssignAgentsDTO;
+use App\DTO\ServiceOrder\Request\AssignAgentsDTO;
 use App\Service\TaskService;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;

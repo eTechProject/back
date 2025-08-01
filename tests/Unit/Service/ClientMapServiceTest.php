@@ -22,10 +22,10 @@ use App\Enum\Reason;
 use App\Enum\Genre;
 use App\Enum\UserRole;
 use App\Enum\EntityType;
-use App\DTO\Client\ClientMapDataDTO;
-use App\DTO\SecuredZone\SecuredZoneDTO;
-use App\DTO\Agent\AgentResponseDTO;
-use App\DTO\User\UserDTO;
+use App\DTO\Client\Response\ClientMapDataDTO;
+use App\DTO\SecuredZone\Response\SecuredZoneDTO;
+use App\DTO\Agent\Response\AgentResponseDTO;
+use App\DTO\User\Internal\UserDTO;
 use PHPUnit\Framework\TestCase;
 use PHPUnit\Framework\MockObject\MockObject;
 

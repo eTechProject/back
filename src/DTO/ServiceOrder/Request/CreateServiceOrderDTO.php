@@ -1,10 +1,10 @@
 <?php
 
-namespace App\DTO\ServiceOrder;
+namespace App\DTO\ServiceOrder\Request;
 
 use Symfony\Component\Validator\Constraints as Assert;
 use App\Enum\Status;
-use App\DTO\SecuredZone\CreateSecuredZoneDTO;
+use App\DTO\SecuredZone\Request\CreateSecuredZoneDTO;
 
 class CreateServiceOrderDTO
 {
