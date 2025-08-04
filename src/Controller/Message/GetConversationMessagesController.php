@@ -32,7 +32,7 @@ class GetConversationMessagesController extends AbstractController
 
         try {
             $senderId = $this->cryptService->decryptId($senderIdEncrypted, EntityType::USER->value);
-            $receiverId = $this->cryptService->decryptId($receiverIdEncrypted, EntityType::AGENT->value);
+            $receiverId = $this->cryptService->decryptId($receiverIdEncrypted, EntityType::USER->value);
         } catch (\Exception) {
             return $this->json([
                 'status' => 'error',
