@@ -10,6 +10,7 @@ use App\Entity\Tasks;
 use App\Enum\EntityType;
 use App\Repository\AgentLocationSignificantRepository;
 use App\Repository\AgentLocationsRawRepository;
+use App\Repository\AgentsRepository;
 use App\Repository\TasksRepository;
 
 class AgentMapService
@@ -20,22 +21,28 @@ class AgentMapService
         private TasksRepository $tasksRepository,
         private AgentLocationSignificantRepository $agentLocationSignificantRepository,
         private AgentLocationsRawRepository $agentLocationsRawRepository,
+        private AgentsRepository $agentsRepository,
     ) {}
 
     /**
      * Get agent map data for the current assigned task of a specific agent
      * 
-     * @param string $agentIdCrypt The encrypted agent ID
+     * @param string $userIdCrypt The encrypted user ID (linked to the agent)
      * @return AgentMapDataDTO|null
      */
-    public function getAgentMapData(string $agentIdCrypt): ?AgentMapDataDTO
+    public function getAgentMapData(string $userIdCrypt): ?AgentMapDataDTO
     {
-        // Decrypt the agent ID
-        $agentId = $this->cryptService->decryptId($agentIdCrypt, EntityType::AGENT->value);
+        // Decrypt the user ID and find the associated agent
+        $userId = $this->cryptService->decryptId($userIdCrypt, EntityType::USER->value);
+        $agent = $this->agentsRepository->findOneBy(['user' => $userId]);
+        
+        if (!$agent) {
+            return null;
+        }
         
         // Get the current assigned task for this agent (IN_PROGRESS status)
         $task = $this->tasksRepository->findOneBy([
-            'agent' => $agentId,
+            'agent' => $agent,
             'status' => \App\Enum\Status::IN_PROGRESS
         ]);
         

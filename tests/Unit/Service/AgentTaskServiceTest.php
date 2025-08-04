@@ -40,8 +40,8 @@ class AgentTaskServiceTest extends TestCase
 
     public function testGetAssignedTasksByEncryptedAgentIdSuccess(): void
     {
-        $encryptedAgentId = 'encrypted_agent_123';
-        $agentId = 1;
+        $encryptedUserId = 'encrypted_user_123';
+        $userId = 1;
         
         // Create mock entities
         $agent = $this->createMockAgent();
@@ -51,14 +51,14 @@ class AgentTaskServiceTest extends TestCase
         $this->cryptService
             ->expects($this->once())
             ->method('decryptId')
-            ->with($encryptedAgentId, EntityType::AGENT->value)
-            ->willReturn($agentId);
+            ->with($encryptedUserId, EntityType::USER->value)
+            ->willReturn($userId);
 
         // Setup agent repository
         $this->agentsRepository
             ->expects($this->once())
-            ->method('find')
-            ->with($agentId)
+            ->method('findOneBy')
+            ->with(['user' => $userId])
             ->willReturn($agent);
 
         // Setup task service
@@ -71,7 +71,7 @@ class AgentTaskServiceTest extends TestCase
         // Setup encryption for DTOs
         $this->setupCryptServiceForDTOs();
 
-        $result = $this->agentTaskService->getAssignedTasksByEncryptedAgentId($encryptedAgentId);
+        $result = $this->agentTaskService->getAssignedTasksByEncryptedAgentId($encryptedUserId);
 
         $this->assertIsArray($result);
         $this->assertCount(1, $result);
@@ -80,25 +80,25 @@ class AgentTaskServiceTest extends TestCase
 
     public function testGetAssignedTasksByEncryptedAgentIdAgentNotFound(): void
     {
-        $encryptedAgentId = 'encrypted_agent_invalid';
-        $agentId = 999;
+        $encryptedUserId = 'encrypted_user_invalid';
+        $userId = 999;
 
         $this->cryptService
             ->expects($this->once())
             ->method('decryptId')
-            ->with($encryptedAgentId, EntityType::AGENT->value)
-            ->willReturn($agentId);
+            ->with($encryptedUserId, EntityType::USER->value)
+            ->willReturn($userId);
 
         $this->agentsRepository
             ->expects($this->once())
-            ->method('find')
-            ->with($agentId)
+            ->method('findOneBy')
+            ->with(['user' => $userId])
             ->willReturn(null);
 
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage('Agent non trouvé');
 
-        $this->agentTaskService->getAssignedTasksByEncryptedAgentId($encryptedAgentId);
+        $this->agentTaskService->getAssignedTasksByEncryptedAgentId($encryptedUserId);
     }
 
     public function testGetAssignedTasksByUserSuccess(): void

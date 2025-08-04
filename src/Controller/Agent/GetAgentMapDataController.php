@@ -19,6 +19,7 @@ class GetAgentMapDataController extends AbstractController
     public function __invoke(string $idcrypt): JsonResponse
     {
         try {
+            // Note: idcrypt is actually the encrypted user ID linked to the agent
             $mapData = $this->agentMapService->getAgentMapData($idcrypt);
 
             return $this->json([

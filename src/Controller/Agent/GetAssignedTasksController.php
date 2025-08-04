@@ -20,6 +20,7 @@ class GetAssignedTasksController extends AbstractController
     public function __invoke(Request $request, string $encryptedAgentId): JsonResponse
     {
         try {
+            // Note: encryptedAgentId is actually the encrypted user ID linked to the agent
             $tasksDTOs = $this->agentTaskService->getAssignedTasksByEncryptedAgentId($encryptedAgentId);
 
             return $this->json([

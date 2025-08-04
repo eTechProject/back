@@ -20,13 +20,13 @@ class AgentTaskService
     ) {}
 
     /**
-     * Get assigned tasks for an agent by encrypted agent ID
+     * Get assigned tasks for an agent by encrypted user ID (since the agent is linked to a user)
      */
     public function getAssignedTasksByEncryptedAgentId(string $encryptedAgentId): array
     {
-        // Decrypt agent ID and find agent
-        $agentId = $this->cryptService->decryptId($encryptedAgentId, EntityType::USER->value);
-        $agent = $this->agentsRepository->find($agentId);
+        // Decrypt user ID and find agent by user
+        $userId = $this->cryptService->decryptId($encryptedAgentId, EntityType::USER->value);
+        $agent = $this->agentsRepository->findOneBy(['user' => $userId]);
         
         if (!$agent) {
             throw new \InvalidArgumentException('Agent non trouvé');

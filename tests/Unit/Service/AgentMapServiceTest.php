@@ -8,6 +8,7 @@ use App\Service\CryptService;
 use App\Repository\TasksRepository;
 use App\Repository\AgentLocationSignificantRepository;
 use App\Repository\AgentLocationsRawRepository;
+use App\Repository\AgentsRepository;
 use App\Entity\ServiceOrders;
 use App\Entity\SecuredZones;
 use App\Entity\User;
@@ -32,6 +33,7 @@ class AgentMapServiceTest extends TestCase
     private MockObject|TasksRepository $tasksRepository;
     private MockObject|AgentLocationSignificantRepository $agentLocationSignificantRepository;
     private MockObject|AgentLocationsRawRepository $agentLocationsRawRepository;
+    private MockObject|AgentsRepository $agentsRepository;
 
     protected function setUp(): void
     {
@@ -40,37 +42,68 @@ class AgentMapServiceTest extends TestCase
         $this->tasksRepository = $this->createMock(TasksRepository::class);
         $this->agentLocationSignificantRepository = $this->createMock(AgentLocationSignificantRepository::class);
         $this->agentLocationsRawRepository = $this->createMock(AgentLocationsRawRepository::class);
+        $this->agentsRepository = $this->createMock(AgentsRepository::class);
 
         $this->agentMapService = new AgentMapService(
             $this->securedZoneService,
             $this->cryptService,
             $this->tasksRepository,
             $this->agentLocationSignificantRepository,
-            $this->agentLocationsRawRepository
+            $this->agentLocationsRawRepository,
+            $this->agentsRepository
         );
     }
 
     public function testGetAgentMapDataReturnsNullWhenNoInProgressTask(): void
     {
-        $agentIdCrypt = 'encrypted_agent_id';
-        $agentId = 1;
+        $userIdCrypt = 'encrypted_user_id';
+        $userId = 1;
+        $agent = $this->createAgent('Agent Name', 'agent@example.com');
 
         $this->cryptService
             ->expects($this->once())
             ->method('decryptId')
-            ->with($agentIdCrypt, EntityType::AGENT->value)
-            ->willReturn($agentId);
+            ->with($userIdCrypt, EntityType::USER->value)
+            ->willReturn($userId);
+
+        $this->agentsRepository
+            ->expects($this->once())
+            ->method('findOneBy')
+            ->with(['user' => $userId])
+            ->willReturn($agent);
 
         $this->tasksRepository
             ->expects($this->once())
             ->method('findOneBy')
             ->with([
-                'agent' => $agentId,
+                'agent' => $agent,
                 'status' => Status::IN_PROGRESS
             ])
             ->willReturn(null);
 
-        $result = $this->agentMapService->getAgentMapData($agentIdCrypt);
+        $result = $this->agentMapService->getAgentMapData($userIdCrypt);
+
+        $this->assertNull($result);
+    }
+
+    public function testGetAgentMapDataReturnsNullWhenAgentNotFound(): void
+    {
+        $userIdCrypt = 'encrypted_user_id';
+        $userId = 999;
+
+        $this->cryptService
+            ->expects($this->once())
+            ->method('decryptId')
+            ->with($userIdCrypt, EntityType::USER->value)
+            ->willReturn($userId);
+
+        $this->agentsRepository
+            ->expects($this->once())
+            ->method('findOneBy')
+            ->with(['user' => $userId])
+            ->willReturn(null);
+
+        $result = $this->agentMapService->getAgentMapData($userIdCrypt);
 
         $this->assertNull($result);
     }
@@ -78,8 +111,8 @@ class AgentMapServiceTest extends TestCase
     public function testGetAgentMapDataReturnsDataForInProgressTask(): void
     {
         // Create entities
-        $agentIdCrypt = 'encrypted_agent_id';
-        $agentId = 1;
+        $userIdCrypt = 'encrypted_user_id';
+        $userId = 1;
         $agent = $this->createAgent('Agent Name', 'agent@example.com');
         $client = $this->createUser('Client Name', 'client@example.com', UserRole::CLIENT);
         $securedZone = $this->createSecuredZone('Zone Alpha');
@@ -91,14 +124,20 @@ class AgentMapServiceTest extends TestCase
         $this->cryptService
             ->expects($this->once())
             ->method('decryptId')
-            ->with($agentIdCrypt, EntityType::AGENT->value)
-            ->willReturn($agentId);
+            ->with($userIdCrypt, EntityType::USER->value)
+            ->willReturn($userId);
+
+        $this->agentsRepository
+            ->expects($this->once())
+            ->method('findOneBy')
+            ->with(['user' => $userId])
+            ->willReturn($agent);
 
         $this->tasksRepository
             ->expects($this->once())
             ->method('findOneBy')
             ->with([
-                'agent' => $agentId,
+                'agent' => $agent,
                 'status' => Status::IN_PROGRESS
             ])
             ->willReturn($task);
@@ -107,7 +146,7 @@ class AgentMapServiceTest extends TestCase
         $this->setupSecuredZoneServiceMock($securedZone);
         $this->setupAgentLocationSignificantRepositoryMock($agent, [$agentLocation]);
 
-        $result = $this->agentMapService->getAgentMapData($agentIdCrypt);
+        $result = $this->agentMapService->getAgentMapData($userIdCrypt);
 
         $this->assertNotNull($result);
         $this->assertInstanceOf(AgentMapDataDTO::class, $result);
