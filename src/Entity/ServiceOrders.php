@@ -26,12 +26,12 @@ class ServiceOrders
     #[ORM\Column(length: 20, enumType: Status::class)]
     private Status $status;
 
-    #[ORM\Column]
-    private \DateTimeImmutable $created_at;
+    #[ORM\Column(name: 'created_at')]
+    private \DateTimeImmutable $createdAt;
 
     #[ORM\ManyToOne(targetEntity: SecuredZones::class)]
     #[ORM\JoinColumn(name: 'secured_zone_id', referencedColumnName: 'id', nullable: false)]
-    private SecuredZones $secured_zone;
+    private SecuredZones $securedZone;
 
     #[ORM\ManyToOne(targetEntity: User::class)]
     #[ORM\JoinColumn(name: 'client_id', referencedColumnName: 'id', nullable: false)]
@@ -42,7 +42,7 @@ class ServiceOrders
 
     public function __construct()
     {
-        $this->created_at = new \DateTimeImmutable();
+        $this->createdAt = new \DateTimeImmutable();
         $this->status = Status::PENDING;
         $this->messages = new ArrayCollection();
     }
@@ -84,23 +84,23 @@ class ServiceOrders
 
     public function getCreatedAt(): \DateTimeImmutable
     {
-        return $this->created_at;
+        return $this->createdAt;
     }
 
-    public function setCreatedAt(\DateTimeImmutable $created_at): static
+    public function setCreatedAt(\DateTimeImmutable $createdAt): static
     {
-        $this->created_at = $created_at;
+        $this->createdAt = $createdAt;
         return $this;
     }
 
     public function getSecuredZone(): SecuredZones
     {
-        return $this->secured_zone;
+        return $this->securedZone;
     }
 
-    public function setSecuredZone(SecuredZones $secured_zone): static
+    public function setSecuredZone(SecuredZones $securedZone): static
     {
-        $this->secured_zone = $secured_zone;
+        $this->securedZone = $securedZone;
         return $this;
     }
 
@@ -135,12 +135,7 @@ class ServiceOrders
 
     public function removeMessage(Messages $message): self
     {
-        if ($this->messages->removeElement($message)) {
-            // set the owning side to null (unless already changed)
-            if ($message->getOrder() === $this) {
-                $message->setOrder(null);
-            }
-        }
+        $this->messages->removeElement($message);
 
         return $this;
     }

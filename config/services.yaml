@@ -40,13 +40,32 @@ services:
         tags:
             - { name: kernel.event_listener, event: lexik_jwt_authentication.on_authentication_failure, method: onAuthenticationFailure }
             
-    # Ajout explicite de UserController pour qu'il soit public et tagué
-    App\Controller\UserController:
-        public: true
-        tags: ['controller.service_arguments']
-
     # Contrôleurs invokables SOLID pour AdminAgent
     App\Controller\AdminAgent\:
         resource: '../src/Controller/AdminAgent/'
+        public: true
+        tags: ['controller.service_arguments']
+
+    # Contrôleurs invokables SOLID pour Client
+    App\Controller\Client\:
+        resource: '../src/Controller/Client/'
+        public: true
+        tags: ['controller.service_arguments']
+
+    # Contrôleurs invokables SOLID pour User
+    App\Controller\User\:
+        resource: '../src/Controller/User/'
+        public: true
+        tags: ['controller.service_arguments']
+
+    # Contrôleurs invokables SOLID pour Message
+    App\Controller\Message\:
+        resource: '../src/Controller/Message/'
+        public: true
+        tags: ['controller.service_arguments']
+
+    # Contrôleurs invokables SOLID pour ResetPassword
+    App\Controller\ResetPassword\:
+        resource: '../src/Controller/ResetPassword/'
         public: true
         tags: ['controller.service_arguments']

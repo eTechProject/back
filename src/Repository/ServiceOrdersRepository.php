@@ -59,7 +59,7 @@ class ServiceOrdersRepository extends ServiceEntityRepository
                  INNER JOIN App\Entity\Tasks t WITH t.order = o
                  INNER JOIN App\Entity\Agents a WITH t.agent = a
                  WHERE a.id = :agentId
-                 ORDER BY o.created_at DESC'
+                 ORDER BY o.createdAt DESC'
             )->setParameter('agentId', $agentId);
             
             return $query->getResult();
@@ -81,7 +81,7 @@ class ServiceOrdersRepository extends ServiceEntityRepository
             return $this->createQueryBuilder('s')
                 ->andWhere('s.client = :clientId')
                 ->setParameter('clientId', $clientId)
-                ->orderBy('s.created_at', 'DESC')
+                ->orderBy('s.createdAt', 'DESC')
                 ->getQuery()
                 ->getResult();
         } catch (\Exception $e) {

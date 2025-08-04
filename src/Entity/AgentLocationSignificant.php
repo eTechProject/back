@@ -23,8 +23,8 @@ class AgentLocationSignificant
     #[ORM\Column(type: PostGISType::GEOMETRY, options: ['geometry_type' => 'point', 'srid' => 4326])]
     private string $geom;
 
-    #[ORM\Column]
-    private \DateTimeImmutable $recorded_at;
+    #[ORM\Column(name: 'recorded_at')]
+    private \DateTimeImmutable $recordedAt;
 
     #[ORM\Column(enumType: Reason::class)]
     private Reason $reason;
@@ -63,12 +63,12 @@ class AgentLocationSignificant
 
     public function getRecordedAt(): \DateTimeImmutable
     {
-        return $this->recorded_at;
+        return $this->recordedAt;
     }
 
-    public function setRecordedAt(\DateTimeImmutable $recorded_at): static
+    public function setRecordedAt(\DateTimeImmutable $recordedAt): static
     {
-        $this->recorded_at = $recorded_at;
+        $this->recordedAt = $recordedAt;
 
         return $this;
     }
