@@ -5,6 +5,8 @@ namespace App\Service;
 use App\Entity\Messages;
 use App\Repository\ServiceOrdersRepository;
 use App\Repository\UserRepository;
+use App\Repository\TasksRepository;
+use App\Enum\UserRole;
 use Doctrine\ORM\EntityManagerInterface;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Mercure\HubInterface;
@@ -18,6 +20,7 @@ class MessageService
         private EntityManagerInterface $em,
         private ServiceOrdersRepository $ordersRepo,
         private UserRepository $userRepo,
+        private TasksRepository $tasksRepo,
         private HubInterface $mercureHub,
         private LoggerInterface $logger,
         MercureQueueService $mercureQueueService = null
@@ -58,15 +61,25 @@ class MessageService
             throw new \InvalidArgumentException('Commande ou utilisateurs non trouvés');
         }
 
-        // Validation métier
-        if ($order->getClient()->getId() !== $sender->getId() && $order->getClient()->getId() !== $receiver->getId()) {
-            $this->logger->error('Utilisateurs non liés à la commande', [
-                'client_id' => $order->getClient()->getId(),
+        // Validation métier - vérifier que les utilisateurs ont les bons rôles
+        if (!in_array($sender->getRole(), [UserRole::CLIENT, UserRole::AGENT])) {
+            $this->logger->error('Sender n\'est ni client ni agent', [
                 'sender_id' => $sender->getId(),
-                'receiver_id' => $receiver->getId()
+                'sender_role' => $sender->getRole()->value
             ]);
-            throw new \InvalidArgumentException('Sender ou receiver non liés à cette commande');
+            throw new \InvalidArgumentException('L\'expéditeur doit être un client ou un agent');
         }
+
+        if (!in_array($receiver->getRole(), [UserRole::CLIENT, UserRole::AGENT])) {
+            $this->logger->error('Receiver n\'est ni client ni agent', [
+                'receiver_id' => $receiver->getId(),
+                'receiver_role' => $receiver->getRole()->value
+            ]);
+            throw new \InvalidArgumentException('Le destinataire doit être un client ou un agent');
+        }
+
+        // Validation métier - vérifier que les utilisateurs sont liés à cette commande
+        $this->validateUsersAccessToOrder($order, $sender, $receiver);
 
         // Création et persistance du message
         $message = new Messages();
@@ -127,8 +140,8 @@ class MessageService
         ]);
 
         $topics = [
-            sprintf('/agents/%d', $sender->getId()),
-            sprintf('/clients/%d', $receiver->getId())
+            sprintf('/%s/%d', $sender->getRole()->value === 'agent' ? 'agents' : 'clients', $sender->getId()),
+            sprintf('/%s/%d', $receiver->getRole()->value === 'agent' ? 'agents' : 'clients', $receiver->getId())
         ];
 
         foreach ($topics as $topicIndex => $topic) {
@@ -308,5 +321,51 @@ class MessageService
     public function userHasAccessToOrder(int $orderId, int $userId, string $role): bool
     {
         return $this->ordersRepo->userHasAccessToOrder($orderId, $userId, $role);
+    }
+
+    /**
+     * Valide que les utilisateurs (sender et receiver) ont accès à cette commande
+     */
+    private function validateUsersAccessToOrder($order, $sender, $receiver): void
+    {
+        $orderId = $order->getId();
+        $clientId = $order->getClient()->getId();
+
+        // Le client de la commande doit être soit sender soit receiver
+        if ($clientId !== $sender->getId() && $clientId !== $receiver->getId()) {
+            $this->logger->error('Aucun des utilisateurs n\'est le client de cette commande', [
+                'order_id' => $orderId,
+                'client_id' => $clientId,
+                'sender_id' => $sender->getId(),
+                'receiver_id' => $receiver->getId()
+            ]);
+            throw new \InvalidArgumentException('Aucun des utilisateurs n\'est le client de cette commande');
+        }
+
+        // Récupérer les agents assignés à cette commande via les tâches
+        $tasks = $this->tasksRepo->findBy(['order' => $order]);
+        $assignedAgentUserIds = [];
+        foreach ($tasks as $task) {
+            $assignedAgentUserIds[] = $task->getAgent()->getUser()->getId();
+        }
+
+        // Vérifier que si un utilisateur est un agent, il doit être assigné à cette commande
+        if ($sender->getRole() === UserRole::AGENT && !in_array($sender->getId(), $assignedAgentUserIds)) {
+            $this->logger->error('L\'agent expéditeur n\'est pas assigné à cette commande', [
+                'order_id' => $orderId,
+                'sender_id' => $sender->getId(),
+                'assigned_agents' => $assignedAgentUserIds
+            ]);
+            throw new \InvalidArgumentException('L\'agent expéditeur n\'est pas assigné à cette commande');
+        }
+
+        if ($receiver->getRole() === UserRole::AGENT && !in_array($receiver->getId(), $assignedAgentUserIds)) {
+            $this->logger->error('L\'agent destinataire n\'est pas assigné à cette commande', [
+                'order_id' => $orderId,
+                'receiver_id' => $receiver->getId(),
+                'assigned_agents' => $assignedAgentUserIds
+            ]);
+            throw new \InvalidArgumentException('L\'agent destinataire n\'est pas assigné à cette commande');
+        }
     }
 }
