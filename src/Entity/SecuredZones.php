@@ -23,15 +23,15 @@ class SecuredZones
     #[ORM\Column(type: PostGISType::GEOMETRY, options: ['geometry_type' => 'polygon', 'srid' => 4326])]
     private string $geom;
 
-    #[ORM\Column(type: 'datetime_immutable')]
-    private \DateTimeImmutable $created_at;
+    #[ORM\Column(type: 'datetime_immutable', name: 'created_at')]
+    private \DateTimeImmutable $createdAt;
 
     /**
      * Constructeur : initialise la date de création automatiquement
      */
     public function __construct()
     {
-        $this->created_at = new \DateTimeImmutable();
+        $this->createdAt = new \DateTimeImmutable();
     }
 
     // ----------------------------
@@ -67,12 +67,12 @@ class SecuredZones
 
     public function getCreatedAt(): \DateTimeImmutable
     {
-        return $this->created_at;
+        return $this->createdAt;
     }
 
-    public function setCreatedAt(\DateTimeImmutable $created_at): static
+    public function setCreatedAt(\DateTimeImmutable $createdAt): static
     {
-        $this->created_at = $created_at;
+        $this->createdAt = $createdAt;
         return $this;
     }
 }

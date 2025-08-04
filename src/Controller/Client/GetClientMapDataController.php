@@ -7,17 +7,17 @@ use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\Routing\Annotation\Route;
 
-#[Route('/api/client/map-data', name: 'api_client_map_data', methods: ['GET'])]
+#[Route('/api/client/{idcrypt}/map-data', name: 'api_client_map_data', methods: ['GET'])]
 class GetClientMapDataController extends AbstractController
 {
     public function __construct(
         private readonly ClientMapService $clientMapService
     ) {}
 
-    public function __invoke(): JsonResponse
+    public function __invoke(string $idcrypt): JsonResponse
     {
         try {
-            $mapData = $this->clientMapService->getClientMapData();
+            $mapData = $this->clientMapService->getClientMapData($idcrypt);
 
             return $this->json([
                 'success' => true,

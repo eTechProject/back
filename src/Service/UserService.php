@@ -9,13 +9,15 @@ use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 use App\Enum\UserRole;
 use App\Enum\EntityType;
 use App\DTO\User\Internal\UserDTO;
+use Doctrine\ORM\EntityManagerInterface;
 
 class UserService
 {
     public function __construct(
         private UserPasswordHasherInterface $passwordHasher,
         private UserRepository $userRepository,
-        private CryptService $cryptService
+        private CryptService $cryptService,
+        private EntityManagerInterface $entityManager
     ) {}
 
     public function createUserFromRequest(RegisterUserDTO $request): User
@@ -42,6 +44,10 @@ class UserService
             $request->password
         );
         $user->setPassword($hashedPassword);
+
+        // Persist the user within the service
+        $this->entityManager->persist($user);
+        $this->entityManager->flush();
 
         return $user;
     }

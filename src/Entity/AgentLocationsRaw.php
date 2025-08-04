@@ -22,8 +22,8 @@ class AgentLocationsRaw
     #[ORM\Column(type: PostGISType::GEOMETRY, options: ['geometry_type' => 'point', 'srid' => 4326])]
     private string $geom;
 
-    #[ORM\Column]
-    private \DateTimeImmutable $recorded_at;
+    #[ORM\Column(name: 'recorded_at')]
+    private \DateTimeImmutable $recordedAt;
 
     #[ORM\Column]
     private float $accuracy;
@@ -31,11 +31,11 @@ class AgentLocationsRaw
     #[ORM\Column(nullable: true)]
     private ?float $speed = null;
 
-    #[ORM\Column(nullable: true)]
-    private ?float $battery_level = null;
+    #[ORM\Column(nullable: true, name: 'battery_level')]
+    private ?float $batteryLevel = null;
 
-    #[ORM\Column(nullable: true)]
-    private ?bool $is_significant = null;
+    #[ORM\Column(nullable: true, name: 'is_significant')]
+    private ?bool $isSignificant = null;
 
     #[ORM\ManyToOne(targetEntity: Tasks::class)]
     #[ORM\JoinColumn(name: 'tasks_id', referencedColumnName: 'id', nullable: false)]
@@ -71,12 +71,12 @@ class AgentLocationsRaw
 
     public function getRecordedAt(): \DateTimeImmutable
     {
-        return $this->recorded_at;
+        return $this->recordedAt;
     }
 
-    public function setRecordedAt(\DateTimeImmutable $recorded_at): static
+    public function setRecordedAt(\DateTimeImmutable $recordedAt): static
     {
-        $this->recorded_at = $recorded_at;
+        $this->recordedAt = $recordedAt;
         return $this;
     }
 
@@ -104,23 +104,23 @@ class AgentLocationsRaw
 
     public function getBatteryLevel(): ?float
     {
-        return $this->battery_level;
+        return $this->batteryLevel;
     }
 
-    public function setBatteryLevel(?float $battery_level): static
+    public function setBatteryLevel(?float $batteryLevel): static
     {
-        $this->battery_level = $battery_level;
+        $this->batteryLevel = $batteryLevel;
         return $this;
     }
 
     public function isSignificant(): ?bool
     {
-        return $this->is_significant;
+        return $this->isSignificant;
     }
 
-    public function setIsSignificant(?bool $is_significant): static
+    public function setIsSignificant(?bool $isSignificant): static
     {
-        $this->is_significant = $is_significant;
+        $this->isSignificant = $isSignificant;
         return $this;
     }
 

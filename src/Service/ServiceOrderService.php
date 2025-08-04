@@ -102,4 +102,12 @@ class ServiceOrderService
     {
         return $this->serviceOrdersRepository->findBy(['client' => $clientId]);
     }
+
+    public function findLastInProgressByClientId(int $clientId): ?ServiceOrders
+    {
+        return $this->serviceOrdersRepository->findOneBy(
+            ['client' => $clientId, 'status' => Status::IN_PROGRESS],
+            ['createdAt' => 'DESC']
+        );
+    }
 }

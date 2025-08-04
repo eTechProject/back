@@ -1,10 +1,9 @@
 <?php
 
-namespace App\Controller;
+namespace App\Controller\User;
 
 use App\DTO\User\Request\RegisterUserDTO;
 use App\Service\UserService;
-use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -12,19 +11,19 @@ use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\Serializer\SerializerInterface;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
 
-#[Route('/api', name: 'api_')]
-class UserController extends AbstractController
+#[Route('/api/register', name: 'api_register', methods: ['POST'])]
+class RegisterController extends AbstractController
 {
-    #[Route('/register', name: 'register', methods: ['POST'])]
-    public function register(
-        Request $request,
-        SerializerInterface $serializer,
-        ValidatorInterface $validator,
-        UserService $userService,
-        EntityManagerInterface $em
-    ): JsonResponse {
+    public function __construct(
+        private readonly UserService $userService,
+        private readonly SerializerInterface $serializer,
+        private readonly ValidatorInterface $validator
+    ) {}
+
+    public function __invoke(Request $request): JsonResponse
+    {
         try {
-            $registerRequest = $serializer->deserialize(
+            $registerRequest = $this->serializer->deserialize(
                 $request->getContent(),
                 RegisterUserDTO::class,
                 'json'
@@ -37,7 +36,7 @@ class UserController extends AbstractController
             ], 400);
         }
 
-        $errors = $validator->validate($registerRequest);
+        $errors = $this->validator->validate($registerRequest);
         if (count($errors) > 0) {
             $errorMessages = [];
             foreach ($errors as $error) {
@@ -52,9 +51,7 @@ class UserController extends AbstractController
         }
 
         try {
-            $user = $userService->createUserFromRequest($registerRequest);
-            $em->persist($user);
-            $em->flush();
+            $this->userService->createUserFromRequest($registerRequest);
 
             return $this->json([
                 'status' => 'success',
@@ -65,6 +62,11 @@ class UserController extends AbstractController
                 'status' => 'error',
                 'message' => $e->getMessage()
             ], 400);
+        } catch (\Exception $e) {
+            return $this->json([
+                'status' => 'error',
+                'message' => 'Erreur serveur lors de la création de l\'utilisateur'
+            ], 500);
         }
     }
 }

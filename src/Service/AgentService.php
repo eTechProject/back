@@ -48,8 +48,8 @@ class AgentService
         $agent->setSexe($dto->getEnumSexe());
         $agent->setAddress($dto->address);
 
-        if (property_exists($dto, 'profile')) {
-            $agent->setProfilePictureUrl($dto->profile);
+        if (method_exists($dto, 'getProfilePictureUrl')) {
+            $agent->setProfilePictureUrl($dto->getProfilePictureUrl());
         }
 
         $agent->setUser($user);

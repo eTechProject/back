@@ -11,7 +11,9 @@ class GetClientMapDataControllerTest extends WebTestCase
     {
         $client = static::createClient();
 
-        $client->request('GET', '/api/client/map-data');
+        // Test with a sample encrypted client ID
+        $encryptedClientId = 'test_encrypted_client_id';
+        $client->request('GET', "/api/client/{$encryptedClientId}/map-data");
 
         // Just verify the route exists (even if authentication fails)
         $this->assertNotEquals(404, $client->getResponse()->getStatusCode());
@@ -22,7 +24,9 @@ class GetClientMapDataControllerTest extends WebTestCase
     {
         $client = static::createClient();
 
-        $client->request('GET', '/api/client/map-data', [], [], [
+        // Test with a sample encrypted client ID
+        $encryptedClientId = 'test_encrypted_client_id';
+        $client->request('GET', "/api/client/{$encryptedClientId}/map-data", [], [], [
             'HTTP_AUTHORIZATION' => 'Bearer test-token',
             'CONTENT_TYPE' => 'application/json'
         ]);

@@ -24,17 +24,17 @@ class Tasks
     #[ORM\Column(type: Types::TEXT, nullable: true)]
     private ?string $description = null;
 
-    #[ORM\Column(nullable: true)]
-    private ?\DateTimeImmutable $end_date = null;
+    #[ORM\Column(nullable: true, name: 'end_date')]
+    private ?\DateTimeImmutable $endDate = null;
 
-    #[ORM\Column]
-    private \DateTimeImmutable $start_date;
+    #[ORM\Column(name: 'start_date')]
+    private \DateTimeImmutable $startDate;
 
     /**
      * Position d'assignation de la tâche, type Point avec SRID 4326 (WGS84)
      */
-    #[ORM\Column(type: PostGISType::GEOMETRY, options: ['geometry_type' => 'point', 'srid' => 4326])]
-    private string $assign_position;
+    #[ORM\Column(type: PostGISType::GEOMETRY, options: ['geometry_type' => 'point', 'srid' => 4326], name: 'assign_position')]
+    private string $assignPosition;
 
     #[ORM\ManyToOne(targetEntity: ServiceOrders::class)]
     #[ORM\JoinColumn(name: 'order_id', referencedColumnName: 'id', nullable: false)]
@@ -82,24 +82,24 @@ class Tasks
 
     public function getEndDate(): ?\DateTimeImmutable
     {
-        return $this->end_date;
+        return $this->endDate;
     }
 
-    public function setEndDate(?\DateTimeImmutable $end_date): static
+    public function setEndDate(?\DateTimeImmutable $endDate): static
     {
-        $this->end_date = $end_date;
+        $this->endDate = $endDate;
 
         return $this;
     }
 
     public function getStartDate(): \DateTimeImmutable
     {
-        return $this->start_date;
+        return $this->startDate;
     }
 
-    public function setStartDate(\DateTimeImmutable $start_date): static
+    public function setStartDate(\DateTimeImmutable $startDate): static
     {
-        $this->start_date = $start_date;
+        $this->startDate = $startDate;
 
         return $this;
     }
@@ -130,12 +130,12 @@ class Tasks
 
     public function getAssignPosition(): string
     {
-        return $this->assign_position;
+        return $this->assignPosition;
     }
 
-    public function setAssignPosition(string $assign_position): static
+    public function setAssignPosition(string $assignPosition): static
     {
-        $this->assign_position = $assign_position;
+        $this->assignPosition = $assignPosition;
 
         return $this;
     }
