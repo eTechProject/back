@@ -25,7 +25,7 @@ class AgentTaskService
     public function getAssignedTasksByEncryptedAgentId(string $encryptedAgentId): array
     {
         // Decrypt agent ID and find agent
-        $agentId = $this->cryptService->decryptId($encryptedAgentId, EntityType::AGENT->value);
+        $agentId = $this->cryptService->decryptId($encryptedAgentId, EntityType::USER->value);
         $agent = $this->agentsRepository->find($agentId);
         
         if (!$agent) {
