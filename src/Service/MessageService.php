@@ -7,6 +7,8 @@ use App\Repository\ServiceOrdersRepository;
 use App\Repository\UserRepository;
 use App\Repository\TasksRepository;
 use App\Enum\UserRole;
+use App\Enum\EntityType;
+use App\Service\CryptService;
 use Doctrine\ORM\EntityManagerInterface;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Mercure\HubInterface;
@@ -23,6 +25,7 @@ class MessageService
         private TasksRepository $tasksRepo,
         private HubInterface $mercureHub,
         private LoggerInterface $logger,
+        private CryptService $cryptService,
         MercureQueueService $mercureQueueService = null
     ) {
         $this->mercureQueueService = $mercureQueueService;
@@ -123,12 +126,12 @@ class MessageService
             return;
         }
 
-        // Préparation du payload une seule fois
+        // Préparation du payload une seule fois avec IDs cryptés
         $payload = [
-            'id' => $message->getId(),
-            'order_id' => $order->getId(),
-            'sender_id' => $sender->getId(),
-            'receiver_id' => $receiver->getId(),
+            'id' => $this->cryptService->encryptId((string) $message->getId(), EntityType::MESSAGE->value),
+            'order_id' => $this->cryptService->encryptId((string) $order->getId(), EntityType::SERVICE_ORDER->value),
+            'sender_id' => $this->cryptService->encryptId((string) $sender->getId(), EntityType::USER->value),
+            'receiver_id' => $this->cryptService->encryptId((string) $receiver->getId(), EntityType::USER->value),
             'content' => $content,
             'sent_at' => $message->getSentAt()->format(\DateTimeInterface::ATOM),
         ];
@@ -139,10 +142,17 @@ class MessageService
             'payload' => $payload
         ]);
 
-        $topics = [
-            sprintf('/%s/%d', $sender->getRole()->value === 'agent' ? 'agents' : 'clients', $sender->getId()),
-            sprintf('/%s/%d', $receiver->getRole()->value === 'agent' ? 'agents' : 'clients', $receiver->getId())
-        ];
+        // Créer le topic de conversation avec IDs cryptés
+        $senderEncryptedId = $this->cryptService->encryptId((string) $sender->getId(), EntityType::USER->value);
+        $receiverEncryptedId = $this->cryptService->encryptId((string) $receiver->getId(), EntityType::USER->value);
+        
+        // Déterminer l'ordre pour garantir la cohérence (min-max) avec un tri approprié
+        $encryptedIds = [$senderEncryptedId, $receiverEncryptedId];
+        sort($encryptedIds);
+        
+        $conversationTopic = "chat/conversation/{$encryptedIds[0]}-{$encryptedIds[1]}";
+
+        $topics = [$conversationTopic];
 
         foreach ($topics as $topicIndex => $topic) {
             $attempt = 0;
