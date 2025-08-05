@@ -269,7 +269,7 @@ class AgentMapServiceTest extends TestCase
             ->method('findBy')
             ->with(
                 ['agent' => $agent],
-                ['recorded_at' => 'DESC'],
+                ['recordedAt' => 'DESC'],
                 20
             )
             ->willReturn($locations);
