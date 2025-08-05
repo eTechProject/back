@@ -32,6 +32,32 @@ class AgentService
         private Environment $twig
     ) {}
 
+    /**
+     * Valide l'accès d'un utilisateur à un agent spécifique
+     * Décrypte l'ID et vérifie les permissions
+     */
+    public function validateAgentAccess(string $encryptedId, User $currentUser): ?Agents
+    {
+        // Décrypter l'ID de l'agent
+        $agentId = $this->cryptService->decryptId($encryptedId, EntityType::AGENT->value);
+        if (!$agentId) {
+            return null;
+        }
+
+        // Récupérer l'agent
+        $agent = $this->getAgent($agentId);
+        if (!$agent) {
+            return null;
+        }
+
+        // Vérifier que l'utilisateur connecté peut accéder à cet agent
+        if ($agent->getUser() && $agent->getUser()->getId() !== $currentUser->getId()) {
+            return null;
+        }
+
+        return $agent;
+    }
+
     public function createAgent(RegisterAgentDTO $dto): Agents
     {
         $password = $dto->password ?? $this->generateRandomPassword();
@@ -81,8 +107,33 @@ class AgentService
         $agent = $this->agentsRepository->find($id);
         if (!$agent) return null;
 
-        $agent->setAddress($dto->address);
-        $agent->setProfilePictureUrl($dto->profilePictureUrl);
+        // Mise à jour des propriétés de l'agent
+        if (property_exists($dto, 'address') && $dto->address !== null) {
+            $agent->setAddress($dto->address);
+        }
+        
+        if (property_exists($dto, 'profilePictureUrl') && $dto->profilePictureUrl !== null) {
+            $agent->setProfilePictureUrl($dto->profilePictureUrl);
+        }
+        
+        // Récupérer l'utilisateur lié à l'agent pour mettre à jour ses informations
+        $user = $agent->getUser();
+        if ($user) {
+            // Mise à jour du nom
+            if (property_exists($dto, 'name') && $dto->name !== null) {
+                $user->setName($dto->name);
+            }
+            
+            // Mise à jour du téléphone
+            if (property_exists($dto, 'phone') && $dto->phone !== null) {
+                $user->setPhone($dto->phone);
+            }
+            
+            // Mise à jour du mot de passe
+            if (property_exists($dto, 'password') && $dto->password !== null) {
+                $user->setPassword($this->passwordHasher->hashPassword($user, $dto->password));
+            }
+        }
 
         $this->em->flush();
         return $agent;
@@ -123,7 +174,8 @@ class AgentService
             $this->cryptService->encryptId($user->getId(), EntityType::USER->value),
             $user->getEmail(),
             $user->getName(),
-            $user->getRole()
+            $user->getRole(),
+            $user->getPhone()
         );
 
         return new AgentResponseDTO(
