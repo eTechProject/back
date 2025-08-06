@@ -30,23 +30,24 @@ class ClientMapService
     ) {}
 
     /**
-     * Get client map data for all IN_PROGRESS service orders
+     * Get client map data for the last IN_PROGRESS service order of a specific client
      * 
-     * @return ClientMapDataDTO[]
+     * @param string $clientIdCrypt The encrypted client ID
+     * @return ClientMapDataDTO|null
      */
-    public function getClientMapData(): array
+    public function getClientMapData(string $clientIdCrypt): ?ClientMapDataDTO
     {
-        $serviceOrders = $this->serviceOrderService->findAll();
-        $inProgressOrders = array_filter($serviceOrders, function($order) {
-            return $order->getStatus() === Status::IN_PROGRESS;
-        });
-
-        $mapData = [];
-        foreach ($inProgressOrders as $serviceOrder) {
-            $mapData[] = $this->buildClientMapDataDTO($serviceOrder);
+        // Decrypt the client ID
+        $clientId = $this->cryptService->decryptId($clientIdCrypt, EntityType::USER->value);
+        
+        // Get the last IN_PROGRESS service order for this client
+        $serviceOrder = $this->serviceOrderService->findLastInProgressByClientId($clientId);
+        
+        if (!$serviceOrder) {
+            return null;
         }
 
-        return $mapData;
+        return $this->buildClientMapDataDTO($serviceOrder);
     }
 
     private function buildClientMapDataDTO(ServiceOrders $serviceOrder): ClientMapDataDTO
@@ -106,7 +107,7 @@ class ClientMapService
         // Get agent's most recent raw position
         $agentRawLocation = $this->agentLocationsRawRepository->findOneBy(
             ['agent' => $task->getAgent()],
-            ['recorded_at' => 'DESC']
+            ['recordedAt' => 'DESC']
         );
 
         // Determine status based on whether we have a recent position

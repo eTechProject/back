@@ -22,20 +22,20 @@ class AgentLocationsArchive
     #[ORM\Column(type: PostGISType::GEOMETRY, options: ['geometry_type' => 'linestring', 'srid' => 4326])]
     private string $geom;
 
-    #[ORM\Column]
-    private \DateTimeImmutable $start_time;
+    #[ORM\Column(name: 'start_time')]
+    private \DateTimeImmutable $startTime;
 
-    #[ORM\Column]
-    private \DateTimeImmutable $end_time;
+    #[ORM\Column(name: 'end_time')]
+    private \DateTimeImmutable $endTime;
 
-    #[ORM\Column]
-    private int $point_count;
+    #[ORM\Column(name: 'point_count')]
+    private int $pointCount;
 
-    #[ORM\Column(nullable: true)]
-    private ?float $avg_speed = null;
+    #[ORM\Column(nullable: true, name: 'avg_speed')]
+    private ?float $avgSpeed = null;
 
-    #[ORM\Column(nullable: true)]
-    private ?float $path_length = null;
+    #[ORM\Column(nullable: true, name: 'path_length')]
+    private ?float $pathLength = null;
 
     #[ORM\ManyToOne(targetEntity: Agents::class)]
     #[ORM\JoinColumn(name: 'agent_id', referencedColumnName: 'id', nullable: false)]
@@ -69,56 +69,56 @@ class AgentLocationsArchive
 
     public function getStartTime(): \DateTimeImmutable
     {
-        return $this->start_time;
+        return $this->startTime;
     }
 
-    public function setStartTime(\DateTimeImmutable $start_time): static
+    public function setStartTime(\DateTimeImmutable $startTime): static
     {
-        $this->start_time = $start_time;
+        $this->startTime = $startTime;
         return $this;
     }
 
     public function getEndTime(): \DateTimeImmutable
     {
-        return $this->end_time;
+        return $this->endTime;
     }
 
-    public function setEndTime(\DateTimeImmutable $end_time): static
+    public function setEndTime(\DateTimeImmutable $endTime): static
     {
-        $this->end_time = $end_time;
+        $this->endTime = $endTime;
         return $this;
     }
 
     public function getPointCount(): int
     {
-        return $this->point_count;
+        return $this->pointCount;
     }
 
-    public function setPointCount(int $point_count): static
+    public function setPointCount(int $pointCount): static
     {
-        $this->point_count = $point_count;
+        $this->pointCount = $pointCount;
         return $this;
     }
 
     public function getAvgSpeed(): ?float
     {
-        return $this->avg_speed;
+        return $this->avgSpeed;
     }
 
-    public function setAvgSpeed(?float $avg_speed): static
+    public function setAvgSpeed(?float $avgSpeed): static
     {
-        $this->avg_speed = $avg_speed;
+        $this->avgSpeed = $avgSpeed;
         return $this;
     }
 
     public function getPathLength(): ?float
     {
-        return $this->path_length;
+        return $this->pathLength;
     }
 
-    public function setPathLength(?float $path_length): static
+    public function setPathLength(?float $pathLength): static
     {
-        $this->path_length = $path_length;
+        $this->pathLength = $pathLength;
         return $this;
     }
 

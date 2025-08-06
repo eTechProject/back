@@ -75,13 +75,16 @@ class AgentServiceAvailableAgentsTest extends TestCase
             ->expects($this->exactly(2))
             ->method('encryptId')
             ->willReturnCallback(function($id, $entityType) {
-                if ($id === 1 && $entityType === EntityType::AGENT->value) {
-                    return 'encrypted_agent_id';
-                }
-                if ($id === 10 && $entityType === EntityType::USER->value) {
+                // Check user ID encryption
+                if ($id == 10 && $entityType == 'user') {
                     return 'encrypted_user_id';
                 }
-                return null;
+                // Check agent ID encryption
+                if ($id == 1 && $entityType == 'agent') {
+                    return 'encrypted_agent_id';
+                }
+                // Return a default encrypted ID for any unexpected combinations
+                return "encrypted_{$entityType}_{$id}";
             });
 
         $result = $this->agentService->getAvailableAgents();
@@ -132,14 +135,15 @@ class AgentServiceAvailableAgentsTest extends TestCase
             ->expects($this->exactly(6))
             ->method('encryptId')
             ->willReturnCallback(function($id, $entityType) {
-                if ($entityType === EntityType::AGENT->value) {
+                if ($entityType == 'agent') {
                     return "encrypted_agent_id_$id";
                 }
-                if ($entityType === EntityType::USER->value) {
+                if ($entityType == 'user') {
                     $agentId = $id - 10;
                     return "encrypted_user_id_$agentId";
                 }
-                return null;
+                // Return a default encrypted ID for any unexpected combinations
+                return "encrypted_{$entityType}_{$id}";
             });
 
         $result = $this->agentService->getAvailableAgents();

@@ -19,10 +19,10 @@ class Messages
     #[ORM\Column(type: Types::TEXT)]
     private string $content;
 
-    #[ORM\Column]
-    private \DateTimeImmutable $sent_at;
+    #[ORM\Column(name: 'sent_at')]
+    private \DateTimeImmutable $sentAt;
 
-    #[ORM\ManyToOne(targetEntity: ServiceOrders::class)]
+    #[ORM\ManyToOne(targetEntity: ServiceOrders::class, inversedBy: 'messages')]
     #[ORM\JoinColumn(name: 'order_id', referencedColumnName: 'id', nullable: false)]
     private ServiceOrders $order;
 
@@ -47,18 +47,17 @@ class Messages
     public function setContent(string $content): static
     {
         $this->content = $content;
-
         return $this;
     }
 
     public function getSentAt(): \DateTimeImmutable
     {
-        return $this->sent_at;
+        return $this->sentAt;
     }
 
-    public function setSentAt(\DateTimeImmutable $sent_at): static
+    public function setSentAt(\DateTimeImmutable $sentAt): static
     {
-        $this->sent_at = $sent_at;
+        $this->sentAt = $sentAt;
 
         return $this;
     }
@@ -71,7 +70,6 @@ class Messages
     public function setOrder(ServiceOrders $order): static
     {
         $this->order = $order;
-
         return $this;
     }
 
@@ -83,7 +81,6 @@ class Messages
     public function setSender(User $sender): static
     {
         $this->sender = $sender;
-
         return $this;
     }
 
@@ -95,7 +92,6 @@ class Messages
     public function setReceiver(User $receiver): static
     {
         $this->receiver = $receiver;
-
         return $this;
     }
 }

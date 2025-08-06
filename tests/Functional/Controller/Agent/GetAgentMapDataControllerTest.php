@@ -1,32 +1,32 @@
 <?php
 
-namespace App\Tests\Functional\Controller\Client;
+namespace App\Tests\Functional\Controller\Agent;
 
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 use Symfony\Component\HttpFoundation\Response;
 
-class GetClientMapDataControllerTest extends WebTestCase
+class GetAgentMapDataControllerTest extends WebTestCase
 {
-    public function testGetClientMapDataRoute(): void
+    public function testGetAgentMapDataRoute(): void
     {
         $client = static::createClient();
 
-        // Test with a sample encrypted client ID
-        $encryptedClientId = 'test_encrypted_client_id';
-        $client->request('GET', "/api/client/{$encryptedClientId}/map-data");
+        // Test with a sample encrypted agent ID
+        $encryptedAgentId = 'test_encrypted_agent_id';
+        $client->request('GET', "/api/agent/{$encryptedAgentId}/map-data");
 
         // Just verify the route exists (even if authentication fails)
         $this->assertNotEquals(404, $client->getResponse()->getStatusCode());
         $this->assertContains($client->getResponse()->getStatusCode(), [200, 401, 500]);
     }
 
-    public function testGetClientMapDataWithHeaders(): void
+    public function testGetAgentMapDataWithHeaders(): void
     {
         $client = static::createClient();
 
-        // Test with a sample encrypted client ID
-        $encryptedClientId = 'test_encrypted_client_id';
-        $client->request('GET', "/api/client/{$encryptedClientId}/map-data", [], [], [
+        // Test with a sample encrypted agent ID
+        $encryptedAgentId = 'test_encrypted_agent_id';
+        $client->request('GET', "/api/agent/{$encryptedAgentId}/map-data", [], [], [
             'HTTP_AUTHORIZATION' => 'Bearer test-token',
             'CONTENT_TYPE' => 'application/json'
         ]);

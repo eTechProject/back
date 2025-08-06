@@ -25,13 +25,17 @@ class Agents
     private Genre $sexe;
 
     #[Groups(['agent:read'])]
-    #[ORM\Column(length: 255, nullable: true)]
-    private ?string $profile_picture_url = null;
+    #[ORM\Column(length: 255, nullable: true, name: 'profile_picture_url')]
+    private ?string $profilePictureUrl = null;
 
     #[Groups(['agent:read'])]
     #[ORM\OneToOne(targetEntity: User::class)]
     #[ORM\JoinColumn(name: 'user_id', referencedColumnName: 'id', nullable: false)]
     private User $user;
+
+    
+    // Ajoute une propriété status (string ou enum selon ton design)
+
 
     public function getId(): ?int
     {
@@ -62,12 +66,12 @@ class Agents
 
     public function getProfilePictureUrl(): ?string
     {
-        return $this->profile_picture_url;
+        return $this->profilePictureUrl;
     }
 
-    public function setProfilePictureUrl(?string $profile_picture_url): static
+    public function setProfilePictureUrl(?string $profilePictureUrl): static
     {
-        $this->profile_picture_url = $profile_picture_url;
+        $this->profilePictureUrl = $profilePictureUrl;
         return $this;
     }
 

@@ -7,16 +7,27 @@ use App\Enum\Status;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
-/**
- * @extends ServiceEntityRepository<Agents>
- */
+
 class AgentsRepository extends ServiceEntityRepository
 {
     public function __construct(ManagerRegistry $registry)
     {
         parent::__construct($registry, Agents::class);
     }
+    
+    public function searchAgents(?string $name): array
+  {
+    $qb = $this->createQueryBuilder('a')
+               ->join('a.user', 'u');
 
+    if ($name) {
+        $qb->andWhere('LOWER(u.name) LIKE :name')
+           ->setParameter('name', '%' . strtolower($name) . '%');
+    }
+
+    return $qb->getQuery()->getResult();
+  }
+  
     /**
      * Find all agents who are available for new tasks.
      * 
@@ -51,16 +62,6 @@ class AgentsRepository extends ServiceEntityRepository
     //            ->setMaxResults(10)
     //            ->getQuery()
     //            ->getResult()
-    //        ;
-    //    }
-
-    //    public function findOneBySomeField($value): ?Agents
-    //    {
-    //        return $this->createQueryBuilder('a')
-    //            ->andWhere('a.exampleField = :val')
-    //            ->setParameter('val', $value)
-    //            ->getQuery()
-    //            ->getOneOrNullResult()
     //        ;
     //    }
 }

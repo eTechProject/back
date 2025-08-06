@@ -61,25 +61,33 @@ class ClientMapServiceTest extends TestCase
         );
     }
 
-    public function testGetClientMapDataReturnsEmptyArrayWhenNoInProgressOrders(): void
+    public function testGetClientMapDataReturnsNullWhenNoInProgressOrders(): void
     {
-        // Create a service order with different status
-        $serviceOrder = $this->createServiceOrder(Status::PENDING);
+        $clientIdCrypt = 'encrypted_client_id';
+        $clientId = 1;
+
+        $this->cryptService
+            ->expects($this->once())
+            ->method('decryptId')
+            ->with($clientIdCrypt, EntityType::USER->value)
+            ->willReturn($clientId);
 
         $this->serviceOrderService
             ->expects($this->once())
-            ->method('findAll')
-            ->willReturn([$serviceOrder]);
+            ->method('findLastInProgressByClientId')
+            ->with($clientId)
+            ->willReturn(null);
 
-        $result = $this->clientMapService->getClientMapData();
+        $result = $this->clientMapService->getClientMapData($clientIdCrypt);
 
-        $this->assertIsArray($result);
-        $this->assertEmpty($result);
+        $this->assertNull($result);
     }
 
     public function testGetClientMapDataReturnsDataForInProgressOrders(): void
     {
         // Create entities
+        $clientIdCrypt = 'encrypted_client_id';
+        $clientId = 1;
         $client = $this->createUser('Client Name', 'client@example.com', UserRole::CLIENT);
         $securedZone = $this->createSecuredZone('Zone Alpha');
         $serviceOrder = $this->createServiceOrder(Status::IN_PROGRESS, $client, $securedZone);
@@ -89,10 +97,17 @@ class ClientMapServiceTest extends TestCase
         $agentLocation = $this->createAgentLocation($agent, $task);
 
         // Setup mocks
+        $this->cryptService
+            ->expects($this->once())
+            ->method('decryptId')
+            ->with($clientIdCrypt, EntityType::USER->value)
+            ->willReturn($clientId);
+
         $this->serviceOrderService
             ->expects($this->once())
-            ->method('findAll')
-            ->willReturn([$serviceOrder]);
+            ->method('findLastInProgressByClientId')
+            ->with($clientId)
+            ->willReturn($serviceOrder);
 
         $this->setupCryptServiceMocks();
         $this->setupSecuredZoneServiceMock($securedZone);
@@ -100,16 +115,17 @@ class ClientMapServiceTest extends TestCase
         $this->setupAgentServiceMock($agent);
         $this->setupAgentLocationRepositoryMock($agent, $task, $agentLocation);
 
-        $result = $this->clientMapService->getClientMapData();
+        $result = $this->clientMapService->getClientMapData($clientIdCrypt);
 
-        $this->assertIsArray($result);
-        $this->assertCount(1, $result);
-        $this->assertInstanceOf(ClientMapDataDTO::class, $result[0]);
+        $this->assertNotNull($result);
+        $this->assertInstanceOf(ClientMapDataDTO::class, $result);
     }
 
     public function testGetClientMapDataWithActiveAgent(): void
     {
         // Create entities
+        $clientIdCrypt = 'encrypted_client_id';
+        $clientId = 1;
         $client = $this->createUser('Client Name', 'client@example.com', UserRole::CLIENT);
         $securedZone = $this->createSecuredZone('Zone Alpha');
         $serviceOrder = $this->createServiceOrder(Status::IN_PROGRESS, $client, $securedZone);
@@ -119,10 +135,17 @@ class ClientMapServiceTest extends TestCase
         $agentLocation = $this->createAgentLocation($agent, $task);
 
         // Setup mocks
+        $this->cryptService
+            ->expects($this->once())
+            ->method('decryptId')
+            ->with($clientIdCrypt, EntityType::USER->value)
+            ->willReturn($clientId);
+
         $this->serviceOrderService
             ->expects($this->once())
-            ->method('findAll')
-            ->willReturn([$serviceOrder]);
+            ->method('findLastInProgressByClientId')
+            ->with($clientId)
+            ->willReturn($serviceOrder);
 
         $this->setupCryptServiceMocks();
         $this->setupSecuredZoneServiceMock($securedZone);
@@ -130,9 +153,10 @@ class ClientMapServiceTest extends TestCase
         $this->setupAgentServiceMock($agent);
         $this->setupAgentLocationRepositoryMock($agent, $task, $agentLocation);
 
-        $result = $this->clientMapService->getClientMapData();
+        $result = $this->clientMapService->getClientMapData($clientIdCrypt);
 
-        $assignedAgents = $result[0]->assignedAgents;
+        $this->assertNotNull($result);
+        $assignedAgents = $result->assignedAgents;
         $this->assertCount(1, $assignedAgents);
         $this->assertEquals('actif', $assignedAgents[0]->status);
         $this->assertNotNull($assignedAgents[0]->currentPosition);
@@ -143,6 +167,8 @@ class ClientMapServiceTest extends TestCase
     public function testGetClientMapDataWithInactiveAgent(): void
     {
         // Create entities
+        $clientIdCrypt = 'encrypted_client_id';
+        $clientId = 1;
         $client = $this->createUser('Client Name', 'client@example.com', UserRole::CLIENT);
         $securedZone = $this->createSecuredZone('Zone Alpha');
         $serviceOrder = $this->createServiceOrder(Status::IN_PROGRESS, $client, $securedZone);
@@ -151,10 +177,17 @@ class ClientMapServiceTest extends TestCase
         $task = $this->createTask($serviceOrder, $agent);
 
         // Setup mocks
+        $this->cryptService
+            ->expects($this->once())
+            ->method('decryptId')
+            ->with($clientIdCrypt, EntityType::USER->value)
+            ->willReturn($clientId);
+
         $this->serviceOrderService
             ->expects($this->once())
-            ->method('findAll')
-            ->willReturn([$serviceOrder]);
+            ->method('findLastInProgressByClientId')
+            ->with($clientId)
+            ->willReturn($serviceOrder);
 
         $this->setupCryptServiceMocks();
         $this->setupSecuredZoneServiceMock($securedZone);
@@ -162,9 +195,10 @@ class ClientMapServiceTest extends TestCase
         $this->setupAgentServiceMock($agent);
         $this->setupAgentLocationRepositoryMock($agent, $task, null); // No location = inactive
 
-        $result = $this->clientMapService->getClientMapData();
+        $result = $this->clientMapService->getClientMapData($clientIdCrypt);
 
-        $assignedAgents = $result[0]->assignedAgents;
+        $this->assertNotNull($result);
+        $assignedAgents = $result->assignedAgents;
         $this->assertCount(1, $assignedAgents);
         $this->assertEquals('inactif', $assignedAgents[0]->status);
         $this->assertNull($assignedAgents[0]->currentPosition);
@@ -173,6 +207,8 @@ class ClientMapServiceTest extends TestCase
     public function testGetClientMapDataWithMultipleAgents(): void
     {
         // Create entities
+        $clientIdCrypt = 'encrypted_client_id';
+        $clientId = 1;
         $client = $this->createUser('Client Name', 'client@example.com', UserRole::CLIENT);
         $securedZone = $this->createSecuredZone('Zone Alpha');
         $serviceOrder = $this->createServiceOrder(Status::IN_PROGRESS, $client, $securedZone);
@@ -184,10 +220,17 @@ class ClientMapServiceTest extends TestCase
         $agentLocation1 = $this->createAgentLocation($agent1, $task1);
 
         // Setup mocks
+        $this->cryptService
+            ->expects($this->once())
+            ->method('decryptId')
+            ->with($clientIdCrypt, EntityType::USER->value)
+            ->willReturn($clientId);
+
         $this->serviceOrderService
             ->expects($this->once())
-            ->method('findAll')
-            ->willReturn([$serviceOrder]);
+            ->method('findLastInProgressByClientId')
+            ->with($clientId)
+            ->willReturn($serviceOrder);
 
         $this->setupCryptServiceMocks();
         $this->setupSecuredZoneServiceMock($securedZone);
@@ -208,19 +251,20 @@ class ClientMapServiceTest extends TestCase
             ->willReturnMap([
                 [
                     ['agent' => $agent1],
-                    ['recorded_at' => 'DESC'],
+                    ['recordedAt' => 'DESC'],
                     $agentLocation1
                 ],
                 [
                     ['agent' => $agent2],
-                    ['recorded_at' => 'DESC'],
+                    ['recordedAt' => 'DESC'],
                     null
                 ]
             ]);
 
-        $result = $this->clientMapService->getClientMapData();
+        $result = $this->clientMapService->getClientMapData($clientIdCrypt);
 
-        $assignedAgents = $result[0]->assignedAgents;
+        $this->assertNotNull($result);
+        $assignedAgents = $result->assignedAgents;
         $this->assertCount(2, $assignedAgents);
         $this->assertEquals('actif', $assignedAgents[0]->status);
         $this->assertEquals('inactif', $assignedAgents[1]->status);
@@ -335,6 +379,8 @@ class ClientMapServiceTest extends TestCase
             ->willReturnCallback(function($id, $type) {
                 return "encrypted_{$type}_id_{$id}";
             });
+        
+        // Note: decryptId is set up individually in each test method
     }
 
     private function setupSecuredZoneServiceMock(SecuredZones $securedZone): void
@@ -380,7 +426,7 @@ class ClientMapServiceTest extends TestCase
             ->method('findOneBy')
             ->with(
                 ['agent' => $agent],
-                ['recorded_at' => 'DESC']
+                ['recordedAt' => 'DESC']
             )
             ->willReturn($agentLocation);
     }
