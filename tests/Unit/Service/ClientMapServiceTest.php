@@ -251,12 +251,12 @@ class ClientMapServiceTest extends TestCase
             ->willReturnMap([
                 [
                     ['agent' => $agent1],
-                    ['recorded_at' => 'DESC'],
+                    ['recordedAt' => 'DESC'],
                     $agentLocation1
                 ],
                 [
                     ['agent' => $agent2],
-                    ['recorded_at' => 'DESC'],
+                    ['recordedAt' => 'DESC'],
                     null
                 ]
             ]);
@@ -426,7 +426,7 @@ class ClientMapServiceTest extends TestCase
             ->method('findOneBy')
             ->with(
                 ['agent' => $agent],
-                ['recorded_at' => 'DESC']
+                ['recordedAt' => 'DESC']
             )
             ->willReturn($agentLocation);
     }

@@ -78,7 +78,7 @@ class PostMessageController extends AbstractController
         $receiverIdEncrypted = $data['receiver_id'] ?? null;
         if ($receiverIdEncrypted) {
             try {
-                $receiverId = $this->cryptService->decryptId($receiverIdEncrypted, EntityType::AGENT->value);
+                $receiverId = $this->cryptService->decryptId($receiverIdEncrypted, EntityType::USER->value);
             } catch (\Exception) {
                 return $this->json([
                     'status' => 'error',

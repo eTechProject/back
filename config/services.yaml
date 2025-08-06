@@ -20,7 +20,7 @@ services:
     Symfony\Component\Mercure\HubInterface:
         class: Symfony\Component\Mercure\Hub
         arguments:
-            - '%env(MERCURE_PUBLISH_URL)%'
+            - '%env(MERCURE_URL)%'
             - '@mercure.jwt_provider'
     
     App\Service\CryptService:
@@ -52,6 +52,12 @@ services:
         public: true
         tags: ['controller.service_arguments']
 
+    # Contrôleurs invokables SOLID pour Agent
+    App\Controller\Agent\:
+        resource: '../src/Controller/Agent/'
+        public: true
+        tags: ['controller.service_arguments']
+        
     # Contrôleurs invokables SOLID pour User
     App\Controller\User\:
         resource: '../src/Controller/User/'

@@ -133,10 +133,10 @@ class MessageHandlerService
     private function createMessageDTO($message): MessageDTO
     {
         return new MessageDTO(
-            encryptedId: $this->cryptService->encryptId((string) $message->getId()),
-            order_id: $this->cryptService->encryptId((string) $message->getOrder()->getId()),
-            sender_id: $this->cryptService->encryptId((string) $message->getSender()->getId()),
-            receiver_id: $this->cryptService->encryptId((string) $message->getReceiver()->getId()),
+            encryptedId: $this->cryptService->encryptId((string) $message->getId(), \App\Enum\EntityType::MESSAGE->value),
+            order_id: $this->cryptService->encryptId((string) $message->getOrder()->getId(), \App\Enum\EntityType::SERVICE_ORDER->value),
+            sender_id: $this->cryptService->encryptId((string) $message->getSender()->getId(), \App\Enum\EntityType::USER->value),
+            receiver_id: $this->cryptService->encryptId((string) $message->getReceiver()->getId(), \App\Enum\EntityType::USER->value),
             content: $message->getContent(),
             sent_at: $message->getSentAt()->format('Y-m-d H:i:s')
         );
@@ -145,10 +145,10 @@ class MessageHandlerService
     private function createMessageDTOFromArray(array $message): MessageDTO
     {
         return new MessageDTO(
-            encryptedId: $this->cryptService->encryptId((string) $message['id']),
-            order_id: $this->cryptService->encryptId((string) $message['order']->getId()),
-            sender_id: $this->cryptService->encryptId((string) $message['sender']->getId()),
-            receiver_id: $this->cryptService->encryptId((string) $message['receiver']->getId()),
+            encryptedId: $this->cryptService->encryptId((string) $message['id'], \App\Enum\EntityType::MESSAGE->value),
+            order_id: $this->cryptService->encryptId((string) $message['order']->getId(), \App\Enum\EntityType::SERVICE_ORDER->value),
+            sender_id: $this->cryptService->encryptId((string) $message['sender']->getId(), \App\Enum\EntityType::USER->value),
+            receiver_id: $this->cryptService->encryptId((string) $message['receiver']->getId(), \App\Enum\EntityType::USER->value),
             content: $message['content'],
             sent_at: $message['sent_at']->format('Y-m-d H:i:s')
         );
@@ -209,7 +209,7 @@ class MessageHandlerService
                 'id' => $this->cryptService->encryptId((string) $m->getId(), \App\Enum\EntityType::MESSAGE->value),
                 'order_id' => $this->cryptService->encryptId((string) ($m->getOrder()?->getId()), \App\Enum\EntityType::SERVICE_ORDER->value),
                 'sender_id' => $this->cryptService->encryptId((string) ($m->getSender()?->getId()), \App\Enum\EntityType::USER->value),
-                'receiver_id' => $this->cryptService->encryptId((string) ($m->getReceiver()?->getId()), \App\Enum\EntityType::AGENT->value),
+                'receiver_id' => $this->cryptService->encryptId((string) ($m->getReceiver()?->getId()), \App\Enum\EntityType::USER->value),
                 'content' => $m->getContent(),
                 'sent_at' => $m->getSentAt()?->format('Y-m-d H:i:s'),
             ];
