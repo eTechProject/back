@@ -57,7 +57,7 @@ services:
         resource: '../src/Controller/Agent/'
         public: true
         tags: ['controller.service_arguments']
-
+        
     # Contrôleurs invokables SOLID pour User
     App\Controller\User\:
         resource: '../src/Controller/User/'
