@@ -11,5 +11,6 @@ class UserDTO
         public string $name,
         public UserRole $role,
         public ?string $phone = null,
+        public array $serviceOrders = [],
     ) {}
 } 

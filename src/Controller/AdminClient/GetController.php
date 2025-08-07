@@ -39,7 +39,7 @@ class GetController extends AbstractController
                 ], 404);
             }
 
-            $userDto = $this->userService->toDTO($client);
+            $userDto = $this->userService->toDTOWithOrders($client);
 
             return $this->json([
                 'status' => 'success',

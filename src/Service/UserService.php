@@ -7,6 +7,7 @@ use App\DTO\Client\Request\CreateClientDTO;
 use App\DTO\User\Request\UpdateUserDTO;
 use App\Entity\User;
 use App\Repository\UserRepository;
+use App\Repository\ServiceOrdersRepository;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 use App\Enum\UserRole;
 use App\Enum\EntityType;
@@ -22,7 +23,9 @@ class UserService
         private UserRepository $userRepository,
         private CryptService $cryptService,
         private EntityManagerInterface $entityManager,
-        private MailerInterface $mailer
+        private MailerInterface $mailer,
+        private ServiceOrdersRepository $serviceOrdersRepository,
+        private ServiceOrderService $serviceOrderService
     ) {}
 
     public function createUserFromRequest(RegisterUserDTO $request): User
@@ -210,6 +213,30 @@ class UserService
             name: $user->getName(),
             role: $user->getRole(),
             phone: $user->getPhone()
+        );
+    }
+
+    public function toDTOWithOrders(User $user): UserDTO
+    {
+        // Récupérer les commandes du client
+        $serviceOrders = $this->serviceOrdersRepository->findBy(
+            ['client' => $user], 
+            ['createdAt' => 'DESC']
+        );
+
+        // Convertir les commandes en DTOs
+        $serviceOrderDTOs = [];
+        foreach ($serviceOrders as $serviceOrder) {
+            $serviceOrderDTOs[] = $this->serviceOrderService->toDTO($serviceOrder);
+        }
+
+        return new UserDTO(
+            userId: $this->cryptService->encryptId((string)$user->getId(), EntityType::USER->value),
+            email: $user->getEmail(),
+            name: $user->getName(),
+            role: $user->getRole(),
+            phone: $user->getPhone(),
+            serviceOrders: $serviceOrderDTOs
         );
     }
 }
