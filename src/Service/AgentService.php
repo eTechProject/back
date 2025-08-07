@@ -149,6 +149,14 @@ class AgentService
         return $this->agentsRepository->find($id);
     }
 
+    /**
+     * Récupérer un agent par son utilisateur
+     */
+    public function getAgentByUser(User $user): ?Agents
+    {
+        return $this->agentsRepository->findOneBy(['user' => $user]);
+    }
+
     public function deleteAgent(int $id): bool
     {
         $agent = $this->agentsRepository->find($id);
@@ -204,29 +212,31 @@ class AgentService
         return $availableAgentDTOs;
     }
     
-    public function searchAgents(?string $name): array
+    public function searchAgents(?string $name, ?string $taskStatus = null): array
     {
-        return $this->agentsRepository->searchAgents($name);
+        return $this->agentsRepository->searchAgents($name, $taskStatus);
     }
 
     public function getAgentsPaginated(int $page, int $limit): array 
     {
-    $offset = ($page - 1) * $limit;
+        $offset = ($page - 1) * $limit;
 
-    $queryBuilder = $this->agentsRepository->createQueryBuilder('a');
+        $queryBuilder = $this->agentsRepository->createQueryBuilder('a')
+            ->join('a.user', 'u')
+            ->orderBy('u.createdAt', 'DESC');
 
-    $query = $queryBuilder
-        ->setFirstResult($offset)
-        ->setMaxResults($limit)
-        ->getQuery();
+        $query = $queryBuilder
+            ->setFirstResult($offset)
+            ->setMaxResults($limit)
+            ->getQuery();
 
-    $agents = $query->getResult();
+        $agents = $query->getResult();
 
-    // Compter total agents (pour pagination)
-    $total = $this->agentsRepository->count([]);
+        // Compter total agents (pour pagination)
+        $total = $this->agentsRepository->count([]);
 
-    return [$agents, $total];
-  }
+        return [$agents, $total];
+    }
 
     private function generateRandomPassword(int $length = 12): string
     {
