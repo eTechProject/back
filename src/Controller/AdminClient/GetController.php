@@ -3,6 +3,7 @@
 namespace App\Controller\AdminClient;
 
 use App\Service\UserService;
+use App\Service\ClientOrderService;
 use App\Service\CryptService;
 use App\Enum\EntityType;
 use App\Enum\UserRole;
@@ -17,6 +18,7 @@ class GetController extends AbstractController
 {
     public function __construct(
         private UserService $userService,
+        private ClientOrderService $clientOrderService,
         private CryptService $cryptService
     ) {}
 
@@ -39,11 +41,12 @@ class GetController extends AbstractController
                 ], 404);
             }
 
-            $userDto = $this->userService->toDTOWithOrders($client);
+            $clientDto = $this->clientOrderService->getClientWithOrders($client);
 
             return $this->json([
                 'status' => 'success',
-                'data' => $userDto
+                'message' => 'Client récupéré avec succès',
+                'data' => $clientDto
             ]);
         } catch (\Exception $e) {
             return $this->json([
