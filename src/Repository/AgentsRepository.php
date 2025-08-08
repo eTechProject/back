@@ -15,18 +15,26 @@ class AgentsRepository extends ServiceEntityRepository
         parent::__construct($registry, Agents::class);
     }
     
-    public function searchAgents(?string $name): array
-  {
-    $qb = $this->createQueryBuilder('a')
-               ->join('a.user', 'u');
+    public function searchAgents(?string $name, ?string $taskStatus = null): array
+    {
+        $qb = $this->createQueryBuilder('a')
+                   ->join('a.user', 'u');
 
-    if ($name) {
-        $qb->andWhere('LOWER(u.name) LIKE :name')
-           ->setParameter('name', '%' . strtolower($name) . '%');
+        if ($name) {
+            $qb->andWhere('LOWER(u.name) LIKE :name')
+               ->setParameter('name', '%' . strtolower($name) . '%');
+        }
+
+        // Filtre par statut des tâches
+        if ($taskStatus) {
+            $qb->join('a.tasks', 't')
+               ->andWhere('t.status = :taskStatus')
+               ->setParameter('taskStatus', $taskStatus)
+               ->groupBy('a.id'); // Éviter les doublons
+        }
+
+        return $qb->getQuery()->getResult();
     }
-
-    return $qb->getQuery()->getResult();
-  }
   
     /**
      * Find all agents who are available for new tasks.

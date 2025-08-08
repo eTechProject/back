@@ -19,7 +19,9 @@ class SearchController extends AbstractController
     {
         try {
             $name = $request->query->get('name');
-            $agents = $this->agentService->searchAgents($name);
+            $taskStatus = $request->query->get('status'); // Nouveau: filtre par statut des tâches
+            
+            $agents = $this->agentService->searchAgents($name, $taskStatus);
             $agentDtos = [];
             foreach ($agents as $agent) {
                 $agentDtos[] = $this->agentService->getAgentProfile($agent);
@@ -28,6 +30,10 @@ class SearchController extends AbstractController
             return $this->json([
                 'status' => 'success',
                 'data' => $agentDtos,
+                'filters' => [
+                    'name' => $name,
+                    'task_status' => $taskStatus
+                ]
             ]);
         } catch (\Throwable $e) {
             return $this->json([

@@ -10,5 +10,6 @@ class UserDTO
         public string $email,
         public string $name,
         public UserRole $role,
+        public ?string $phone = null,
     ) {}
-}
+} 
