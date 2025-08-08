@@ -5,6 +5,8 @@ namespace App\Service;
 use App\DTO\User\Request\RegisterUserDTO;
 use App\DTO\Client\Request\CreateClientDTO;
 use App\DTO\User\Request\UpdateUserDTO;
+use App\DTO\User\Request\UpdateUserProfileDTO;
+use App\DTO\User\Request\ChangePasswordDTO;
 use App\Entity\User;
 use App\Repository\UserRepository;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
@@ -201,6 +203,75 @@ class UserService
     private function generateRandomPassword(int $length = 12): string
     {
         return bin2hex(random_bytes($length / 2));
+    }
+    
+    /**
+     * Mettre à jour le profil utilisateur depuis la nouvelle API
+     */
+    public function updateUserFromRequest(int $id, UpdateUserProfileDTO $request): User
+    {
+        $user = $this->userRepository->find($id);
+        if (!$user) {
+            throw new \InvalidArgumentException('Utilisateur non trouvé');
+        }
+
+        if ($request->name !== null) {
+            $user->setName($request->name);
+        }
+
+        if ($request->email !== null) {
+            $user->setEmail($request->email);
+        }
+
+        if ($request->phone !== null) {
+            $user->setPhone($request->phone);
+        }
+
+        $this->entityManager->flush();
+
+        return $user;
+    }
+    
+    /**
+     * Changer le mot de passe utilisateur depuis la nouvelle API
+     */
+    public function updatePasswordFromRequest(int $id, ChangePasswordDTO $request): User
+    {
+        $user = $this->userRepository->find($id);
+        if (!$user) {
+            throw new \InvalidArgumentException('Utilisateur non trouvé');
+        }
+
+        // Vérifier le mot de passe actuel
+        if (!$this->passwordHasher->isPasswordValid($user, $request->current_password)) {
+            throw new \InvalidArgumentException('Mot de passe actuel incorrect');
+        }
+
+        // Hasher le nouveau mot de passe
+        $hashedPassword = $this->passwordHasher->hashPassword(
+            $user,
+            $request->new_password
+        );
+        $user->setPassword($hashedPassword);
+
+        $this->entityManager->flush();
+
+        return $user;
+    }
+
+    /**
+     * Récupérer un utilisateur par ID chiffré
+     */
+    public function getUserByEncryptedId(string $encryptedId): User
+    {
+        $decryptedId = $this->cryptService->decryptId($encryptedId, EntityType::USER->value);
+        $user = $this->userRepository->find($decryptedId);
+        
+        if (!$user) {
+            throw new \InvalidArgumentException('Utilisateur non trouvé');
+        }
+        
+        return $user;
     }
     public function toDTO(User $user): UserDTO
     {

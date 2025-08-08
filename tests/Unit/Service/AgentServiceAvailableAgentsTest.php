@@ -32,7 +32,9 @@ class AgentServiceAvailableAgentsTest extends TestCase
             $this->createMock(\App\Repository\UserRepository::class),
             $this->agentsRepository,
             $this->cryptService,
-            $this->createMock(\Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface::class)
+            $this->createMock(\Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface::class),
+            $this->createMock(\Symfony\Component\Mailer\MailerInterface::class), // 6th argument (MailerInterface)
+            $this->createMock(\Twig\Environment::class) // 7th argument (Twig\Environment)
         );
     }
 
