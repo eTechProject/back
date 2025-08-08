@@ -17,6 +17,7 @@ use App\Repository\AgentLocationSignificantRepository;
 use App\Repository\AgentsRepository;
 use App\Repository\TasksRepository;
 use App\Service\AgentLocationService;
+use App\Service\AgentLocationArchiveService;
 use App\Service\CryptService;
 use Doctrine\ORM\EntityManagerInterface;
 use PHPUnit\Framework\TestCase;
@@ -40,6 +41,7 @@ class AgentLocationServiceTest extends TestCase
     private MockObject|LoggerInterface $logger;
     private MockObject|SerializerInterface $serializer;
     private MockObject|ValidatorInterface $validator;
+    private MockObject|AgentLocationArchiveService $archiveService;
 
     protected function setUp(): void
     {
@@ -53,6 +55,7 @@ class AgentLocationServiceTest extends TestCase
         $this->logger = $this->createMock(LoggerInterface::class);
         $this->serializer = $this->createMock(SerializerInterface::class);
         $this->validator = $this->createMock(ValidatorInterface::class);
+        $this->archiveService = $this->createMock(AgentLocationArchiveService::class);
 
         $this->agentLocationService = new AgentLocationService(
             $this->entityManager,
@@ -64,7 +67,8 @@ class AgentLocationServiceTest extends TestCase
             $this->mercureHub,
             $this->logger,
             $this->serializer,
-            $this->validator
+            $this->validator,
+            $this->archiveService
         );
     }
 
@@ -182,6 +186,87 @@ class AgentLocationServiceTest extends TestCase
         $this->entityManager
             ->expects($this->exactly(2)) // Raw + Significant
             ->method('persist');
+
+        // Execute
+        $result = $this->agentLocationService->recordLocation($encryptedAgentId, $locationData);
+
+        // Assert
+        $this->assertInstanceOf(AgentLocationsRaw::class, $result);
+    }
+
+    public function testRecordLocationWithEndTaskCreatesArchive(): void
+    {
+        // Create test data for end_task scenario
+        $encryptedAgentId = 'encrypted_agent_123';
+        $encryptedTaskId = 'encrypted_task_456';
+        $agentId = 1;
+        $taskId = 1;
+        $locationData = new RecordLocationDTO(
+            longitude: 2.3522,
+            latitude: 48.8566,
+            accuracy: 10.0,
+            isSignificant: true,
+            reason: 'end_task', // This should trigger archive creation
+            taskId: $encryptedTaskId
+        );
+
+        // Create mock entities
+        $agent = $this->createMockAgent($agentId);
+        $task = $this->createMockTask($taskId, $agent);
+
+        // Setup expectations
+        $this->cryptService
+            ->expects($this->exactly(2))
+            ->method('decryptId')
+            ->willReturnMap([
+                [$encryptedAgentId, EntityType::AGENT->value, $agentId],
+                [$encryptedTaskId, EntityType::TASK->value, $taskId]
+            ]);
+
+        $this->agentsRepository
+            ->expects($this->once())
+            ->method('find')
+            ->willReturn($agent);
+
+        $this->tasksRepository
+            ->expects($this->once())
+            ->method('find')
+            ->willReturn($task);
+
+        $this->entityManager
+            ->expects($this->once())
+            ->method('beginTransaction');
+
+        $this->entityManager
+            ->expects($this->exactly(2)) // Raw + Significant
+            ->method('persist');
+
+        $this->entityManager
+            ->expects($this->once())
+            ->method('flush');
+
+        $this->entityManager
+            ->expects($this->once())
+            ->method('commit');
+
+        // Archive service should be called to check if archive exists
+        $this->archiveService
+            ->expects($this->once())
+            ->method('archiveExistsForTask')
+            ->with($task)
+            ->willReturn(false);
+
+        // Archive service should be called to create archive
+        $this->archiveService
+            ->expects($this->once())
+            ->method('createTaskArchive')
+            ->with($agent, $task)
+            ->willReturn($this->createMock(\App\Entity\AgentLocationsArchive::class));
+
+        $this->mercureHub
+            ->expects($this->once())
+            ->method('getUrl')
+            ->willReturn('http://mercure-hub');
 
         // Execute
         $result = $this->agentLocationService->recordLocation($encryptedAgentId, $locationData);

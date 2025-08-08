@@ -4,7 +4,6 @@ namespace App\Controller\AdminAgent;
 
 use App\Service\AgentService;
 use App\Service\CryptService;
-use App\Service\RequestValidationService;
 use App\Service\TaskHistoryResponseService;
 use App\Enum\EntityType;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -20,7 +19,6 @@ class TasksHistoryController extends AbstractController
     public function __construct(
         private AgentService $agentService,
         private CryptService $cryptService,
-        private RequestValidationService $requestValidationService,
         private TaskHistoryResponseService $taskHistoryResponseService
     ) {}
 
@@ -45,9 +43,10 @@ class TasksHistoryController extends AbstractController
                 ], 404);
             }
 
-            // Validation des paramètres via le service
-            [$page, $limit] = $this->requestValidationService->validatePaginationParams($request);
-            $statusFilter = $this->requestValidationService->validateStatusParam($request);
+            // Validation simple des paramètres de pagination
+            $page = max(1, (int) $request->query->get('page', 1));
+            $limit = max(1, min(100, (int) $request->query->get('limit', 20)));
+            $statusFilter = $request->query->get('status');
             
             // Construction de la réponse via le service
             $response = $this->taskHistoryResponseService->buildTaskHistoryResponse(
@@ -63,11 +62,6 @@ class TasksHistoryController extends AbstractController
 
             return $this->json($response);
 
-        } catch (\InvalidArgumentException $e) {
-            return $this->json([
-                'status' => 'error',
-                'message' => $e->getMessage()
-            ], 400);
         } catch (\Exception $e) {
             return $this->json([
                 'status' => 'error',

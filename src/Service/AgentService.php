@@ -6,6 +6,7 @@ use App\Entity\Agents;
 use App\Entity\User;
 use App\Enum\UserRole;
 use App\Enum\EntityType;
+use App\Enum\Genre;
 use App\DTO\Agent\Request\RegisterAgentDTO;
 use App\DTO\Agent\Request\UpdateAgentDTO;
 use App\DTO\Agent\Response\AgentResponseDTO;
@@ -116,6 +117,10 @@ class AgentService
             $agent->setProfilePictureUrl($dto->profilePictureUrl);
         }
         
+        if (property_exists($dto, 'sexe') && $dto->sexe !== null) {
+            $agent->setSexe(Genre::from($dto->sexe));
+        }
+        
         // Récupérer l'utilisateur lié à l'agent pour mettre à jour ses informations
         $user = $agent->getUser();
         if ($user) {
@@ -127,11 +132,6 @@ class AgentService
             // Mise à jour du téléphone
             if (property_exists($dto, 'phone') && $dto->phone !== null) {
                 $user->setPhone($dto->phone);
-            }
-            
-            // Mise à jour du mot de passe
-            if (property_exists($dto, 'password') && $dto->password !== null) {
-                $user->setPassword($this->passwordHasher->hashPassword($user, $dto->password));
             }
         }
 

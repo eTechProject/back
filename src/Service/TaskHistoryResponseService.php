@@ -47,14 +47,10 @@ class TaskHistoryResponseService
         return [
             'status' => 'success',
             'message' => 'Historique des tâches récupéré avec succès',
-            'agent' => $agentInfo,
-            'meta' => [
-                'page' => $page,
-                'limit' => $limit,
-                'total' => $total,
-                'pages' => $pages,
-                'status_filter' => $statusFilter?->value
-            ]
+            'data' => $agentInfo,
+            'total' => $total,
+            'page' => $page,
+            'pages' => $pages,
         ];
     }
 }

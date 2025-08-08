@@ -60,6 +60,83 @@ class UserService
     }
 
     /**
+     * Rechercher des utilisateurs par rôle et nom
+     */
+    public function searchUsersByRole(UserRole $role, ?string $name): array
+    {
+        $queryBuilder = $this->userRepository->createQueryBuilder('u')
+            ->where('u.role = :role')
+            ->setParameter('role', $role);
+
+        if ($name) {
+            $queryBuilder
+                ->andWhere('LOWER(u.name) LIKE LOWER(:name)')
+                ->setParameter('name', '%' . $name . '%');
+        }
+
+        return $queryBuilder
+            ->orderBy('u.createdAt', 'DESC')
+            ->getQuery()
+            ->getResult();
+    }
+
+    /**
+     * Récupérer un utilisateur par ID
+     */
+    public function getUserById(int $id): ?User
+    {
+        return $this->userRepository->find($id);
+    }
+
+    /**
+     * Générer un mot de passe aléatoire
+     */
+    private function generateRandomPassword(int $length = 12): string
+    {
+        return bin2hex(random_bytes($length / 2));
+    }
+    
+    /**
+     * Mettre à jour le profil utilisateur depuis la nouvelle API
+     */
+    public function updateUserFromRequest(int $id, UpdateUserProfileDTO $request): User
+    {
+        $user = $this->userRepository->find($id);
+        if (!$user) {
+            throw new \InvalidArgumentException('Utilisateur non trouvé');
+        }
+
+        if ($request->name !== null) {
+            $user->setName($request->name);
+        }
+
+        if ($request->email !== null) {
+            $user->setEmail($request->email);
+        }
+
+        if ($request->phone !== null) {
+            $user->setPhone($request->phone);
+        }
+
+        $this->entityManager->flush();
+
+        return $user;
+    }
+    
+    /**
+     * Changer le mot de passe utilisateur depuis la nouvelle API
+     */
+    public function updatePasswordFromRequest(int $id, ChangePasswordDTO $request): User
+    {
+        $user = $this->userRepository->find($id);
+        if (!$user) {
+            throw new \InvalidArgumentException('Utilisateur non trouvé');
+        }
+        
+        return $user;
+    }
+
+    /**
      * Créer un client depuis une requête admin avec envoi d'email
      */
     public function createClientFromRequest(CreateClientDTO $request): User
@@ -166,82 +243,7 @@ class UserService
         $total = $this->userRepository->count(['role' => $role]);
 
         return [$users, $total];
-    }
-
-    /**
-     * Rechercher des utilisateurs par rôle et nom
-     */
-    public function searchUsersByRole(UserRole $role, ?string $name): array
-    {
-        $queryBuilder = $this->userRepository->createQueryBuilder('u')
-            ->where('u.role = :role')
-            ->setParameter('role', $role);
-
-        if ($name) {
-            $queryBuilder
-                ->andWhere('u.name LIKE :name')
-                ->setParameter('name', '%' . $name . '%');
-        }
-
-        return $queryBuilder
-            ->orderBy('u.createdAt', 'DESC')
-            ->getQuery()
-            ->getResult();
-    }
-
-    /**
-     * Récupérer un utilisateur par ID
-     */
-    public function getUserById(int $id): ?User
-    {
-        return $this->userRepository->find($id);
-    }
-
-    /**
-     * Générer un mot de passe aléatoire
-     */
-    private function generateRandomPassword(int $length = 12): string
-    {
-        return bin2hex(random_bytes($length / 2));
-    }
-    
-    /**
-     * Mettre à jour le profil utilisateur depuis la nouvelle API
-     */
-    public function updateUserFromRequest(int $id, UpdateUserProfileDTO $request): User
-    {
-        $user = $this->userRepository->find($id);
-        if (!$user) {
-            throw new \InvalidArgumentException('Utilisateur non trouvé');
-        }
-
-        if ($request->name !== null) {
-            $user->setName($request->name);
-        }
-
-        if ($request->email !== null) {
-            $user->setEmail($request->email);
-        }
-
-        if ($request->phone !== null) {
-            $user->setPhone($request->phone);
-        }
-
-        $this->entityManager->flush();
-
-        return $user;
-    }
-    
-    /**
-     * Changer le mot de passe utilisateur depuis la nouvelle API
-     */
-    public function updatePasswordFromRequest(int $id, ChangePasswordDTO $request): User
-    {
-        $user = $this->userRepository->find($id);
-        if (!$user) {
-            throw new \InvalidArgumentException('Utilisateur non trouvé');
-        }
-
+   
         // Vérifier le mot de passe actuel
         if (!$this->passwordHasher->isPasswordValid($user, $request->current_password)) {
             throw new \InvalidArgumentException('Mot de passe actuel incorrect');
