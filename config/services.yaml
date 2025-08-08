@@ -1,10 +1,13 @@
 parameters:
     mercure_jwt_token: '%env(MERCURE_JWT_PUBLISHER)%'
+    mercure_jwt_secret: '%env(MERCURE_JWT_SECRET)%'
 
 services:
     _defaults:
         autowire: true
         autoconfigure: true
+        bind:
+            $mercureJwtSecret: '%mercure_jwt_secret%'
 
     App\:
         resource: '../src/'
@@ -26,10 +29,6 @@ services:
     App\Service\CryptService:
         arguments:
             $appSecret: '%env(APP_SECRET)%'
-
-    App\Service\MercureTokenGenerator:
-        arguments:
-            $mercureJwtSecret: '%env(MERCURE_JWT_SECRET)%'
 
     # JWT Authentication Event Listeners
     App\EventListener\JwtLoginSuccessHandler:

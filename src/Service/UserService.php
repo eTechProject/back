@@ -3,6 +3,8 @@
 namespace App\Service;
 
 use App\DTO\User\Request\RegisterUserDTO;
+use App\DTO\User\Request\UpdateUserProfileDTO;
+use App\DTO\User\Request\ChangePasswordDTO;
 use App\Entity\User;
 use App\Repository\UserRepository;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
@@ -51,6 +53,67 @@ class UserService
 
         return $user;
     }
+    
+    public function updateUserFromRequest(int $id, UpdateUserProfileDTO $request): User
+    {
+        $user = $this->userRepository->find($id);
+        if (!$user) {
+            throw new \InvalidArgumentException('Utilisateur non trouvé');
+        }
+
+        if ($request->name !== null) {
+            $user->setName($request->name);
+        }
+
+        if ($request->email !== null) {
+            $user->setEmail($request->email);
+        }
+
+        if ($request->phone !== null) {
+            $user->setPhone($request->phone);
+        }
+
+        $this->entityManager->flush();
+
+        return $user;
+    }
+    
+    public function updatePasswordFromRequest(int $id, ChangePasswordDTO $request): User
+    {
+        $user = $this->userRepository->find($id);
+        if (!$user) {
+            throw new \InvalidArgumentException('Utilisateur non trouvé');
+        }
+
+        // Vérifier le mot de passe actuel
+        if (!$this->passwordHasher->isPasswordValid($user, $request->current_password)) {
+            throw new \InvalidArgumentException('Mot de passe actuel incorrect');
+        }
+
+        // Hasher le nouveau mot de passe
+        $hashedPassword = $this->passwordHasher->hashPassword(
+            $user,
+            $request->new_password
+        );
+        $user->setPassword($hashedPassword);
+
+        $this->entityManager->flush();
+
+        return $user;
+    }
+
+    public function getUserByEncryptedId(string $encryptedId): User
+    {
+        $decryptedId = $this->cryptService->decryptId($encryptedId, EntityType::USER->value);
+        $user = $this->userRepository->find($decryptedId);
+        
+        if (!$user) {
+            throw new \InvalidArgumentException('Utilisateur non trouvé');
+        }
+        
+        return $user;
+    }
+
     public function toDTO(User $user): UserDTO
     {
         return new UserDTO(
