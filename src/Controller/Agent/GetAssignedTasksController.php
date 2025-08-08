@@ -17,7 +17,7 @@ class GetAssignedTasksController extends AbstractController
         private readonly AgentTaskService $agentTaskService
     ) {}
 
-    public function __invoke(Request $request, string $encryptedAgentId): JsonResponse
+    public function __invoke(string $encryptedAgentId): JsonResponse
     {
         try {
             // Note: encryptedAgentId is actually the encrypted user ID linked to the agent

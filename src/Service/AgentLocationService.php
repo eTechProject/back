@@ -34,7 +34,8 @@ class AgentLocationService
         private HubInterface $mercureHub,
         private LoggerInterface $logger,
         private SerializerInterface $serializer,
-        private ValidatorInterface $validator
+        private ValidatorInterface $validator,
+        private AgentLocationArchiveService $archiveService
     ) {}
 
     /**
@@ -151,7 +152,12 @@ class AgentLocationService
             $this->entityManager->flush();
             $this->entityManager->commit();
 
-            // 7. Publish to Mercure (async-like, doesn't block)
+            // 7. Check if this is an end_task event and create archive
+            if ($locationData->isSignificant === true && $locationData->reason === 'end_task') {
+                $this->createTaskArchiveOnEnd($agent, $task);
+            }
+
+            // 8. Publish to Mercure (async-like, doesn't block)
             $this->publishLocationUpdate($agent, $rawLocation, $significantLocation);
 
             $this->logger->info('Location recorded successfully', [
@@ -380,5 +386,41 @@ class AgentLocationService
         }
 
         return true;
+    }
+
+    /**
+     * Create task archive when task ends
+     */
+    private function createTaskArchiveOnEnd(Agents $agent, Tasks $task): void
+    {
+        try {
+            // Check if archive already exists
+            if ($this->archiveService->archiveExistsForTask($task)) {
+                $this->logger->info('Archive already exists for task', [
+                    'agent_id' => $agent->getId(),
+                    'task_id' => $task->getId()
+                ]);
+                return;
+            }
+
+            // Create the archive
+            $archive = $this->archiveService->createTaskArchive($agent, $task);
+            
+            if ($archive) {
+                $this->logger->info('Task archive created on end_task', [
+                    'agent_id' => $agent->getId(),
+                    'task_id' => $task->getId(),
+                    'archive_id' => $archive->getId()
+                ]);
+            }
+
+        } catch (\Exception $e) {
+            // Don't fail the location recording if archive creation fails
+            $this->logger->error('Failed to create task archive on end_task', [
+                'agent_id' => $agent->getId(),
+                'task_id' => $task->getId(),
+                'error' => $e->getMessage()
+            ]);
+        }
     }
 }

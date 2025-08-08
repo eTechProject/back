@@ -99,8 +99,39 @@ This endpoint allows agents to record their current location position.
 1. **Data Validation**: The endpoint validates all input data for format and credibility
 2. **Raw Location Storage**: All valid locations are stored in `agent_locations_raw` table
 3. **Significant Location Storage**: If `isSignificant` is true, the location is also stored in `agent_locations_significant` table with the provided reason
-4. **Real-time Publishing**: Location updates are published via Mercure to `/agents/{id}/location` topic
-5. **Task Association**: Locations are linked to the specified task, which must belong to the agent and be active
+4. **Automatic Archive Creation**: When `reason` is `end_task`, the system automatically creates a trajectory archive from all raw locations for the task
+5. **Real-time Publishing**: Location updates are published via Mercure to `/agents/{id}/location` topic
+6. **Task Association**: Locations are linked to the specified task, which must belong to the agent and be active
+
+### Task Trajectory Archives
+
+When an agent marks a location with `reason: "end_task"`, the system automatically:
+
+- Collects all raw location data recorded during the task
+- Creates a LineString geometry representing the complete trajectory
+- Calculates path statistics (length, average speed, point count)
+- Stores the archive in `agent_locations_archive` table
+
+**Archive includes:**
+- Complete trajectory as PostGIS LineString
+- Start and end timestamps
+- Total path length in meters
+- Average speed calculation
+- Number of location points
+
+**Example end_task request:**
+```json
+{
+  "longitude": 2.3522,
+  "latitude": 48.8566,
+  "accuracy": 10.0,
+  "speed": 0.0,
+  "batteryLevel": 75.0,
+  "isSignificant": true,
+  "reason": "end_task",
+  "taskId": "encrypted_task_123"
+}
+```
 
 ### Security
 
