@@ -7,3 +7,14 @@ controllers:
 login_check:
     path: /api/login_check
 
+# Routes PATCH pour les notifications
+api_notification_mark_all_read_bulk:
+    path: /api/notifications/mark-all-read
+    controller: App\Controller\Notification\MarkAllNotificationsAsReadController
+    methods: [PATCH]
+
+# Route GET pour les notifications par user ID chiffré
+api_get_notifications_by_user_id:
+    path: /api/users/{userId}/notifications
+    controller: App\Controller\Notification\GetNotificationsByUserController
+    methods: [GET]
