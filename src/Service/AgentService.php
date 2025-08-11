@@ -75,9 +75,7 @@ class AgentService
         $agent->setSexe($dto->getEnumSexe());
         $agent->setAddress($dto->address);
 
-        if (method_exists($dto, 'getProfilePictureUrl')) {
-            $agent->setProfilePictureUrl($dto->getProfilePictureUrl());
-        }
+        $agent->setProfilePictureUrl($dto->getProfilePictureUrl());
 
         $agent->setUser($user);
 
@@ -113,8 +111,8 @@ class AgentService
             $agent->setAddress($dto->address);
         }
         
-        if (property_exists($dto, 'profilePictureUrl') && $dto->profilePictureUrl !== null) {
-            $agent->setProfilePictureUrl($dto->profilePictureUrl);
+        if (property_exists($dto, 'picture_url') && $dto->picture_url !== null) {
+            $agent->setProfilePictureUrl($dto->picture_url);
         }
         
         if (property_exists($dto, 'sexe') && $dto->sexe !== null) {

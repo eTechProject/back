@@ -14,7 +14,7 @@ class UpdateAgentDTO
     public ?string $address = null;
 
     #[Assert\Url(message: 'L\'URL de la photo n\'est pas valide')]
-    public ?string $profilePictureUrl = null;
+    public ?string $picture_url = null;
 
     #[Assert\Length(
         min: 2,
