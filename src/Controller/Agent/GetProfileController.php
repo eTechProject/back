@@ -3,22 +3,20 @@
 namespace App\Controller\Agent;
 
 use App\Service\AgentService;
-use App\Service\CryptService;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 #[IsGranted('ROLE_AGENT')]
-#[Route('/api/agent/{encryptedId}', name: 'api_agent_get_profile', methods: ['GET'])]
+#[Route('/api/agent/me', name: 'api_agent_me', methods: ['GET'])]
 class GetProfileController extends AbstractController
 {
-    public function __construct(private AgentService $agentService, private CryptService $cryptService) {}
+    public function __construct(private AgentService $agentService) {}
 
-    public function __invoke(string $encryptedId): JsonResponse
+    public function __invoke(): JsonResponse
     {
         try {
-            // Récupérer l'utilisateur connecté
             $user = $this->getUser();
             if (!$user) {
                 return $this->json([
@@ -27,16 +25,14 @@ class GetProfileController extends AbstractController
                 ], 401);
             }
 
-            // Valider l'accès à l'agent
-            $agent = $this->agentService->validateAgentAccess($encryptedId, $user);
+            $agent = $this->agentService->findByUser($user);
             if (!$agent) {
                 return $this->json([
                     'status' => 'error',
-                    'message' => 'Agent non trouvé ou accès non autorisé'
+                    'message' => 'Aucun agent lié à cet utilisateur'
                 ], 404);
             }
 
-            // Récupérer le profil de l'agent
             $agentProfile = $this->agentService->getAgentProfile($agent);
 
             return $this->json([

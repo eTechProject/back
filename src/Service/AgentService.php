@@ -155,6 +155,14 @@ class AgentService
         return $this->agentsRepository->findOneBy(['user' => $user]);
     }
 
+    /**
+     * Trouve un agent par son utilisateur (alias pour compatibilité)
+     */
+    public function findByUser(User $user): ?Agents
+    {
+        return $this->agentsRepository->findOneBy(['user' => $user]);
+    }
+
     public function deleteAgent(int $id): bool
     {
         $agent = $this->agentsRepository->find($id);
