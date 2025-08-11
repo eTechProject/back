@@ -30,4 +30,9 @@ class RegisterAgentDTO
     {
         return Genre::from($this->sexe);
     }
+
+    public function getProfilePictureUrl(): ?string
+    {
+        return $this->picture_url;
+    }
 }
