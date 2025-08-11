@@ -10,6 +10,7 @@ use App\Enum\EntityType;
 use App\Repository\TasksRepository;
 use App\Repository\ServiceOrdersRepository;
 use App\Repository\AgentsRepository;
+use App\DTO\Task\Response\TaskHistoryDTO;
 use Doctrine\ORM\EntityManagerInterface;
 
 class TaskService
@@ -205,5 +206,60 @@ class TaskService
     public function getTasksByAgent(Agents $agent): array
     {
         return $this->tasksRepository->findBy(['agent' => $agent]);
+    }
+
+    /**
+     * Get tasks history for a specific agent with pagination and optional status filter
+     */
+    public function getTasksHistoryByAgent(Agents $agent, int $page, int $limit, ?Status $statusFilter = null): array
+    {
+        $offset = ($page - 1) * $limit;
+        
+        $queryBuilder = $this->tasksRepository->createQueryBuilder('t')
+            ->where('t.agent = :agent')
+            ->setParameter('agent', $agent)
+            ->setFirstResult($offset)
+            ->setMaxResults($limit)
+            ->orderBy('t.startDate', 'DESC');
+
+        if ($statusFilter) {
+            $queryBuilder
+                ->andWhere('t.status = :status')
+                ->setParameter('status', $statusFilter);
+        }
+
+        $tasks = $queryBuilder->getQuery()->getResult();
+        
+        // Count total tasks for pagination
+        $countQueryBuilder = $this->tasksRepository->createQueryBuilder('t')
+            ->select('COUNT(t.id)')
+            ->where('t.agent = :agent')
+            ->setParameter('agent', $agent);
+
+        if ($statusFilter) {
+            $countQueryBuilder
+                ->andWhere('t.status = :status')
+                ->setParameter('status', $statusFilter);
+        }
+
+        $total = $countQueryBuilder->getQuery()->getSingleScalarResult();
+
+        return [$tasks, $total];
+    }
+
+    /**
+     * Convert a Task entity to TaskHistoryDTO
+     */
+    public function taskToHistoryDTO(Tasks $task): TaskHistoryDTO
+    {
+        return new TaskHistoryDTO(
+            taskId: $this->cryptService->encryptId((string)$task->getId(), EntityType::TASK->value),
+            description: $task->getDescription(),
+            status: $task->getStatus()->value,
+            startDate: $task->getStartDate()->format('Y-m-d\TH:i:s\Z'),
+            endDate: $task->getEndDate()?->format('Y-m-d\TH:i:s\Z'),
+            orderId: $this->cryptService->encryptId((string)$task->getOrder()->getId(), EntityType::SERVICE_ORDER->value),
+            orderDescription: $task->getOrder()->getDescription() ?? 'Ordre de service'
+        );
     }
 }

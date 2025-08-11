@@ -1,21 +1,11 @@
 <?php
 
-namespace App\DTO\Agent\Request;
+namespace App\DTO\User\Request;
 
 use Symfony\Component\Validator\Constraints as Assert;
-use App\Enum\Genre;
 
-class UpdateAgentDTO
+class UpdateUserDTO
 {
-    #[Assert\Length(
-        max: 255,
-        maxMessage: 'L\'adresse ne peut pas dépasser {{ limit }} caractères'
-    )]
-    public ?string $address = null;
-
-    #[Assert\Url(message: 'L\'URL de la photo n\'est pas valide')]
-    public ?string $picture_url = null;
-
     #[Assert\Length(
         min: 2,
         max: 255,
@@ -24,15 +14,22 @@ class UpdateAgentDTO
     )]
     public ?string $name = null;
 
+    #[Assert\Email(message: 'L\'email n\'est pas valide')]
+    #[Assert\Length(
+        max: 255,
+        maxMessage: 'L\'email ne peut pas dépasser {{ limit }} caractères'
+    )]
+    public ?string $email = null;
+
     #[Assert\Regex(
         pattern: '/^\+?[0-9\s\-\(\)]{7,}$/',
         message: 'Le format du numéro de téléphone n\'est pas valide'
     )]
     public ?string $phone = null;
 
-    #[Assert\Choice(
-        choices: ['M', 'F'],
-        message: 'Le sexe doit être M ou F'
+    #[Assert\Length(
+        min: 8,
+        minMessage: 'Le mot de passe doit contenir au moins {{ limit }} caractères'
     )]
-    public ?string $sexe = null;
+    public ?string $password = null;
 }
