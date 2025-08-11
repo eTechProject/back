@@ -34,9 +34,8 @@ class UpdatePasswordController extends AbstractController
             ], 400);
         }
 
-        // Vérifier que l'utilisateur connecté ne peut modifier que son propre mot de passe
         $currentUser = $this->getUser();
-        if (!$currentUser || $currentUser->getId() !== $decryptedId) {
+        if (!$currentUser || !method_exists($currentUser, 'getId') || $currentUser->getId() !== $decryptedId) {
             return $this->json([
                 'status' => 'error',
                 'message' => 'Accès refusé : vous ne pouvez modifier que votre propre mot de passe'

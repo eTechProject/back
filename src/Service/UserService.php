@@ -132,7 +132,21 @@ class UserService
         if (!$user) {
             throw new \InvalidArgumentException('Utilisateur non trouvé');
         }
-        
+
+        // Vérifier le mot de passe actuel
+        if (!$this->passwordHasher->isPasswordValid($user, $request->current_password)) {
+            throw new \InvalidArgumentException('Mot de passe actuel incorrect');
+        }
+
+        // Hasher le nouveau mot de passe
+        $hashedPassword = $this->passwordHasher->hashPassword(
+            $user,
+            $request->new_password
+        );
+        $user->setPassword($hashedPassword);
+
+        $this->entityManager->flush();
+
         return $user;
     }
 
@@ -242,24 +256,8 @@ class UserService
         $users = $queryBuilder->getQuery()->getResult();
         $total = $this->userRepository->count(['role' => $role]);
 
-        return [$users, $total];
-   
-        // Vérifier le mot de passe actuel
-        if (!$this->passwordHasher->isPasswordValid($user, $request->current_password)) {
-            throw new \InvalidArgumentException('Mot de passe actuel incorrect');
-        }
-
-        // Hasher le nouveau mot de passe
-        $hashedPassword = $this->passwordHasher->hashPassword(
-            $user,
-            $request->new_password
-        );
-        $user->setPassword($hashedPassword);
-
-        $this->entityManager->flush();
-
-        return $user;
-    }
+    return [$users, $total];
+}
 
     /**
      * Récupérer un utilisateur par ID chiffré
