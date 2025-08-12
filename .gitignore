@@ -1,3 +1,9 @@
+# IDE settings
+.vscode/
+.idea/
+*.swp
+*.swo
+
 ###> symfony/framework-bundle ###
 /.env
 /.env.local
@@ -75,9 +81,13 @@
 ###> lexik/jwt-authentication-bundle ###
 /config/jwt/*.pem
 ###< lexik/jwt-authentication-bundle ###
+<<<<<<< HEAD
 
 # Ignore all files in public except index.php and images/logo128.png
 /public/*
 !/public/index.php
 !/public/images/
 !/public/images/logo128.png
+=======
+.vscode/
+>>>>>>> 2e1f995 (feat: implement complete payment system with entities and enums)
