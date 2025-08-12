@@ -1,4 +1,3 @@
-
 ###> symfony/framework-bundle ###
 /.env
 /.env.local
@@ -76,3 +75,9 @@
 ###> lexik/jwt-authentication-bundle ###
 /config/jwt/*.pem
 ###< lexik/jwt-authentication-bundle ###
+
+# Ignore all files in public except index.php and images/logo128.png
+/public/*
+!/public/index.php
+!/public/images/
+!/public/images/logo128.png
