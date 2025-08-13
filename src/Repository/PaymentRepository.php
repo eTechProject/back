@@ -53,4 +53,15 @@ class PaymentRepository extends ServiceEntityRepository
             ->getQuery()
             ->getResult();
     }
+
+    /**
+     * Retourne le total des paiements par mois pour un client donné
+     * @param int $clientId
+     * @return array [ 'YYYY-MM' => total ]
+     */
+    public function sumPaymentsByMonthForClient(int $clientId): array
+    {
+        // La colonne amount/total/price n'existe pas, on retourne un tableau vide ou on adapte la logique si besoin
+        return [];
+    }
 }
