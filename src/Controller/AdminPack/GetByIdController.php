@@ -10,8 +10,7 @@ use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 
-#[IsGranted('ROLE_ADMIN')]
-#[Route('/api/admin/pack/{encryptedId}', name: 'api_admin_pack_get_by_id', methods: ['GET'])]
+#[Route('/api/public/pack/{encryptedId}', name: 'api_admin_pack_get_by_id', methods: ['GET'])]
 class GetByIdController extends AbstractController
 {
     public function __construct(
@@ -45,9 +44,8 @@ class GetByIdController extends AbstractController
             return $this->json([
                 'success' => true,
                 'message' => 'Pack récupéré avec succès',
-                'data' => [
-                    'pack' => $packDTO
-                ]
+                'data' =>  $packDTO,
+            
             ]);
         } catch (\Exception $e) {
             return $this->json([
