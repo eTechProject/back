@@ -9,8 +9,7 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 
-#[IsGranted('ROLE_CLIENT')]
-#[Route('/api/pack', name: 'api_admin_pack_list', methods: ['GET'])]
+#[Route('/api/public/pack', name: 'api_admin_pack_list', methods: ['GET'])]
 class ListController extends AbstractController
 {
     public function __construct(
