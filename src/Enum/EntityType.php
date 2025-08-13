@@ -11,4 +11,5 @@ enum EntityType: string
     case TASK = 'task';
     case MESSAGE = 'message';
     case NOTIFICATION = 'notification';
+    case PACK = 'pack';
 }

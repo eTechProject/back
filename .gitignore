@@ -81,13 +81,12 @@
 ###> lexik/jwt-authentication-bundle ###
 /config/jwt/*.pem
 ###< lexik/jwt-authentication-bundle ###
-<<<<<<< HEAD
 
 # Ignore all files in public except index.php and images/logo128.png
 /public/*
 !/public/index.php
 !/public/images/
 !/public/images/logo128.png
-=======
+
+# IDE settings
 .vscode/
->>>>>>> 2e1f995 (feat: implement complete payment system with entities and enums)
