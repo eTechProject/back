@@ -7,7 +7,7 @@ use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Annotation\Route;
 use App\Service\Client\DashboardService;
-use App\DTO\Client\Dashboard\Request\DashboardFiltersDTO;
+use App\DTO\Dashboard\Request\DashboardFiltersDTO;
 use App\Service\CryptService;
 use App\Enum\EntityType;
 
@@ -34,8 +34,13 @@ class DashboardController extends AbstractController
                 ], 403);
             }
 
+
+
             $filters = new DashboardFiltersDTO();
-            // TODO: Hydrater $filters avec les paramètres de la requête si besoin
+            $filters->dateRange = $request->query->get('dateRange', 'all');
+            $filters->choice = $request->query->get('choice');
+            $filters->dateStart = $request->query->get('dateStart');
+            $filters->dateEnd = $request->query->get('dateEnd');
 
             $dashboardData = $this->dashboardService->getDashboardData($clientId, $filters);
 
