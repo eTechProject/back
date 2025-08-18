@@ -46,6 +46,10 @@ class PaymentHistory
     #[ORM\Column(type: Types::DATETIME_MUTABLE)]
     private \DateTimeInterface $createdAt;
 
+    // New field: providerResponse (nullable) to store provider session/token/etc.
+    #[ORM\Column(type: Types::TEXT, nullable: true)]
+    private ?string $providerResponse = null;
+
     public function __construct()
     {
         $this->date = new \DateTime();
@@ -87,6 +91,17 @@ class PaymentHistory
     public function setProvider(string $provider): static
     {
         $this->provider = $provider;
+        return $this;
+    }
+
+    public function getProviderResponse(): ?string
+    {
+        return $this->providerResponse;
+    }
+
+    public function setProviderResponse(?string $providerResponse): static
+    {
+        $this->providerResponse = $providerResponse;
         return $this;
     }
 
