@@ -80,4 +80,22 @@ class PaymentHistoryRepository extends ServiceEntityRepository
 
         return (float) ($result ?? 0);
     }
+
+    /**
+     * Retourne le total des paiements par mois pour un client donné
+     * @param int $clientId
+     * @return array [ 'YYYY-MM' => total ]
+     */
+    public function sumPaymentsByMonthForClient(int $clientId): array
+    {
+        $conn = $this->getEntityManager()->getConnection();
+        $sql = "SELECT TO_CHAR(ph.date, 'YYYY-MM') as month, SUM(ph.amount::float) as total FROM payment_history ph INNER JOIN payment p ON ph.payment_id = p.id WHERE p.client_id = :clientId GROUP BY month ORDER BY month ASC";
+        $stmt = $conn->prepare($sql);
+        $result = $stmt->executeQuery(['clientId' => $clientId]);
+        $data = [];
+        foreach ($result->fetchAllAssociative() as $row) {
+            $data[$row['month']] = (float)$row['total'];
+        }
+        return $data;
+    }
 }
