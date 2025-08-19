@@ -31,6 +31,6 @@ COPY docker/nginx/default.conf /etc/nginx/conf.d/default.conf
 ENV PORT=10000
 EXPOSE 10000
 
-# Start both PHP-FPM and Nginx
-CMD service nginx start && php-fpm
+# Start PHP-FPM in background, Nginx in foreground (nécessaire pour Render)
+CMD php-fpm & nginx -g 'daemon off;'
 
