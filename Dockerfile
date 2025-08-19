@@ -15,10 +15,14 @@ COPY . .
  
 # Install PHP dependencies with scripts (needed for autoload_runtime.php)
 ENV COMPOSER_MEMORY_LIMIT=-1
-RUN composer install --no-dev --optimize-autoloader --no-progress --prefer-dist --no-interaction --quiet || { echo "Composer install failed"; exit 1; }
+ENV COMPOSER_ALLOW_SUPERUSER=1
+RUN composer install --no-dev --optimize-autoloader --no-progress --prefer-dist --no-interaction --no-scripts --quiet || { echo "Composer install failed"; exit 1; }
 
-# Generate runtime autoloader explicitly if needed
-RUN composer run-script --no-interaction auto-scripts || echo "Auto-scripts completed with warnings"
+# Generate the autoload_runtime.php file manually if it doesn't exist
+RUN if [ ! -f "vendor/autoload_runtime.php" ]; then \
+        composer dump-autoload --optimize --no-dev; \
+        echo '<?php return require_once __DIR__."/autoload.php";' > vendor/autoload_runtime.php; \
+    fi
  
 # Ensure var/ and public/ exist
 RUN mkdir -p var public \
