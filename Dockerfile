@@ -23,6 +23,15 @@ RUN if [ ! -f "vendor/autoload_runtime.php" ]; then \
         composer dump-autoload --optimize --no-dev; \
         echo '<?php return require_once __DIR__."/autoload.php";' > vendor/autoload_runtime.php; \
     fi
+
+# Create minimal .env file for Symfony (even when env vars are set externally)
+RUN echo "# Minimal .env file for Docker deployment" > .env && \
+    echo "APP_ENV=prod" >> .env && \
+    echo "APP_DEBUG=0" >> .env
+
+# Set default environment variables for production
+ENV APP_ENV=prod
+ENV APP_DEBUG=0
  
 # Ensure var/ and public/ exist
 RUN mkdir -p var public \
