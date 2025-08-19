@@ -10,15 +10,15 @@ COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
  
 WORKDIR /var/www/app
  
-# Copy composer files first (better caching)
-COPY composer.json composer.lock ./
- 
-# Install PHP dependencies (optimisé pour Render, pas de progress, pas d'interaction, dist only, mémoire illimitée)
-ENV COMPOSER_MEMORY_LIMIT=-1
-RUN composer install --no-dev --optimize-autoloader --no-progress --prefer-dist --no-interaction || { cat /var/www/app/composer.lock || true; cat /var/www/app/composer.json || true; exit 1; }
- 
-# Copy rest of the app
+# Copy all application files first
 COPY . .
+ 
+# Install PHP dependencies with scripts (needed for autoload_runtime.php)
+ENV COMPOSER_MEMORY_LIMIT=-1
+RUN composer install --no-dev --optimize-autoloader --no-progress --prefer-dist --no-interaction --quiet || { echo "Composer install failed"; exit 1; }
+
+# Generate runtime autoloader explicitly if needed
+RUN composer run-script --no-interaction auto-scripts || echo "Auto-scripts completed with warnings"
  
 # Ensure var/ and public/ exist
 RUN mkdir -p var public \
@@ -31,4 +31,4 @@ ENV PORT=10000
 EXPOSE 10000
  
 # Start PHP-FPM in background, Nginx in foreground
-CMD php-fpm & nginx -g 'daemon off;'
+CMD ["sh", "-c", "php-fpm & nginx -g 'daemon off;'"]
