@@ -39,13 +39,20 @@ RUN mkdir -p var/cache var/log var/sessions public/uploads \
     && chmod -R 775 var public
 
 # Warm up Symfony cache for production (if console is available)
-RUN php bin/console cache:warmup --env=prod --no-debug 2>/dev/null || echo "Cache warmup skipped (console not available)"
+# RUN php bin/console cache:warmup --env=prod --no-debug 2>/dev/null || echo "Cache warmup skipped (console not available)"
 
 # Create startup script
 RUN echo '#!/bin/bash\n\
+# Force production environment\n\
+export APP_ENV=prod\n\
+export APP_DEBUG=0\n\
+\n\
 # Fix permissions\n\
 chown -R www-data:www-data /var/www/app/var /var/www/app/public\n\
 chmod -R 775 /var/www/app/var /var/www/app/public\n\
+\n\
+# Clear any dev cache that might exist\n\
+rm -rf /var/www/app/var/cache/dev 2>/dev/null || true\n\
 \n\
 # Start PHP-FPM in background\n\
 php-fpm &\n\
