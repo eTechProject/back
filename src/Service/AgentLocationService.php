@@ -41,19 +41,19 @@ class AgentLocationService
     /**
      * Process location recording request with full validation and response creation
      * 
-     * @param string $encryptedAgentId The encrypted agent ID
+     * @param string $encryptedUserId The encrypted user ID (linked to the agent)
      * @param string $requestContent Raw JSON request content
      * @return array Success response array
      * @throws \InvalidArgumentException If validation fails
      * @throws \RuntimeException If processing fails
      */
-    public function processLocationRequest(string $encryptedAgentId, string $requestContent): array
+    public function processLocationRequest(string $encryptedUserId, string $requestContent): array
     {
         // 1. Deserialize and validate request
         $recordLocationDTO = $this->deserializeAndValidateRequest($requestContent);
 
         // 2. Record location
-        $rawLocation = $this->recordLocation($encryptedAgentId, $recordLocationDTO);
+        $rawLocation = $this->recordLocation($encryptedUserId, $recordLocationDTO);
 
         // 3. Build response DTO
         $responseDTO = LocationRecordedDTO::fromLocationData(
@@ -119,19 +119,27 @@ class AgentLocationService
     /**
      * Record agent location (optimized)
      * 
-     * @param string $encryptedAgentId The encrypted agent ID
+     * @param string $encryptedUserId The encrypted user ID (linked to the agent)
      * @param RecordLocationDTO $locationData The location data
      * @return AgentLocationsRaw
      * @throws \InvalidArgumentException If agent not found or validation fails
      * @throws \RuntimeException If database operation fails
      */
-    public function recordLocation(string $encryptedAgentId, RecordLocationDTO $locationData): AgentLocationsRaw
+    public function recordLocation(string $encryptedUserId, RecordLocationDTO $locationData): AgentLocationsRaw
     {
+        // Add debug logging to verify method is being called
+        $this->logger->info('AgentLocationService::recordLocation called', [
+            'encrypted_user_id' => $encryptedUserId,
+            'task_id' => $locationData->taskId,
+            'is_significant' => $locationData->isSignificant,
+            'coordinates' => [$locationData->longitude, $locationData->latitude]
+        ]);
+
         try {
             $this->entityManager->beginTransaction();
 
             // 1. Get and validate agent
-            $agent = $this->getAndValidateAgent($encryptedAgentId);
+            $agent = $this->getAndValidateAgent($encryptedUserId);
 
             // 2. Get and validate task from request
             $task = $this->getAndValidateTask($locationData->taskId, $agent);
@@ -158,10 +166,10 @@ class AgentLocationService
             }
 
             // 8. Publish to Mercure (async-like, doesn't block)
-            $this->publishLocationUpdate($agent, $rawLocation, $significantLocation);
+            $this->publishLocationUpdate($agent,$task, $rawLocation, $significantLocation);
 
             $this->logger->info('Location recorded successfully', [
-                'agent_id' => $encryptedAgentId,
+                'user_id' => $encryptedUserId,
                 'task_id' => $this->cryptService->encryptId($task->getId(), EntityType::TASK->value),
                 'is_significant' => $locationData->isSignificant,
                 'coordinates' => [$locationData->longitude, $locationData->latitude]
@@ -173,7 +181,7 @@ class AgentLocationService
             $this->entityManager->rollback();
             
             $this->logger->error('Failed to record location', [
-                'encrypted_agent_id' => $encryptedAgentId,
+                'encrypted_user_id' => $encryptedUserId,
                 'error' => $e->getMessage()
             ]);
             
@@ -182,19 +190,19 @@ class AgentLocationService
     }
 
     /**
-     * Get and validate agent from encrypted ID
+     * Get and validate agent from encrypted user ID
      */
-    private function getAndValidateAgent(string $encryptedAgentId): Agents
+    private function getAndValidateAgent(string $encryptedUserId): Agents
     {
         try {
-            $agentId = $this->cryptService->decryptId($encryptedAgentId, EntityType::AGENT->value);
+            $userId = $this->cryptService->decryptId($encryptedUserId, EntityType::USER->value);
         } catch (\Exception $e) {
-            throw new \InvalidArgumentException('ID agent invalide: ' . $e->getMessage());
+            throw new \InvalidArgumentException('ID utilisateur invalide: ' . $e->getMessage());
         }
 
-        $agent = $this->agentsRepository->find($agentId);
+        $agent = $this->agentsRepository->findOneBy(['user' => $userId]);
         if (!$agent) {
-            throw new \InvalidArgumentException('Agent non trouvé');
+            throw new \InvalidArgumentException('Agent non trouvé pour cet utilisateur');
         }
 
         return $agent;
@@ -288,7 +296,8 @@ class AgentLocationService
      * Publish location update to Mercure (optimized)
      */
     private function publishLocationUpdate(
-        Agents $agent, 
+        Agents $agent,
+        Tasks $task, 
         AgentLocationsRaw $rawLocation, 
         ?AgentLocationSignificant $significantLocation
     ): void {
@@ -303,7 +312,8 @@ class AgentLocationService
 
             // Pre-calculate encrypted agent ID once (performance optimization)
             $encryptedAgentId = $this->cryptService->encryptId($agent->getId(), EntityType::AGENT->value);
-            
+            $encryptedOrderId = $this->cryptService->encryptId($task->getOrder()->getId(), EntityType::SERVICE_ORDER->value);
+
             // Extract coordinates from geometry once (avoid redundant regex)
             $coordinates = $this->extractCoordinatesFromPoint($rawLocation->getGeom());
 
@@ -321,25 +331,67 @@ class AgentLocationService
             ];
 
             // Topic: /agents/{encrypted_id}/location
-            $topic = sprintf('/agents/%s/location', $encryptedAgentId);
+            $topic = sprintf('order/%s/agents/location', $encryptedOrderId);
 
-            // Pre-encode JSON once
-            $jsonPayload = json_encode($payload, JSON_THROW_ON_ERROR);
-            
-            // Publish update
-            $update = new Update($topic, $jsonPayload);
-            $this->mercureHub->publish($update);
+            // Add retry logic similar to MessageService
+            $maxRetries = 3;
+            $retryDelay = 500; // milliseconds
+            $lastException = null;
 
-            $this->logger->info('Location update published to Mercure', [
+            for ($attempt = 1; $attempt <= $maxRetries; $attempt++) {
+                try {
+                    $this->logger->debug('Tentative de publication Mercure location', [
+                        'topic' => $topic,
+                        'attempt' => $attempt,
+                        'agent_id' => $encryptedAgentId
+                    ]);
+                    
+                    // Publish update (public, like MessageService)
+                    $update = new Update($topic, json_encode($payload));
+                    $this->mercureHub->publish($update);
+
+                    $this->logger->info('Location update published to Mercure', [
+                        'topic' => $topic,
+                        'agent_id' => $encryptedAgentId,
+                        'attempt' => $attempt,
+                        'payload_size' => strlen(json_encode($payload))
+                    ]);
+                    
+                    return; // Success, exit retry loop
+                    
+                } catch (\Throwable $e) {
+                    $lastException = $e;
+                    
+                    $this->logger->warning('Échec de la tentative de publication Mercure location', [
+                        'topic' => $topic,
+                        'attempt' => $attempt,
+                        'agent_id' => $encryptedAgentId,
+                        'error' => $e->getMessage(),
+                        'retry_remaining' => ($maxRetries - $attempt)
+                    ]);
+                    
+                    // Si ce n'est pas la dernière tentative, attendre avant de réessayer
+                    if ($attempt < $maxRetries) {
+                        usleep($retryDelay * 1000); // Conversion en microsecondes
+                        
+                        // Augmenter progressivement le délai (backoff exponentiel)
+                        $retryDelay *= 2;
+                    }
+                }
+            }
+
+            // Toutes les tentatives ont échoué
+            $this->logger->error('Échec définitif de la publication Mercure location', [
                 'topic' => $topic,
                 'agent_id' => $encryptedAgentId,
-                'payload_size' => strlen($jsonPayload)
+                'attempts' => $maxRetries,
+                'final_error' => $lastException ? $lastException->getMessage() : 'Erreur inconnue'
             ]);
 
         } catch (\Exception $e) {
             // Don't fail the whole operation if Mercure fails
             $this->logger->error('Failed to publish location update to Mercure', [
-                'agent_id' => $encryptedAgentId,
+                'agent_id' => $agent->getId(),
                 'error' => $e->getMessage()
             ]);
         }
@@ -366,7 +418,7 @@ class AgentLocationService
         // Basic validation rules for credible location data
         
         // 1. Accuracy should be reasonable (not too precise, not too imprecise)
-        if ($locationData->accuracy < 1 || $locationData->accuracy > 1000) {
+        if ($locationData->accuracy < 1 || $locationData->accuracy > 2000) {
             return false;
         }
 

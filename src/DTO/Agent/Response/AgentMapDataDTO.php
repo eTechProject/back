@@ -9,11 +9,9 @@ use App\DTO\SecuredZone\Response\SecuredZoneDTO;
 class AgentMapDataDTO
 {
     public function __construct(
-        public AssignedTaskMapDTO $assignedTask,
+        public AssignedTaskMapDTO $serviceOrder,
         public SecuredZoneDTO $securedZone,
-        /** @var AgentPositionHistoryDTO[] */
-        public array $positionHistory,
         /** @var AssignedAgentDTO[] */
-        public array $assignedAgents = [],
+        public array $assignedAgents,
     ) {}
 }

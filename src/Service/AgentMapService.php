@@ -5,7 +5,7 @@ namespace App\Service;
 use App\DTO\Agent\Internal\AssignedTaskMapDTO;
 use App\DTO\Agent\Response\AgentMapDataDTO;
 use App\DTO\Agent\Response\AgentPositionHistoryDTO;
-use App\DTO\Agent\Response\SimpleClientDTO;
+use App\DTO\Client\Internal\ClientInfoDTO;
 use App\DTO\Client\Internal\AgentPositionDTO;
 use App\DTO\Client\Internal\AssignedAgentDTO;
 use App\DTO\Client\Internal\TaskAssignmentDTO;
@@ -61,22 +61,18 @@ class AgentMapService
     {
         $serviceOrder = $task->getOrder();        
 
-        // Build assigned task DTO
-        $assignedTaskDTO = $this->buildAssignedTaskMapDTO($task);
+        // Build assigned task DTO (now called serviceOrder to match ClientMap structure)
+        $serviceOrderDTO = $this->buildAssignedTaskMapDTO($task);
         
         // Build secured zone DTO
         $securedZoneDTO = $this->securedZoneService->toDTO($serviceOrder->getSecuredZone());
-        
-        // Build agent position history DTOs
-        $positionHistoryDTO = $this->buildAgentPositionHistoryDTO($task->getAgent());
 
         // Build assigned agents DTOs (all agents working on the same service order)
         $assignedAgentsDTO = $this->buildAssignedAgentsDTO($serviceOrder);
 
         return new AgentMapDataDTO(
-            $assignedTaskDTO,
+            $serviceOrderDTO,
             $securedZoneDTO,
-            $positionHistoryDTO,
             $assignedAgentsDTO
         );
     }
@@ -86,69 +82,17 @@ class AgentMapService
         $serviceOrder = $task->getOrder();
         $client = $serviceOrder->getClient();
 
-        $clientDTO = new SimpleClientDTO(
+        $clientDTO = new ClientInfoDTO(
             $this->cryptService->encryptId($client->getId(), EntityType::USER->value),
-            $client->getName(),
-            $client->getEmail()
+            $client->getName()
         );
-
-        // Extract task assign position coordinates
-        $assignPositionGeom = $task->getAssignPosition();
-        $assignPosition = [0.0, 0.0]; // Default coordinates [longitude, latitude]
-        
-        if (preg_match('/POINT\(([^ ]+) ([^ ]+)\)/', $assignPositionGeom, $matches)) {
-            $assignPosition = [(float)$matches[1], (float)$matches[2]];
-        }
 
         return new AssignedTaskMapDTO(
-            $this->cryptService->encryptId($task->getId(), EntityType::TASK->value),
             $this->cryptService->encryptId($serviceOrder->getId(), EntityType::SERVICE_ORDER->value),
-            $task->getDescription(),
+            $serviceOrder->getDescription(),
             $task->getStatus()->value,
-            $task->getStartDate(),
-            $task->getEndDate(),
-            $assignPosition,
+            $serviceOrder->getCreatedAt(),
             $clientDTO
-        );
-    }
-
-    /**
-     * @return AgentPositionHistoryDTO[]
-     */
-    private function buildAgentPositionHistoryDTO($agent): array
-    {
-        // Get recent significant positions for the agent (last 24 hours)
-        $recentPositions = $this->agentLocationSignificantRepository->findBy(
-            ['agent' => $agent],
-            ['recordedAt' => 'DESC'],
-            20 // Limit to 20 most recent positions
-        );
-
-        $positionHistory = [];
-        foreach ($recentPositions as $position) {
-            $positionHistory[] = $this->buildAgentPositionFromSignificant($position);
-        }
-
-        return $positionHistory;
-    }
-
-    private function buildAgentPositionFromSignificant($agentSignificantLocation): AgentPositionHistoryDTO
-    {
-        // Extract coordinates from Point geometry
-        $geom = $agentSignificantLocation->getGeom();
-        $longitude = 0.0;
-        $latitude = 0.0;
-
-        if (preg_match('/POINT\(([^ ]+) ([^ ]+)\)/', $geom, $matches)) {
-            $longitude = (float)$matches[1];
-            $latitude = (float)$matches[2];
-        }
-
-        return new AgentPositionHistoryDTO(
-            $longitude,
-            $latitude,
-            $agentSignificantLocation->getRecordedAt(),
-            $agentSignificantLocation->getReason()->value
         );
     }
 

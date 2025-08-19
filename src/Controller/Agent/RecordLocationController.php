@@ -9,8 +9,12 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 
+/**
+ * Record agent location endpoint
+ * Note: idcryptuser is the encrypted USER ID, not agent ID. The agent is found via the user relationship.
+ */
 #[IsGranted('ROLE_AGENT')]
-#[Route('/api/agent/{idcryptagent}/locations', name: 'api_agent_record_location', methods: ['POST'])]
+#[Route('/api/agent/{idcryptuser}/locations', name: 'api_agent_record_location', methods: ['POST'])]
 class RecordLocationController extends AbstractController
 {
     public function __construct(
@@ -18,12 +22,12 @@ class RecordLocationController extends AbstractController
         private readonly \App\Service\CryptService $cryptService
     ) {}
 
-    public function __invoke(string $idcryptagent, Request $request): JsonResponse
+    public function __invoke(string $idcryptuser, Request $request): JsonResponse
     {
 
         try {
             $response = $this->agentLocationService->processLocationRequest(
-                $idcryptagent, 
+                $idcryptuser, 
                 $request->getContent()
             );
 
