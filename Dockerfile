@@ -14,7 +14,8 @@ WORKDIR /var/www/app
 # Copy application code
 COPY . /var/www/app
 
-# Install PHP dependencies (optimisé pour Render, pas de scripts, pas de progress, pas d'interaction, dist only)
+# Install PHP dependencies (optimisé pour Render, pas de scripts, pas de progress, pas d'interaction, dist only, mémoire illimitée)
+ENV COMPOSER_MEMORY_LIMIT=-1
 RUN composer install --no-dev --optimize-autoloader --no-scripts --no-progress --prefer-dist --no-interaction || { cat /var/www/app/composer.lock || true; cat /var/www/app/composer.json || true; exit 1; }
 
 # Build assets if needed (uncomment if you use asset mapper or encore)
