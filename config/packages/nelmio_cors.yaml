@@ -1,14 +1,14 @@
 nelmio_cors:
     defaults:
         origin_regex: true
-        allow_origin: ['*','https://guard-securityservice.vercel.app']
+        allow_origin: ['*','https://guard-securityservice.vercel.app','https://back-eypq.onrender.com']
         allow_methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS']
         allow_headers: ['Content-Type', 'Authorization', 'X-CSRF-TOKEN', 'X-Requested-With']
         expose_headers: ['Link']
         max_age: 3600
     paths:
         '^/api/':
-            allow_origin: ['*','https://guard-securityservice.vercel.app']
+            allow_origin: ['*','https://guard-securityservice.vercel.app','https://back-eypq.onrender.com']
             allow_headers: ['Content-Type', 'Authorization', 'X-CSRF-Token', 'X-Requested-With']
             allow_methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS']
             max_age: 3600
