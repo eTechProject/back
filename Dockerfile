@@ -14,8 +14,8 @@ WORKDIR /var/www/app
 # Copy application code
 COPY . /var/www/app
 
-# Install PHP dependencies
-RUN composer install --no-dev --optimize-autoloader --no-interaction
+# Install PHP dependencies (désactive les scripts pour éviter les erreurs en build)
+RUN composer install --no-dev --optimize-autoloader --no-interaction --no-scripts
 
 # Build assets if needed (uncomment if you use asset mapper or encore)
 # RUN npm install && npm run build
