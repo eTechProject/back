@@ -20,8 +20,9 @@ RUN composer install --no-dev --optimize-autoloader --no-interaction --no-script
 # Build assets if needed (uncomment if you use asset mapper or encore)
 # RUN npm install && npm run build
 
-# Set permissions
-RUN chown -R www-data:www-data /var/www/app/var /var/www/app/public
+# Crée les dossiers var et public si absents, puis change les permissions
+RUN mkdir -p /var/www/app/var /var/www/app/public \
+    && chown -R www-data:www-data /var/www/app/var /var/www/app/public
 
 # Nginx config
 COPY docker/nginx/default.conf /etc/nginx/conf.d/default.conf
