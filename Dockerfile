@@ -32,10 +32,26 @@ RUN echo "# Minimal .env file for Docker deployment" > .env && \
 # Set default environment variables for production
 ENV APP_ENV=prod
 ENV APP_DEBUG=0
- 
-# Ensure var/ and public/ exist
-RUN mkdir -p var public \
-&& chown -R www-data:www-data var public
+
+# Create cache and log directories with proper permissions
+RUN mkdir -p var/cache var/log var/sessions public/uploads \
+    && chown -R www-data:www-data var public \
+    && chmod -R 775 var public
+
+# Warm up Symfony cache for production (if console is available)
+RUN php bin/console cache:warmup --env=prod --no-debug 2>/dev/null || echo "Cache warmup skipped (console not available)"
+
+# Create startup script
+RUN echo '#!/bin/bash\n\
+# Fix permissions\n\
+chown -R www-data:www-data /var/www/app/var /var/www/app/public\n\
+chmod -R 775 /var/www/app/var /var/www/app/public\n\
+\n\
+# Start PHP-FPM in background\n\
+php-fpm &\n\
+\n\
+# Start Nginx in foreground\n\
+nginx -g "daemon off;"\n' > /start.sh && chmod +x /start.sh
  
 # Copy Nginx config
 COPY docker/nginx/default.conf /etc/nginx/conf.d/default.conf
@@ -44,4 +60,4 @@ ENV PORT=10000
 EXPOSE 10000
  
 # Start PHP-FPM in background, Nginx in foreground
-CMD ["sh", "-c", "php-fpm & nginx -g 'daemon off;'"]
+CMD ["/start.sh"]
