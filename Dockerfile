@@ -77,7 +77,17 @@ echo "=== Starting Services ===" \n\
 \n\
 # Start services\n\
 php-fpm &\n\
-nginx -g "daemon off;"\n' > /start.sh && chmod +x /start.sh
+nginx -g "daemon off;" &\n\
+\n\
+# Wait a bit for services to start\n\
+sleep 3\n\
+\n\
+echo "=== Service Ready ===" \n\
+echo "API available at http://localhost:10000"\n\
+echo "Health check: http://localhost:10000/health"\n\
+\n\
+# Keep the container running\n\
+wait\n' > /start.sh && chmod +x /start.sh
  
 # Copy Nginx config
 COPY docker/nginx/default.conf /etc/nginx/conf.d/default.conf
