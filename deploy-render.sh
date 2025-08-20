@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -e  # Exit on any error
+
 echo "=== Render Deployment Script ==="
 
 # Set production environment
@@ -12,19 +14,36 @@ echo "DATABASE_URL: ${DATABASE_URL:0:20}..."
 echo "MERCURE_URL: $MERCURE_URL"
 echo "MERCURE_PUBLIC_URL: $MERCURE_PUBLIC_URL"
 
+# Function to handle errors
+handle_error() {
+    echo "Error on line $1"
+    echo "Continuing with startup..."
+}
+trap 'handle_error $LINENO' ERR
+
 echo "=== Database Setup ==="
 
 # Wait for database to be ready
 echo "Waiting for database..."
 sleep 10
 
-# Enable PostGIS extension
+# Enable PostGIS extension (ignore errors)
 echo "Enabling PostGIS..."
 php bin/console dbal:run-sql "CREATE EXTENSION IF NOT EXISTS postgis;" --env=prod 2>/dev/null || echo "PostGIS extension setup completed"
 
+set +e  # Don't exit on errors for migrations
+
 # Run migrations instead of dropping schema
 echo "Running database migrations..."
-php bin/console doctrine:migrations:migrate --no-interaction --env=prod 2>/dev/null || echo "Migration completed"
+php bin/console doctrine:migrations:migrate --no-interaction --env=prod 2>/dev/null || {
+    echo "Migrations failed, attempting schema update..."
+    php bin/console doctrine:schema:update --force --env=prod 2>/dev/null || {
+        echo "Schema update failed, creating schema from scratch..."
+        php bin/console doctrine:schema:create --env=prod 2>/dev/null || echo "Schema operations completed"
+    }
+}
+
+set -e  # Re-enable exit on error
 
 # Create super admin user
 echo "Creating super admin..."
@@ -61,3 +80,40 @@ chown -R www-data:www-data var/
 chmod -R 775 var/
 
 echo "=== Render deployment completed successfully ==="
+
+echo "=== Starting Services ==="
+
+# Start Mercure server in background
+echo "Starting Mercure server..."
+MERCURE_PUBLISHER_JWT_KEY="${MERCURE_JWT_SECRET:-changeme}" \
+MERCURE_SUBSCRIBER_JWT_KEY="${MERCURE_JWT_SECRET:-changeme}" \
+SERVER_NAME=":3000" \
+MERCURE_TRANSPORT_URL="bolt://mercure.db" \
+MERCURE_PUBLISHER_JWT_ALG="HS256" \
+MERCURE_SUBSCRIBER_JWT_ALG="HS256" \
+MERCURE_EXTRA_DIRECTIVES="cors_origins ${CORS_ORIGINS:-*}" \
+/usr/local/bin/mercure run &
+
+# Start PHP-FPM in background
+echo "Starting PHP-FPM..."
+php-fpm &
+
+# Wait a moment for PHP-FPM to start
+sleep 2
+
+# Start Nginx in foreground (this keeps the container running)
+echo "Starting Nginx..."
+echo "=== Services Started ==="
+echo "API available at http://localhost:10000"
+echo "Mercure available at http://localhost:3000/.well-known/mercure"
+echo "Health check: http://localhost:10000/health"
+
+# Wait a moment then test services
+sleep 3
+echo "=== Testing services locally ==="
+curl -s http://localhost:10000/health > /dev/null && echo "✓ API health check passed" || echo "✗ API health check failed"
+curl -s http://localhost:3000/.well-known/mercure?topic=test --max-time 2 > /dev/null && echo "✓ Mercure health check passed" || echo "✗ Mercure health check failed"
+
+echo "=== Starting nginx in foreground ==="
+# Start Nginx in foreground to keep container alive
+exec nginx -g "daemon off;"

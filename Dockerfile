@@ -61,8 +61,7 @@ export APP_DEBUG=0\n\
 # Check if we are on Render (they set RENDER env var)\n\
 if [ -n "$RENDER" ]; then\n\
     echo "=== Render Environment Detected ==="\n\
-    exec ./deploy-render.sh\n\
-    exit 0\n\
+    exec /var/www/app/deploy-render.sh\n\
 fi\n\
 \n\
 echo "=== Local Docker Environment ==="\n\

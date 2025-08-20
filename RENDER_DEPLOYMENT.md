@@ -9,7 +9,7 @@ Dans votre dashboard Render, définissez les variables d'environnement suivantes
 APP_ENV=prod
 APP_DEBUG=0
 DATABASE_URL=[Render PostgreSQL Connection String]
-MERCURE_URL=http://localhost:3000/.well-known/mercure
+MERCURE_URL=http://127.0.0.1:3000/.well-known/mercure
 MERCURE_PUBLIC_URL=https://[VOTRE-SERVICE-NAME].onrender.com/.well-known/mercure
 MERCURE_JWT_SECRET=[Générez une clé secrète forte d'au moins 32 caractères]
 MERCURE_JWT_PUBLISHER=true
