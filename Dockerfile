@@ -2,7 +2,7 @@ FROM php:8.2-fpm
  
 # Install system dependencies
 RUN apt-get update \
-&& apt-get install -y git unzip zip libpq-dev curl nginx libicu-dev \
+&& apt-get install -y git unzip zip libpq-dev curl nginx libicu-dev openssl \
 && docker-php-ext-install pdo pdo_pgsql intl \
 && apt-get clean && rm -rf /var/lib/apt/lists/*
  
@@ -66,6 +66,19 @@ php bin/console doctrine:schema:drop --force --env=prod 2>/dev/null || true\n\
 php bin/console doctrine:schema:create --env=prod\n\
 \n\
 echo "=== Cache Setup ===" \n\
+\n\
+# Generate JWT keys if they don'\''t exist\n\
+echo "Setting up JWT keys..."\n\
+mkdir -p config/jwt\n\
+if [ ! -f config/jwt/private.pem ]; then\n\
+  openssl genpkey -algorithm RSA -out config/jwt/private.pem -aes256 -pass pass:${JWT_PASSPHRASE:-c1bdcabb020acfd03d86808959952dc577f864c49217c871e440fb406ebe609}\n\
+fi\n\
+if [ ! -f config/jwt/public.pem ]; then\n\
+  openssl pkey -in config/jwt/private.pem -out config/jwt/public.pem -pubout -passin pass:${JWT_PASSPHRASE:-c1bdcabb020acfd03d86808959952dc577f864c49217c871e440fb406ebe609}\n\
+fi\n\
+chown -R www-data:www-data config/jwt\n\
+chmod 600 config/jwt/private.pem\n\
+chmod 644 config/jwt/public.pem\n\
 \n\
 # Fix permissions and generate cache as www-data user\n\
 mkdir -p /var/www/app/var/cache/prod /var/www/app/var/log\n\
