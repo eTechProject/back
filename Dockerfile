@@ -39,10 +39,7 @@ RUN if [ ! -f "vendor/autoload_runtime.php" ]; then \
 # Create minimal .env file for Symfony (even when env vars are set externally)
 RUN echo "# Minimal .env file for Docker deployment" > .env && \
     echo "APP_ENV=prod" >> .env && \
-    echo "APP_DEBUG=0" >> .env && \
-    echo "MERCURE_URL=http://localhost:3000/.well-known/mercure" >> .env && \
-    echo "MERCURE_PUBLIC_URL=https://back-eypq.onrender.com/.well-known/mercure" >> .env && \
-    echo "MERCURE_PUBLISH_URL=http://localhost:3000/.well-known/mercure" >> .env
+    echo "APP_DEBUG=0" >> .env
 
 # Set default environment variables for production
 ENV APP_ENV=prod
@@ -61,6 +58,14 @@ RUN echo '#!/bin/bash\n\
 export APP_ENV=prod\n\
 export APP_DEBUG=0\n\
 \n\
+# Check if we are on Render (they set RENDER env var)\n\
+if [ -n "$RENDER" ]; then\n\
+    echo "=== Render Environment Detected ==="\n\
+    exec ./deploy-render.sh\n\
+    exit 0\n\
+fi\n\
+\n\
+echo "=== Local Docker Environment ==="\n\
 echo "=== Database Setup ===" \n\
 \n\
 # Wait for database to be ready\n\
@@ -115,7 +120,7 @@ SERVER_NAME=":3000" \\\n\
 MERCURE_TRANSPORT_URL="bolt://mercure.db" \\\n\
 MERCURE_PUBLISHER_JWT_ALG="HS256" \\\n\
 MERCURE_SUBSCRIBER_JWT_ALG="HS256" \\\n\
-MERCURE_EXTRA_DIRECTIVES="cors_origins *" \\\n\
+MERCURE_EXTRA_DIRECTIVES="cors_origins ${CORS_ORIGINS:-*}" \\\n\
 /usr/local/bin/mercure run &\n\
 \n\
 # Start services\n\

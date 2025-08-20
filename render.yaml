@@ -1,0 +1,35 @@
+services:
+  - type: web
+    name: etech-backend
+    env: docker
+    dockerfilePath: ./Dockerfile
+    envVars:
+      - key: APP_ENV
+        value: prod
+      - key: APP_DEBUG
+        value: "0"
+      - key: DATABASE_URL
+        fromDatabase:
+          name: etech-db
+          property: connectionString
+      - key: MERCURE_URL
+        value: http://localhost:3000/.well-known/mercure
+      - key: MERCURE_PUBLIC_URL
+        value: https://etech-backend.onrender.com/.well-known/mercure
+      - key: MERCURE_JWT_SECRET
+        generateValue: true
+      - key: MERCURE_JWT_PUBLISHER
+        value: "true"
+      - key: JWT_PASSPHRASE
+        generateValue: true
+      - key: CORS_ORIGINS
+        value: "*"
+      - key: PORT
+        value: "10000"
+    healthCheckPath: /health
+    
+databases:
+  - name: etech-db
+    databaseName: etech
+    user: etech
+    plan: free

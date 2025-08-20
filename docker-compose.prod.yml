@@ -1,0 +1,36 @@
+version: '3.8'
+
+services:
+  app:
+    build: .
+    ports:
+      - "10000:10000"
+      - "3000:3000"
+    environment:
+      APP_ENV: prod
+      APP_DEBUG: 0
+      DATABASE_URL: "postgresql://etech:password@db:5432/etech"
+      MERCURE_URL: "http://localhost:3000/.well-known/mercure"
+      MERCURE_PUBLIC_URL: "http://localhost:10000/.well-known/mercure"
+      MERCURE_JWT_SECRET: "changeme-local-development-only"
+      MERCURE_JWT_PUBLISHER: "true"
+      JWT_PASSPHRASE: "local-development-passphrase"
+      CORS_ORIGINS: "*"
+    depends_on:
+      - db
+    volumes:
+      - ./config/jwt:/var/www/app/config/jwt
+
+  db:
+    image: postgis/postgis:15-3.3
+    environment:
+      POSTGRES_DB: etech
+      POSTGRES_USER: etech
+      POSTGRES_PASSWORD: password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data:
