@@ -11,7 +11,11 @@ COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 WORKDIR /var/www/app
  
 # Copy all application files first
+# Copy the rest of the application
 COPY . .
+
+# Make deploy script executable
+RUN chmod +x deploy.sh
  
 # Install PHP dependencies with scripts (needed for autoload_runtime.php)
 ENV COMPOSER_MEMORY_LIMIT=-1
@@ -53,6 +57,12 @@ chmod -R 775 /var/www/app/var /var/www/app/public\n\
 \n\
 # Clear any dev cache that might exist\n\
 rm -rf /var/www/app/var/cache/dev 2>/dev/null || true\n\
+\n\
+# Run database migrations\n\
+echo "Running database migrations..."\n\
+# Enable PostGIS extension first\n\
+php bin/console dbal:run-sql "CREATE EXTENSION IF NOT EXISTS postgis;" --env=prod || echo "PostGIS extension setup failed, continuing..."\n\
+php bin/console doctrine:migrations:migrate --no-interaction --env=prod || echo "Migration failed, continuing..."\n\
 \n\
 # Start PHP-FPM in background\n\
 php-fpm &\n\
