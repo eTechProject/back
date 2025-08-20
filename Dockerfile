@@ -111,15 +111,12 @@ echo "=== Starting Services ===" \n\
 echo "Starting Mercure..."\n\
 MERCURE_PUBLISHER_JWT_KEY="${MERCURE_JWT_SECRET:-changeme}" \\\n\
 MERCURE_SUBSCRIBER_JWT_KEY="${MERCURE_JWT_SECRET:-changeme}" \\\n\
-/usr/local/bin/mercure run --config /dev/stdin <<EOF &\n\
-{\n\
-  "addr": ":3000",\n\
-  "publish_origins": ["*"],\n\
-  "subscribe_origins": ["*"],\n\
-  "cors_origins": ["*"],\n\
-  "transport_url": "bolt://mercure.db"\n\
-}\n\
-EOF\n\
+SERVER_NAME=":3000" \\\n\
+MERCURE_TRANSPORT_URL="bolt://mercure.db" \\\n\
+MERCURE_PUBLISHER_JWT_ALG="HS256" \\\n\
+MERCURE_SUBSCRIBER_JWT_ALG="HS256" \\\n\
+MERCURE_EXTRA_DIRECTIVES="cors_origins *" \\\n\
+/usr/local/bin/mercure run &\n\
 \n\
 # Start services\n\
 php-fpm &\n\
