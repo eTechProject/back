@@ -65,7 +65,7 @@ class RegisterController extends AbstractController
         } catch (\Exception $e) {
             return $this->json([
                 'status' => 'error',
-                'message' => $e->getMessage(),
+                'message' => 'Erreur serveur lors de la création de l\'utilisateur'
             ], 500);
         }
     }

@@ -2,9 +2,16 @@ FROM php:8.2-fpm
  
 # Install system dependencies
 RUN apt-get update \
-&& apt-get install -y git unzip zip libpq-dev curl nginx libicu-dev openssl \
+&& apt-get install -y git unzip zip libpq-dev curl nginx libicu-dev openssl wget \
 && docker-php-ext-install pdo pdo_pgsql intl \
 && apt-get clean && rm -rf /var/lib/apt/lists/*
+
+# Install Mercure
+RUN wget -O mercure.tar.gz https://github.com/dunglas/mercure/releases/download/v0.15.8/mercure_Linux_x86_64.tar.gz \
+    && tar -xzf mercure.tar.gz \
+    && mv mercure /usr/local/bin/mercure \
+    && chmod +x /usr/local/bin/mercure \
+    && rm mercure.tar.gz
  
 # Install Composer
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
@@ -32,7 +39,10 @@ RUN if [ ! -f "vendor/autoload_runtime.php" ]; then \
 # Create minimal .env file for Symfony (even when env vars are set externally)
 RUN echo "# Minimal .env file for Docker deployment" > .env && \
     echo "APP_ENV=prod" >> .env && \
-    echo "APP_DEBUG=0" >> .env
+    echo "APP_DEBUG=0" >> .env && \
+    echo "MERCURE_URL=http://localhost:3000/.well-known/mercure" >> .env && \
+    echo "MERCURE_PUBLIC_URL=https://back-eypq.onrender.com/.well-known/mercure" >> .env && \
+    echo "MERCURE_PUBLISH_URL=http://localhost:3000/.well-known/mercure" >> .env
 
 # Set default environment variables for production
 ENV APP_ENV=prod
@@ -97,6 +107,20 @@ su www-data -s /bin/bash -c "php bin/console cache:warmup --env=prod" || echo "C
 \n\
 echo "=== Starting Services ===" \n\
 \n\
+# Start Mercure server\n\
+echo "Starting Mercure..."\n\
+MERCURE_PUBLISHER_JWT_KEY="${MERCURE_JWT_SECRET:-changeme}" \\\n\
+MERCURE_SUBSCRIBER_JWT_KEY="${MERCURE_JWT_SECRET:-changeme}" \\\n\
+/usr/local/bin/mercure run --config /dev/stdin <<EOF &\n\
+{\n\
+  "addr": ":3000",\n\
+  "publish_origins": ["*"],\n\
+  "subscribe_origins": ["*"],\n\
+  "cors_origins": ["*"],\n\
+  "transport_url": "bolt://mercure.db"\n\
+}\n\
+EOF\n\
+\n\
 # Start services\n\
 php-fpm &\n\
 nginx -g "daemon off;" &\n\
@@ -112,7 +136,7 @@ wait\n' > /start.sh && chmod +x /start.sh
 COPY docker/nginx/default.conf /etc/nginx/conf.d/default.conf
  
 ENV PORT=10000
-EXPOSE 10000
+EXPOSE 10000 3000
  
 # Start PHP-FPM in background, Nginx in foreground
 CMD ["/start.sh"]
