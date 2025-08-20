@@ -65,6 +65,10 @@ echo "Creating database schema..."\n\
 php bin/console doctrine:schema:drop --force --env=prod 2>/dev/null || true\n\
 php bin/console doctrine:schema:create --env=prod\n\
 \n\
+# Create super admin user\n\
+echo "Creating super admin..."\n\
+php bin/console app:create-admin ynnotjoh@gmail.com --env=prod 2>/dev/null || echo "Admin creation failed or already exists"\n\
+\n\
 echo "=== Cache Setup ===" \n\
 \n\
 # Generate JWT keys if they don'\''t exist\n\
