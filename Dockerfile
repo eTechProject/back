@@ -48,32 +48,35 @@ RUN mkdir -p var/cache/prod var/log var/sessions public/uploads migrations \
 
 # Create startup script
 RUN echo '#!/bin/bash\n\
-# Force production environment\n\
 export APP_ENV=prod\n\
 export APP_DEBUG=0\n\
 \n\
-# Fix permissions more thoroughly\n\
-mkdir -p /var/www/app/var/cache/prod /var/www/app/var/log /var/www/app/migrations\n\
-chown -R www-data:www-data /var/www/app/var /var/www/app/public /var/www/app/migrations\n\
-chmod -R 775 /var/www/app/var /var/www/app/public /var/www/app/migrations\n\
+echo "=== Database Setup ===" \n\
 \n\
-# Clear any existing cache\n\
+# Fix permissions\n\
+mkdir -p /var/www/app/var/cache/prod /var/www/app/var/log\n\
+chown -R www-data:www-data /var/www/app/var /var/www/app/public\n\
+chmod -R 775 /var/www/app/var /var/www/app/public\n\
+\n\
+# Clear cache\n\
 rm -rf /var/www/app/var/cache/* 2>/dev/null || true\n\
 \n\
-# Check if migrations directory exists and has files\n\
-if [ -d "/var/www/app/migrations" ] && [ "$(ls -A /var/www/app/migrations)" ]; then\n\
-  echo "Running database migrations..."\n\
-  # Enable PostGIS extension first\n\
-  php bin/console dbal:run-sql "CREATE EXTENSION IF NOT EXISTS postgis;" --env=prod || echo "PostGIS extension setup failed, continuing..."\n\
-  php bin/console doctrine:migrations:migrate --no-interaction --env=prod || echo "Migration failed, continuing..."\n\
-else\n\
-  echo "No migrations found, skipping migration step..."\n\
-fi\n\
+# Wait for database to be ready\n\
+sleep 5\n\
 \n\
-# Start PHP-FPM in background\n\
+# Enable PostGIS extension\n\
+echo "Enabling PostGIS..."\n\
+php bin/console dbal:run-sql "CREATE EXTENSION IF NOT EXISTS postgis;" --env=prod 2>/dev/null || true\n\
+\n\
+# Drop and recreate schema (force clean state)\n\
+echo "Creating database schema..."\n\
+php bin/console doctrine:schema:drop --force --env=prod 2>/dev/null || true\n\
+php bin/console doctrine:schema:create --env=prod\n\
+\n\
+echo "=== Starting Services ===" \n\
+\n\
+# Start services\n\
 php-fpm &\n\
-\n\
-# Start Nginx in foreground\n\
 nginx -g "daemon off;"\n' > /start.sh && chmod +x /start.sh
  
 # Copy Nginx config
