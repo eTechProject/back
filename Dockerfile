@@ -2,8 +2,9 @@ FROM php:8.2-fpm
  
 # Install system dependencies
 RUN apt-get update \
-&& apt-get install -y git unzip zip libpq-dev curl nginx \
-&& docker-php-ext-install pdo pdo_pgsql
+&& apt-get install -y git unzip zip libpq-dev curl nginx libicu-dev \
+&& docker-php-ext-install pdo pdo_pgsql intl \
+&& apt-get clean && rm -rf /var/lib/apt/lists/*
  
 # Install Composer
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
@@ -38,9 +39,9 @@ ENV APP_ENV=prod
 ENV APP_DEBUG=0
 
 # Create cache and log directories with proper permissions
-RUN mkdir -p var/cache var/log var/sessions public/uploads \
-    && chown -R www-data:www-data var public \
-    && chmod -R 775 var public
+RUN mkdir -p var/cache/prod var/log var/sessions public/uploads migrations \
+    && chown -R www-data:www-data var public migrations \
+    && chmod -R 775 var public migrations
 
 # Warm up Symfony cache for production (if console is available)
 # RUN php bin/console cache:warmup --env=prod --no-debug 2>/dev/null || echo "Cache warmup skipped (console not available)"
@@ -51,18 +52,23 @@ RUN echo '#!/bin/bash\n\
 export APP_ENV=prod\n\
 export APP_DEBUG=0\n\
 \n\
-# Fix permissions\n\
-chown -R www-data:www-data /var/www/app/var /var/www/app/public\n\
-chmod -R 775 /var/www/app/var /var/www/app/public\n\
+# Fix permissions more thoroughly\n\
+mkdir -p /var/www/app/var/cache/prod /var/www/app/var/log /var/www/app/migrations\n\
+chown -R www-data:www-data /var/www/app/var /var/www/app/public /var/www/app/migrations\n\
+chmod -R 775 /var/www/app/var /var/www/app/public /var/www/app/migrations\n\
 \n\
-# Clear any dev cache that might exist\n\
-rm -rf /var/www/app/var/cache/dev 2>/dev/null || true\n\
+# Clear any existing cache\n\
+rm -rf /var/www/app/var/cache/* 2>/dev/null || true\n\
 \n\
-# Run database migrations\n\
-echo "Running database migrations..."\n\
-# Enable PostGIS extension first\n\
-php bin/console dbal:run-sql "CREATE EXTENSION IF NOT EXISTS postgis;" --env=prod || echo "PostGIS extension setup failed, continuing..."\n\
-php bin/console doctrine:migrations:migrate --no-interaction --env=prod || echo "Migration failed, continuing..."\n\
+# Check if migrations directory exists and has files\n\
+if [ -d "/var/www/app/migrations" ] && [ "$(ls -A /var/www/app/migrations)" ]; then\n\
+  echo "Running database migrations..."\n\
+  # Enable PostGIS extension first\n\
+  php bin/console dbal:run-sql "CREATE EXTENSION IF NOT EXISTS postgis;" --env=prod || echo "PostGIS extension setup failed, continuing..."\n\
+  php bin/console doctrine:migrations:migrate --no-interaction --env=prod || echo "Migration failed, continuing..."\n\
+else\n\
+  echo "No migrations found, skipping migration step..."\n\
+fi\n\
 \n\
 # Start PHP-FPM in background\n\
 php-fpm &\n\
