@@ -53,14 +53,6 @@ export APP_DEBUG=0\n\
 \n\
 echo "=== Database Setup ===" \n\
 \n\
-# Fix permissions\n\
-mkdir -p /var/www/app/var/cache/prod /var/www/app/var/log\n\
-chown -R www-data:www-data /var/www/app/var /var/www/app/public\n\
-chmod -R 775 /var/www/app/var /var/www/app/public\n\
-\n\
-# Clear cache\n\
-rm -rf /var/www/app/var/cache/* 2>/dev/null || true\n\
-\n\
 # Wait for database to be ready\n\
 sleep 5\n\
 \n\
@@ -73,20 +65,30 @@ echo "Creating database schema..."\n\
 php bin/console doctrine:schema:drop --force --env=prod 2>/dev/null || true\n\
 php bin/console doctrine:schema:create --env=prod\n\
 \n\
+echo "=== Cache Setup ===" \n\
+\n\
+# Fix permissions and generate cache as www-data user\n\
+mkdir -p /var/www/app/var/cache/prod /var/www/app/var/log\n\
+rm -rf /var/www/app/var/cache/* 2>/dev/null || true\n\
+chown -R www-data:www-data /var/www/app\n\
+chmod -R 755 /var/www/app\n\
+chmod -R 775 /var/www/app/var\n\
+\n\
+# Generate cache as www-data to avoid permission issues\n\
+echo "Generating cache..."\n\
+su www-data -s /bin/bash -c "php bin/console cache:warmup --env=prod" || echo "Cache warmup failed"\n\
+\n\
 echo "=== Starting Services ===" \n\
 \n\
 # Start services\n\
 php-fpm &\n\
 nginx -g "daemon off;" &\n\
 \n\
-# Wait a bit for services to start\n\
 sleep 3\n\
-\n\
 echo "=== Service Ready ===" \n\
 echo "API available at http://localhost:10000"\n\
 echo "Health check: http://localhost:10000/health"\n\
 \n\
-# Keep the container running\n\
 wait\n' > /start.sh && chmod +x /start.sh
  
 # Copy Nginx config
