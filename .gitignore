@@ -16,7 +16,8 @@
 /vendor/
 ###< symfony/framework-bundle ###
 
-/migrations/
+# Track migrations for deployment
+!/migrations/
 
 ###> phpunit/phpunit ###
 /phpunit.xml
@@ -82,9 +83,10 @@
 /config/jwt/*.pem
 ###< lexik/jwt-authentication-bundle ###
 
-# Ignore all files in public except index.php and images/logo128.png
+# Ignore all files in public except whitelisted ones
 /public/*
 !/public/index.php
+!/public/healthz.php
 !/public/images/
 !/public/images/logo128.png
 
