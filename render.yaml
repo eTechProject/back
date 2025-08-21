@@ -14,7 +14,9 @@ services:
       - key: APP_SECRET
         generateValue: true
       - key: DATABASE_URL
-        fromDatabase: guard-db
+        fromDatabase:
+          name: guard-db
+          property: connectionString
       - key: JWT_SECRET_KEY
         value: /var/www/app/config/jwt/private.pem
       - key: JWT_PUBLIC_KEY
