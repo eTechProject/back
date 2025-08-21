@@ -1,0 +1,30 @@
+# Ignore Git data
+.git
+.gitignore
+
+# Node / front cache
+node_modules
+npm-debug.log
+yarn.lock
+pnpm-lock.yaml
+
+# Symfony runtime/cache/logs
+var/cache
+var/log
+
+# Local environment files
+.env
+.env.*
+
+# Tests (optional in prod image)
+/tests
+
+# Docker artifacts not needed in final image context (except prod configs)
+docker/db
+
+# Composer artefacts that can be rebuilt
+vendor
+
+# IDE/editor
+.vscode
+.idea

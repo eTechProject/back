@@ -1,0 +1,53 @@
+# Render Blueprint: defines infrastructure for deployment
+
+services:
+  - type: web
+    name: guard-api
+    env: docker
+    plan: free
+    dockerfilePath: Dockerfile.render
+    autoDeploy: true
+    healthCheckPath: /index.php
+    envVars:
+      - key: APP_ENV
+        value: prod
+      - key: APP_SECRET
+        generateValue: true
+      - key: DATABASE_URL
+        fromDatabase: guard-db
+      - key: JWT_SECRET_KEY
+        value: /var/www/app/config/jwt/private.pem
+      - key: JWT_PUBLIC_KEY
+        value: /var/www/app/config/jwt/public.pem
+      - key: JWT_PASSPHRASE
+        sync: false # set this manually in the Render dashboard or via 'render env:set'
+      - key: MERCURE_URL
+        value: https://your-mercure-service.onrender.com/.well-known/mercure
+      - key: MERCURE_JWT_TOKEN
+        sync: false
+      - key: RUN_MIGRATIONS
+        value: "1"
+
+# Optional Mercure hub (uncomment to enable). After creation, update MERCURE_URL above.
+#  - type: web
+#    name: mercure-hub
+#    env: docker
+#    plan: free
+#    image: dunglas/mercure:latest
+#    envVars:
+#      - key: SERVER_NAME
+#        value: ':80'
+#      - key: MERCURE_PUBLISHER_JWT_KEY
+#        sync: false
+#      - key: MERCURE_SUBSCRIBER_JWT_KEY
+#        sync: false
+#      - key: MERCURE_EXTRA_DIRECTIVES
+#        value: |
+#          cors_origins *
+#          anonymous 1
+
+databases:
+  - name: guard-db
+    plan: free
+    databaseName: guard
+    user: app
