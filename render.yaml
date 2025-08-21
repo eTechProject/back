@@ -7,7 +7,7 @@ services:
     plan: free
     dockerfilePath: Dockerfile.render
     autoDeploy: true
-    healthCheckPath: /index.php
+    healthCheckPath: /healthz.php
     envVars:
       - key: APP_ENV
         value: prod
