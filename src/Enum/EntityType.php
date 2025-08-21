@@ -12,4 +12,6 @@ enum EntityType: string
     case MESSAGE = 'message';
     case NOTIFICATION = 'notification';
     case PACK = 'pack';
+    case PAYMENT = 'payment';
+    case PAYMENT_HISTORY = 'payment_history';
 }
