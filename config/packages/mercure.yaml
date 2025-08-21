@@ -2,7 +2,7 @@ mercure:
     hubs:
         default:
             url: '%env(MERCURE_URL)%'
-            public_url: '%env(MERCURE_PUBLIC_URL)%'
+            # public_url removed temporarily (env MERCURE_PUBLIC_URL not set in Render). Re-add when available.
             jwt:
                 # Match Render env vars (rename if you later standardize)
                 secret: '%env(MERCURE_SUBSCRIBER_JWT_KEY)%'
