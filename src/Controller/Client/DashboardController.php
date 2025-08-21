@@ -10,6 +10,8 @@ use App\Service\Client\DashboardService;
 use App\DTO\Dashboard\Request\DashboardFiltersDTO;
 use App\Service\CryptService;
 use App\Enum\EntityType;
+use Sensio\Bundle\FrameworkExtraBundle\Configuration\IsGranted;
+
 
 class DashboardController extends AbstractController
 {
@@ -17,7 +19,6 @@ class DashboardController extends AbstractController
         private readonly DashboardService $dashboardService,
         private readonly CryptService $cryptService
     ) {}
-
     #[Route('/api/client/{encryptedId}/dashboard', name: 'client_dashboard', methods: ['GET'])]
     public function __invoke(string $encryptedId, Request $request): JsonResponse
     {
@@ -25,16 +26,14 @@ class DashboardController extends AbstractController
             // Décrypter l'id client
             $clientId = $this->cryptService->decryptId($encryptedId, EntityType::USER->value);
 
-            // Vérification sécurité : l'utilisateur connecté doit être le client demandé
+            // Vérification stricte : seul le client connecté peut accéder à son dashboard
             $user = $this->getUser();
-            if (!$user || (method_exists($user, 'getId') && $user->getId() !== $clientId)) {
+            if (!$user || !in_array('ROLE_CLIENT', $user->getRoles(), true) || (method_exists($user, 'getId') && $user->getId() !== $clientId)) {
                 return $this->json([
                     'status' => 'error',
-                    'message' => 'Accès refusé : client non autorisé',
+                    'message' => 'Accès refusé : seul le client concerné peut accéder à ce dashboard',
                 ], 403);
             }
-
-
 
             $filters = new DashboardFiltersDTO();
             $filters->dateRange = $request->query->get('dateRange', 'all');
