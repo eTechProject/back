@@ -20,6 +20,8 @@ ENV COMPOSER_ALLOW_SUPERUSER=1 \
 
 # Allow build layer caching of vendor
 COPY composer.json composer.lock symfony.lock ./
+# Provide a minimal .env file so Dotenv doesn't fail if relying on file presence; values overridden by real env vars
+RUN printf "APP_ENV=prod\n" > .env
 # First install dependencies without running scripts (bin/console not copied yet)
 RUN composer install --no-dev --prefer-dist --optimize-autoloader --no-interaction --no-progress --no-scripts \
     && mkdir -p var/cache var/log \
