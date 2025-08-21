@@ -113,10 +113,11 @@ echo "=== Starting Services ===" \n\
 \n\
 # Start Mercure server\n\
 echo "Starting Mercure..."\n\
+mkdir -p /tmp/mercure\n\
 MERCURE_PUBLISHER_JWT_KEY="${MERCURE_JWT_SECRET:-changeme}" \\\n\
 MERCURE_SUBSCRIBER_JWT_KEY="${MERCURE_JWT_SECRET:-changeme}" \\\n\
 SERVER_NAME=":3000" \\\n\
-MERCURE_TRANSPORT_URL="bolt://mercure.db" \\\n\
+MERCURE_TRANSPORT_URL="bolt:///tmp/mercure/mercure.db" \\\n\
 MERCURE_PUBLISHER_JWT_ALG="HS256" \\\n\
 MERCURE_SUBSCRIBER_JWT_ALG="HS256" \\\n\
 MERCURE_EXTRA_DIRECTIVES="cors_origins ${CORS_ORIGINS:-*}" \\\n\

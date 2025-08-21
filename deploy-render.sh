@@ -85,10 +85,11 @@ echo "=== Starting Services ==="
 
 # Start Mercure server in background
 echo "Starting Mercure server..."
+mkdir -p /tmp/mercure
 MERCURE_PUBLISHER_JWT_KEY="${MERCURE_JWT_SECRET:-changeme}" \
 MERCURE_SUBSCRIBER_JWT_KEY="${MERCURE_JWT_SECRET:-changeme}" \
 SERVER_NAME=":3000" \
-MERCURE_TRANSPORT_URL="bolt://mercure.db" \
+MERCURE_TRANSPORT_URL="bolt:///tmp/mercure/mercure.db" \
 MERCURE_PUBLISHER_JWT_ALG="HS256" \
 MERCURE_SUBSCRIBER_JWT_ALG="HS256" \
 MERCURE_EXTRA_DIRECTIVES="cors_origins ${CORS_ORIGINS:-*}" \

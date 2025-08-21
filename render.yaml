@@ -20,6 +20,8 @@ services:
         generateValue: true
       - key: MERCURE_JWT_PUBLISHER
         value: "true"
+      - key: MERCURE_JWT_SUBSCRIBER
+        value: "true"
       - key: JWT_PASSPHRASE
         generateValue: true
       - key: CORS_ORIGINS
