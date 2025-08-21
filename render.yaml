@@ -31,6 +31,8 @@ services:
         sync: false
       - key: RUN_MIGRATIONS
         value: "1"
+      - key: MESSENGER_TRANSPORT_DSN
+        value: doctrine://default?auto_setup=0
 
 # Optional Mercure hub (uncomment to enable). After creation, update MERCURE_URL above.
 #  - type: web
