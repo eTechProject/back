@@ -20,15 +20,17 @@ ENV COMPOSER_ALLOW_SUPERUSER=1 \
 
 # Allow build layer caching of vendor
 COPY composer.json composer.lock symfony.lock ./
-RUN composer install --no-dev --prefer-dist --optimize-autoloader --no-interaction --no-progress \
+# First install dependencies without running scripts (bin/console not copied yet)
+RUN composer install --no-dev --prefer-dist --optimize-autoloader --no-interaction --no-progress --no-scripts \
     && mkdir -p var/cache var/log \
     && chown -R www-data:www-data var
 
 # Copy the rest of the application source
 COPY . .
 
-# Pre-build Symfony cache (ignore failures if env vars not fully present yet)
-RUN APP_ENV=prod php bin/console cache:clear || true
+# Pre-build Symfony cache (ignore failures if env vars not fully present yet). Run scripts now that code is present.
+RUN composer run-script post-install-cmd || true && \
+    APP_ENV=prod php bin/console cache:clear || true
 
 # Nginx & Supervisor configuration
 COPY docker/prod/nginx.conf.template /etc/nginx/conf.d/default.conf.template
