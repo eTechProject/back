@@ -1,6 +1,6 @@
 <?php
 
-namespace App\DTO\Client\Dashboard\Response;
+namespace App\DTO\Dashboard\Response;
 
 class DashboardResponseDTO
 {

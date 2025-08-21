@@ -2,8 +2,8 @@
 
 namespace App\Service\Client;
 
-use App\DTO\Client\Dashboard\Request\DashboardFiltersDTO;
-use App\DTO\Client\Dashboard\Response\DashboardResponseDTO;
+use App\DTO\Dashboard\Request\DashboardFiltersDTO;
+use App\DTO\Dashboard\Response\DashboardResponseDTO;
 use App\Repository\ServiceOrdersRepository;
 use App\Repository\PaymentRepository;
 use App\Repository\AgentsRepository;
@@ -86,18 +86,17 @@ class DashboardService
     {
         $response = new DashboardResponseDTO();
 
-        // Filtres globaux (exemple)
         $response->filters = [
-            'dateRange' => $filters?->dateRange ?? 'all',
-            'shortcuts' => $filters?->shortcuts ?? [],
+            'choice' => $filters?->choice,
+            'dateStart' => $filters?->dateStart,
+            'dateEnd' => $filters?->dateEnd,
         ];
 
-        // Récupération des commandes du client
         $orders = $this->serviceOrdersRepository->findByClientId($clientId);
         $tasks = [];
         $agents = [];
         foreach ($orders as $order) {
-            foreach (method_exists($order, 'getTasks') ? $order->getTasks() : [] as $task) {
+            foreach ($order->getTasks() ?? [] as $task) {
                 $tasks[] = $task;
                 if (method_exists($task, 'getAgent')) {
                     $agent = $task->getAgent();
@@ -106,6 +105,51 @@ class DashboardService
                     }
                 }
             }
+        }
+
+        // Filtrage uniquement si un filtre est appliqué
+        if ($filters?->choice || $filters?->dateStart || $filters?->dateEnd) {
+            $now = new \DateTimeImmutable('now');
+            $tasks = array_filter($tasks, function ($task) use ($filters, $now) {
+                if (!method_exists($task, 'getStartDate')) return false;
+                $start = $task->getStartDate();
+                if (!$start) return false;
+                // Filtrage par choix rapide
+                if ($filters->choice) {
+                    switch ($filters->choice) {
+                        case 'today':
+                            if ($start->format('Y-m-d') !== $now->format('Y-m-d')) return false;
+                            break;
+                        case 'last7days':
+                            $sevenDaysAgo = $now->modify('-6 days')->setTime(0,0,0);
+                            if ($start < $sevenDaysAgo || $start > $now) return false;
+                            break;
+                        case 'thisMonth':
+                            if ($start->format('Y-m') !== $now->format('Y-m')) return false;
+                            break;
+                        case 'last30days':
+                            $thirtyDaysAgo = $now->modify('-29 days')->setTime(0,0,0);
+                            if ($start < $thirtyDaysAgo || $start > $now) return false;
+                            break;
+                        case 'thisYear':
+                            if ($start->format('Y') !== $now->format('Y')) return false;
+                            break;
+                        default:
+                            break;
+                    }
+                }
+                // Filtrage par plage personnalisée
+                if ($filters->dateStart) {
+                    $dateStart = new \DateTimeImmutable($filters->dateStart);
+                    if ($start < $dateStart) return false;
+                }
+                if ($filters->dateEnd) {
+                    $dateEnd = new \DateTimeImmutable($filters->dateEnd);
+                    if ($start > $dateEnd) return false;
+                }
+                return true;
+            });
+            $tasks = array_values($tasks);
         }
 
         // Paiements du client
