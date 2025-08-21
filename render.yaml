@@ -25,7 +25,9 @@ services:
         sync: false # set this manually in the Render dashboard or via 'render env:set'
       - key: MERCURE_URL
         value: https://your-mercure-service.onrender.com/.well-known/mercure
-      - key: MERCURE_JWT_TOKEN
+      - key: MERCURE_PUBLISHER_JWT_KEY
+        sync: false
+      - key: MERCURE_SUBSCRIBER_JWT_KEY
         sync: false
       - key: RUN_MIGRATIONS
         value: "1"
