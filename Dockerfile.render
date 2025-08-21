@@ -4,9 +4,9 @@ FROM php:8.2-fpm AS runtime
 
 # Install system dependencies (nginx, supervisor, gettext for envsubst, postgres libs)
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends \
-       git unzip zip libpq-dev curl nginx supervisor gettext-base \
-    && docker-php-ext-install pdo pdo_pgsql \
+     && apt-get install -y --no-install-recommends \
+         git unzip zip libpq-dev curl nginx supervisor gettext-base libicu-dev \
+     && docker-php-ext-install pdo pdo_pgsql intl \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy composer binary
