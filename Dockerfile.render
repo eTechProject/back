@@ -21,7 +21,7 @@ ENV COMPOSER_ALLOW_SUPERUSER=1 \
 # Allow build layer caching of vendor
 COPY composer.json composer.lock symfony.lock ./
 # Provide a minimal .env file so Dotenv doesn't fail if relying on file presence; values overridden by real env vars
-RUN printf "APP_ENV=prod\n" > .env
+RUN printf "APP_ENV=prod\nMESSENGER_TRANSPORT_DSN=doctrine://default?auto_setup=0\n" > .env
 # First install dependencies without running scripts (bin/console not copied yet)
 RUN composer install --no-dev --prefer-dist --optimize-autoloader --no-interaction --no-progress --no-scripts \
     && mkdir -p var/cache var/log \
@@ -30,9 +30,8 @@ RUN composer install --no-dev --prefer-dist --optimize-autoloader --no-interacti
 # Copy the rest of the application source
 COPY . .
 
-# Pre-build Symfony cache (ignore failures if env vars not fully present yet). Run scripts now that code is present.
-RUN composer run-script post-install-cmd || true && \
-    APP_ENV=prod php bin/console cache:clear || true
+# (Optional) Skipped build-time cache clear to avoid needing DATABASE_URL during build; runtime will warm the cache.
+# You can re-enable later with a placeholder DATABASE_URL if desired.
 
 # Nginx & Supervisor configuration
 COPY docker/prod/nginx.conf.template /etc/nginx/conf.d/default.conf.template
