@@ -13,6 +13,16 @@ fi
 : "${MESSENGER_TRANSPORT_DSN:=doctrine://default?auto_setup=0}"
 export MESSENGER_TRANSPORT_DSN
 
+# Ensure a minimal .env exists (Symfony Dotenv will fatal otherwise if it expects the file)
+if [ ! -f .env ]; then
+  echo "[entrypoint] Creating fallback .env file (was missing)"
+  {
+    echo "APP_ENV=${APP_ENV:-prod}";
+    echo "APP_DEBUG=0";
+    echo "MESSENGER_TRANSPORT_DSN=${MESSENGER_TRANSPORT_DSN}";
+  } > .env
+fi
+
 # Run database migrations (ignore failures if DB not reachable yet)
 if [ -n "${RUN_MIGRATIONS:-1}" ]; then
   # Ensure migrations directory exists
