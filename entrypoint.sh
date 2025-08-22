@@ -24,7 +24,7 @@ if [ ! -f "$JWT_DIR/private.pem" ] || [ ! -f "$JWT_DIR/public.pem" ]; then
   echo "[entrypoint] Generating JWT keypair (missing on deployment)"
   
   # Always generate a new random passphrase (override Render environment)
-  JWT_PASSPHRASE_GENERATED="f9e11c19af96431f7a36774b0efd2553db6d13232e1191fe829a665627d11830"
+  JWT_PASSPHRASE_GENERATED=$(openssl rand -base64 32)
   echo "[entrypoint] Generated new JWT passphrase (overriding Render environment)"
   
   # Generate private key using genrsa (more compatible)
@@ -50,8 +50,24 @@ if [ ! -f "$JWT_DIR/private.pem" ] || [ ! -f "$JWT_DIR/public.pem" ]; then
   
   echo "[entrypoint] JWT keypair generated successfully"
 else
-  echo "[entrypoint] JWT keypair already exists"
+  echo "[entrypoint] JWT keypair already exists - setting environment variables"
+  # Even if keys exist, we need to set the environment variables for the application
+  if [ -n "${JWT_PASSPHRASE:-}" ]; then
+    echo "[entrypoint] Using existing JWT_PASSPHRASE from Render environment"
+  else
+    echo "[entrypoint] WARNING: JWT_PASSPHRASE not set and keys already exist"
+  fi
+  
+  # Set the key paths regardless
+  export JWT_SECRET_KEY="/var/www/app/$JWT_DIR/private.pem"
+  export JWT_PUBLIC_KEY="/var/www/app/$JWT_DIR/public.pem"
 fi
+
+# Debug: Show JWT configuration
+echo "[entrypoint] JWT Configuration:"
+echo "  JWT_SECRET_KEY: ${JWT_SECRET_KEY:-not set}"
+echo "  JWT_PUBLIC_KEY: ${JWT_PUBLIC_KEY:-not set}"
+echo "  JWT_PASSPHRASE: ${JWT_PASSPHRASE:+***set***}"
 
 
 # Clear Symfony cache to ensure fresh start
