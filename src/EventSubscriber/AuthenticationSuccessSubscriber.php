@@ -49,6 +49,8 @@ class AuthenticationSuccessSubscriber implements EventSubscriberInterface
         } catch (\Exception $e) {
             // En cas d'erreur, ne pas bloquer l'authentification,
             // simplement ne pas ajouter les informations Mercure
+            error_log('Mercure token generation failed during login: ' . $e->getMessage());
+            // Continue without Mercure data
         }
     }
 }

@@ -13,6 +13,10 @@ fi
 : "${MESSENGER_TRANSPORT_DSN:=doctrine://default?auto_setup=0}"
 export MESSENGER_TRANSPORT_DSN
 
+# Provide default Mercure JWT secret if not supplied by environment
+: "${MERCURE_SUBSCRIBER_JWT_KEY:=default_mercure_secret_$(openssl rand -hex 16)}"
+export MERCURE_SUBSCRIBER_JWT_KEY
+
 # Generate JWT keys if they don't exist (needed for Render deployment)
 JWT_DIR="config/jwt"
 if [ ! -d "$JWT_DIR" ]; then
