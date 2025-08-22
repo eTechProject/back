@@ -19,6 +19,12 @@ export MERCURE_JWT_SECRET
 export MERCURE_PUBLISHER_JWT_KEY="$MERCURE_JWT_SECRET"
 export MERCURE_SUBSCRIBER_JWT_KEY="$MERCURE_JWT_SECRET"
 
+# Set Mercure URLs for proper hub configuration
+: "${MERCURE_URL:=http://localhost:3000/.well-known/mercure}"
+: "${MERCURE_PUBLIC_URL:=http://localhost:3000/.well-known/mercure}"
+export MERCURE_URL
+export MERCURE_PUBLIC_URL
+
 # Generate JWT keys if they don't exist (needed for Render deployment)
 JWT_DIR="config/jwt"
 if [ ! -d "$JWT_DIR" ]; then
@@ -162,6 +168,10 @@ if [ -n "${RUN_MIGRATIONS:-1}" ]; then
       echo "[entrypoint] Set AUTO_GENERATE_MIGRATION=1 to auto-create an initial migration."
     fi
   fi
+  
+  # Create admin user after migrations
+  echo "[entrypoint] Creating admin user..."
+  php bin/console app:create-admin-user || echo "[entrypoint] Admin user creation failed or already exists"
 fi
 
 exec /usr/bin/supervisord -c /etc/supervisor/conf.d/supervisord.conf
