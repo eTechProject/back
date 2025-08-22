@@ -24,7 +24,7 @@ if [ ! -f "$JWT_DIR/private.pem" ] || [ ! -f "$JWT_DIR/public.pem" ]; then
   echo "[entrypoint] Generating JWT keypair (missing on deployment)"
   
   # Always generate a new random passphrase (override Render environment)
-  JWT_PASSPHRASE_GENERATED=$(openssl rand -base64 32)
+  JWT_PASSPHRASE_GENERATED="f9e11c19af96431f7a36774b0efd2553db6d13232e1191fe829a665627d11830"
   echo "[entrypoint] Generated new JWT passphrase (overriding Render environment)"
   
   # Generate private key using genrsa (more compatible)
