@@ -24,11 +24,17 @@ services:
       - key: JWT_PASSPHRASE
         sync: false # set this manually in the Render dashboard or via 'render env:set'
       - key: MERCURE_URL
-        value: https://your-mercure-service.onrender.com/.well-known/mercure
-      - key: MERCURE_PUBLISHER_JWT_KEY
-        sync: false
-      - key: MERCURE_SUBSCRIBER_JWT_KEY
-        sync: false
+        fromService:
+          type: web
+          name: mercure-hub
+          envVarKey: MERCURE_PUBLIC_URL
+      - key: MERCURE_PUBLIC_URL
+        fromService:
+          type: web
+          name: mercure-hub
+          envVarKey: MERCURE_PUBLIC_URL
+      - key: MERCURE_JWT_SECRET
+        generateValue: true
       - key: RUN_MIGRATIONS
         value: "1"
       - key: MESSENGER_TRANSPORT_DSN
@@ -36,23 +42,25 @@ services:
       - key: AUTO_GENERATE_MIGRATION
         value: "0"
 
-# Optional Mercure hub (uncomment to enable). After creation, update MERCURE_URL above.
-#  - type: web
-#    name: mercure-hub
-#    env: docker
-#    plan: free
-#    image: dunglas/mercure:latest
-#    envVars:
-#      - key: SERVER_NAME
-#        value: ':80'
-#      - key: MERCURE_PUBLISHER_JWT_KEY
-#        sync: false
-#      - key: MERCURE_SUBSCRIBER_JWT_KEY
-#        sync: false
-#      - key: MERCURE_EXTRA_DIRECTIVES
-#        value: |
-#          cors_origins *
-#          anonymous 1
+# Mercure hub service for real-time notifications
+  - type: web
+    name: mercure-hub
+    env: docker
+    plan: free
+    dockerImage: dunglas/mercure:latest
+    envVars:
+      - key: SERVER_NAME
+        value: ':10000'
+      - key: MERCURE_PUBLISHER_JWT_KEY
+        generateValue: true
+      - key: MERCURE_SUBSCRIBER_JWT_KEY
+        fromEnvVar: MERCURE_PUBLISHER_JWT_KEY
+      - key: MERCURE_PUBLIC_URL
+        value: https://mercure-hub-5cdd.onrender.com/.well-known/mercure
+      - key: MERCURE_EXTRA_DIRECTIVES
+        value: |
+          cors_origins *
+          anonymous 1
 
 databases:
   - name: guard-db
