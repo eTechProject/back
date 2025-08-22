@@ -6,7 +6,7 @@ require_once dirname(__DIR__).'/vendor/autoload_runtime.php';
 
 return function (array $context) {
     try {
-        return new Kernel($context['APP_ENV'], (bool) $context['APP_DEBUG']);
+        return new Kernel($context['APP_ENV'] ?? 'prod', (bool) ($context['APP_DEBUG'] ?? false));
     } catch (\Throwable $e) {
         // Early boot failure (container compilation, config, etc.)
         error_log('BOOT FAILURE: '.$e->getMessage().' ['.$e->getFile().':'.$e->getLine().']');
