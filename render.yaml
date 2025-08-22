@@ -47,7 +47,7 @@ services:
     name: mercure-hub
     env: docker
     plan: free
-    dockerImage: dunglas/mercure:latest
+    image: dunglas/mercure:latest
     envVars:
       - key: SERVER_NAME
         value: ':10000'
