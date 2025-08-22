@@ -26,8 +26,8 @@ if [ ! -f "$JWT_DIR/private.pem" ] || [ ! -f "$JWT_DIR/public.pem" ]; then
   # Use JWT_PASSPHRASE from env or generate a random one
   JWT_PASSPHRASE_ACTUAL="${JWT_PASSPHRASE:-$(openssl rand -base64 32)}"
   
-  # Generate private key
-  openssl genpkey -algorithm RSA -out "$JWT_DIR/private.pem" -aes256 -pass pass:"$JWT_PASSPHRASE_ACTUAL" -pkcs8 -pkeyopt rsa_keygen_bits:4096
+  # Generate private key with correct syntax
+  openssl genpkey -algorithm RSA -out "$JWT_DIR/private.pem" -pass pass:"$JWT_PASSPHRASE_ACTUAL" -cipher aes256 -pkeyopt rsa_keygen_bits:4096
   
   # Generate public key from private key
   openssl pkey -in "$JWT_DIR/private.pem" -passin pass:"$JWT_PASSPHRASE_ACTUAL" -out "$JWT_DIR/public.pem" -pubout
