@@ -60,7 +60,10 @@ services:
       - key: MERCURE_SUBSCRIBER_JWT_KEY
         generateValue: true
       - key: MERCURE_EXTRA_DIRECTIVES
-        value: "cors_origins * anonymous"
+        value: |
+          cors_origins *
+          anonymous 1
+
 
 databases:
   - name: guard-db
