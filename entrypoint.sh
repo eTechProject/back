@@ -33,6 +33,10 @@ if [ ! -f "$JWT_DIR/private.pem" ] || [ ! -f "$JWT_DIR/public.pem" ]; then
   # Generate public key from private key
   openssl rsa -in "$JWT_DIR/private.pem" -passin pass:"$JWT_PASSPHRASE_GENERATED" -pubout -out "$JWT_DIR/public.pem"
   
+  # Set proper permissions for JWT keys
+  chmod 600 "$JWT_DIR/private.pem"
+  chmod 644 "$JWT_DIR/public.pem"
+  
   # OVERRIDE all JWT environment variables from Render with generated values
   export JWT_PASSPHRASE="$JWT_PASSPHRASE_GENERATED"
   export JWT_SECRET_KEY="/var/www/app/$JWT_DIR/private.pem"
@@ -68,6 +72,25 @@ echo "[entrypoint] JWT Configuration:"
 echo "  JWT_SECRET_KEY: ${JWT_SECRET_KEY:-not set}"
 echo "  JWT_PUBLIC_KEY: ${JWT_PUBLIC_KEY:-not set}"
 echo "  JWT_PASSPHRASE: ${JWT_PASSPHRASE:+***set***}"
+
+# Verify JWT keys are accessible and valid
+if [ -f "${JWT_SECRET_KEY#/var/www/app/}" ]; then
+  echo "[entrypoint] Private key file exists and is readable"
+  # Test if we can read the private key with the passphrase
+  if openssl rsa -in "${JWT_SECRET_KEY#/var/www/app/}" -passin pass:"$JWT_PASSPHRASE" -noout 2>/dev/null; then
+    echo "[entrypoint] Private key is valid and passphrase is correct"
+  else
+    echo "[entrypoint] ERROR: Cannot read private key with provided passphrase"
+  fi
+else
+  echo "[entrypoint] ERROR: Private key file not found at ${JWT_SECRET_KEY#/var/www/app/}"
+fi
+
+if [ -f "${JWT_PUBLIC_KEY#/var/www/app/}" ]; then
+  echo "[entrypoint] Public key file exists and is readable"
+else
+  echo "[entrypoint] ERROR: Public key file not found at ${JWT_PUBLIC_KEY#/var/www/app/}"
+fi
 
 
 # Clear Symfony cache to ensure fresh start
