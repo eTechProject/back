@@ -40,6 +40,16 @@ if [ ! -f "$JWT_DIR/private.pem" ] || [ ! -f "$JWT_DIR/public.pem" ]; then
   # Export JWT key paths as environment variables
   export JWT_SECRET_KEY="$JWT_DIR/private.pem"
   export JWT_PUBLIC_KEY="$JWT_DIR/public.pem"
+
+  # Ensure a minimal .env exists (Symfony Dotenv will fatal otherwise if it expects the file)
+  if [ ! -f .env ]; then
+    echo "[entrypoint] Creating fallback .env file (was missing)"
+    {
+      echo "APP_ENV=${APP_ENV:-prod}";
+      echo "APP_DEBUG=0";
+      echo "MESSENGER_TRANSPORT_DSN=${MESSENGER_TRANSPORT_DSN}";
+    } > .env
+  fi
   
   # Also write them to .env file for persistence
   echo "JWT_PASSPHRASE=$JWT_PASSPHRASE_GENERATED" >> .env
@@ -51,15 +61,6 @@ else
   echo "[entrypoint] JWT keypair already exists"
 fi
 
-# Ensure a minimal .env exists (Symfony Dotenv will fatal otherwise if it expects the file)
-if [ ! -f .env ]; then
-  echo "[entrypoint] Creating fallback .env file (was missing)"
-  {
-    echo "APP_ENV=${APP_ENV:-prod}";
-    echo "APP_DEBUG=0";
-    echo "MESSENGER_TRANSPORT_DSN=${MESSENGER_TRANSPORT_DSN}";
-  } > .env
-fi
 
 # Clear Symfony cache to ensure fresh start
 echo "[entrypoint] Clearing Symfony cache"
