@@ -23,10 +23,9 @@ fi
 if [ ! -f "$JWT_DIR/private.pem" ] || [ ! -f "$JWT_DIR/public.pem" ]; then
   echo "[entrypoint] Generating JWT keypair (missing on deployment)"
   
-  # Generate a random passphrase for JWT keys
+  # Always generate a new random passphrase (override Render environment)
   JWT_PASSPHRASE_GENERATED=$(openssl rand -base64 32)
-  
-  echo "[entrypoint] Generated new JWT passphrase"
+  echo "[entrypoint] Generated new JWT passphrase (overriding Render environment)"
   
   # Generate private key using genrsa (more compatible)
   openssl genrsa -aes256 -passout pass:"$JWT_PASSPHRASE_GENERATED" -out "$JWT_DIR/private.pem" 4096
@@ -34,12 +33,10 @@ if [ ! -f "$JWT_DIR/private.pem" ] || [ ! -f "$JWT_DIR/public.pem" ]; then
   # Generate public key from private key
   openssl rsa -in "$JWT_DIR/private.pem" -passin pass:"$JWT_PASSPHRASE_GENERATED" -pubout -out "$JWT_DIR/public.pem"
   
-  # Export the generated passphrase as environment variable for the application
+  # OVERRIDE all JWT environment variables from Render with generated values
   export JWT_PASSPHRASE="$JWT_PASSPHRASE_GENERATED"
-  
-  # Export JWT key paths as environment variables
-  export JWT_SECRET_KEY="$JWT_DIR/private.pem"
-  export JWT_PUBLIC_KEY="$JWT_DIR/public.pem"
+  export JWT_SECRET_KEY="/var/www/app/$JWT_DIR/private.pem"
+  export JWT_PUBLIC_KEY="/var/www/app/$JWT_DIR/public.pem"
 
   # Ensure a minimal .env exists (Symfony Dotenv will fatal otherwise if it expects the file)
   if [ ! -f .env ]; then
@@ -50,11 +47,6 @@ if [ ! -f "$JWT_DIR/private.pem" ] || [ ! -f "$JWT_DIR/public.pem" ]; then
       echo "MESSENGER_TRANSPORT_DSN=${MESSENGER_TRANSPORT_DSN}";
     } > .env
   fi
-  
-  # Also write them to .env file for persistence
-  echo "JWT_PASSPHRASE=$JWT_PASSPHRASE_GENERATED" >> .env
-  echo "JWT_SECRET_KEY=$JWT_DIR/private.pem" >> .env
-  echo "JWT_PUBLIC_KEY=$JWT_DIR/public.pem" >> .env
   
   echo "[entrypoint] JWT keypair generated successfully"
 else
