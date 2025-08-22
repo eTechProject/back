@@ -13,9 +13,11 @@ fi
 : "${MESSENGER_TRANSPORT_DSN:=doctrine://default?auto_setup=0}"
 export MESSENGER_TRANSPORT_DSN
 
-# Provide default Mercure JWT secret if not supplied by environment
-: "${MERCURE_SUBSCRIBER_JWT_KEY:=default_mercure_secret_$(openssl rand -hex 16)}"
-export MERCURE_SUBSCRIBER_JWT_KEY
+# Provide Mercure JWT secrets matching your working configuration
+: "${MERCURE_JWT_SECRET:=changeme}"
+export MERCURE_JWT_SECRET
+export MERCURE_PUBLISHER_JWT_KEY="$MERCURE_JWT_SECRET"
+export MERCURE_SUBSCRIBER_JWT_KEY="$MERCURE_JWT_SECRET"
 
 # Generate JWT keys if they don't exist (needed for Render deployment)
 JWT_DIR="config/jwt"
@@ -31,15 +33,18 @@ if [ ! -f "$JWT_DIR/private.pem" ] || [ ! -f "$JWT_DIR/public.pem" ]; then
   JWT_PASSPHRASE_GENERATED=$(openssl rand -base64 32)
   echo "[entrypoint] Generated new JWT passphrase (overriding Render environment)"
   
-  # Generate private key using genrsa (more compatible)
-  openssl genrsa -aes256 -passout pass:"$JWT_PASSPHRASE_GENERATED" -out "$JWT_DIR/private.pem" 4096
+  # Generate private key using genpkey (matching your working config)
+  echo "[entrypoint] Generating JWT private key..."
+  openssl genpkey -algorithm RSA -out "$JWT_DIR/private.pem" -aes256 -pass pass:"$JWT_PASSPHRASE_GENERATED"
   
-  # Generate public key from private key
-  openssl rsa -in "$JWT_DIR/private.pem" -passin pass:"$JWT_PASSPHRASE_GENERATED" -pubout -out "$JWT_DIR/public.pem"
+  # Generate public key using pkey (matching your working config)
+  echo "[entrypoint] Generating JWT public key..."
+  openssl pkey -in "$JWT_DIR/private.pem" -out "$JWT_DIR/public.pem" -pubout -passin pass:"$JWT_PASSPHRASE_GENERATED"
   
   # Set proper permissions for JWT keys
   chmod 600 "$JWT_DIR/private.pem"
   chmod 644 "$JWT_DIR/public.pem"
+  chown -R www-data:www-data "$JWT_DIR" 2>/dev/null || true
   
   # OVERRIDE all JWT environment variables from Render with generated values
   export JWT_PASSPHRASE="$JWT_PASSPHRASE_GENERATED"
@@ -80,26 +85,38 @@ echo "  JWT_PASSPHRASE: ${JWT_PASSPHRASE:+***set***}"
 # Verify JWT keys are accessible and valid
 if [ -f "${JWT_SECRET_KEY#/var/www/app/}" ]; then
   echo "[entrypoint] Private key file exists and is readable"
-  # Test if we can read the private key with the passphrase
-  if openssl rsa -in "${JWT_SECRET_KEY#/var/www/app/}" -passin pass:"$JWT_PASSPHRASE" -noout 2>/dev/null; then
-    echo "[entrypoint] Private key is valid and passphrase is correct"
+  # Test if we can read the private key with the passphrase (using pkey command like working config)
+  if openssl pkey -in "${JWT_SECRET_KEY#/var/www/app/}" -passin pass:"$JWT_PASSPHRASE" -noout 2>/dev/null; then
+    echo "[entrypoint] ✓ Private key is valid and passphrase is correct"
   else
-    echo "[entrypoint] ERROR: Cannot read private key with provided passphrase"
+    echo "[entrypoint] ✗ ERROR: Cannot read private key with provided passphrase"
   fi
 else
-  echo "[entrypoint] ERROR: Private key file not found at ${JWT_SECRET_KEY#/var/www/app/}"
+  echo "[entrypoint] ✗ ERROR: Private key file not found at ${JWT_SECRET_KEY#/var/www/app/}"
 fi
 
 if [ -f "${JWT_PUBLIC_KEY#/var/www/app/}" ]; then
-  echo "[entrypoint] Public key file exists and is readable"
+  echo "[entrypoint] ✓ Public key file exists and is readable"
 else
-  echo "[entrypoint] ERROR: Public key file not found at ${JWT_PUBLIC_KEY#/var/www/app/}"
+  echo "[entrypoint] ✗ ERROR: Public key file not found at ${JWT_PUBLIC_KEY#/var/www/app/}"
 fi
 
 
-# Clear Symfony cache to ensure fresh start
-echo "[entrypoint] Clearing Symfony cache"
-php bin/console cache:clear --env=prod --no-debug || echo "[entrypoint] Cache clear failed, continuing..."
+# Clear Symfony cache to ensure fresh start (with better error handling)
+echo "[entrypoint] Clearing Symfony cache..."
+php bin/console cache:clear --env=prod --no-debug || {
+  echo "[entrypoint] Cache clear failed, trying to remove cache manually..."
+  rm -rf var/cache/* 2>/dev/null || true
+  echo "[entrypoint] Manual cache removal completed"
+}
+
+echo "[entrypoint] Warming up cache..."
+php bin/console cache:warmup --env=prod --no-debug || echo "[entrypoint] Cache warmup failed, continuing..."
+
+# Fix permissions like in your working config
+echo "[entrypoint] Setting proper permissions..."
+chown -R www-data:www-data var/ 2>/dev/null || true
+chmod -R 775 var/ 2>/dev/null || true
 
 # Run database migrations (ignore failures if DB not reachable yet)
 if [ -n "${RUN_MIGRATIONS:-1}" ]; then

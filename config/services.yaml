@@ -1,7 +1,7 @@
 parameters:
-    # Adjusted to match Render env var names (previously expected MERCURE_JWT_PUBLISHER / MERCURE_JWT_SECRET)
-    mercure_jwt_token: '%env(MERCURE_PUBLISHER_JWT_KEY)%'
-    mercure_jwt_secret: '%env(MERCURE_SUBSCRIBER_JWT_KEY)%'
+    # Use consistent MERCURE_JWT_SECRET for both publisher and subscriber (matching working config)
+    mercure_jwt_token: '%env(MERCURE_JWT_SECRET)%'
+    mercure_jwt_secret: '%env(MERCURE_JWT_SECRET)%'
 
 services:
     _defaults:
