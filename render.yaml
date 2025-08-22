@@ -27,12 +27,12 @@ services:
         fromService:
           type: web
           name: mercure-hub
-          envVarKey: MERCURE_PUBLIC_URL
-      - key: MERCURE_PUBLIC_URL
+          property: url
+      - key: MERCURE_PUBLIC_URL  
         fromService:
           type: web
           name: mercure-hub
-          envVarKey: MERCURE_PUBLIC_URL
+          property: url
       - key: MERCURE_JWT_SECRET
         generateValue: true
       - key: RUN_MIGRATIONS
@@ -42,25 +42,25 @@ services:
       - key: AUTO_GENERATE_MIGRATION
         value: "0"
 
-# Mercure hub service for real-time notifications
+# Mercure hub service for real-time notifications  
   - type: web
     name: mercure-hub
-    env: docker
+    runtime: go
     plan: free
-    image: dunglas/mercure:latest
+    buildCommand: |
+      wget -O mercure.tar.gz https://github.com/dunglas/mercure/releases/download/v0.15.8/mercure_Linux_x86_64.tar.gz
+      tar -xzf mercure.tar.gz
+      chmod +x mercure
+    startCommand: ./mercure run
     envVars:
       - key: SERVER_NAME
         value: ':10000'
       - key: MERCURE_PUBLISHER_JWT_KEY
         generateValue: true
       - key: MERCURE_SUBSCRIBER_JWT_KEY
-        fromEnvVar: MERCURE_PUBLISHER_JWT_KEY
-      - key: MERCURE_PUBLIC_URL
-        value: https://mercure-hub-5cdd.onrender.com/.well-known/mercure
+        generateValue: true
       - key: MERCURE_EXTRA_DIRECTIVES
-        value: |
-          cors_origins *
-          anonymous 1
+        value: "cors_origins * anonymous"
 
 databases:
   - name: guard-db
