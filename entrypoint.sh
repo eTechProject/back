@@ -23,17 +23,28 @@ fi
 if [ ! -f "$JWT_DIR/private.pem" ] || [ ! -f "$JWT_DIR/public.pem" ]; then
   echo "[entrypoint] Generating JWT keypair (missing on deployment)"
   
-  # Use JWT_PASSPHRASE from env or generate a random one
-  JWT_PASSPHRASE_ACTUAL="${JWT_PASSPHRASE:-$(openssl rand -base64 32)}"
+  # Generate a random passphrase for JWT keys
+  JWT_PASSPHRASE_GENERATED=$(openssl rand -base64 32)
+  
+  echo "[entrypoint] Generated new JWT passphrase"
   
   # Generate private key using genrsa (more compatible)
-  openssl genrsa -aes256 -passout pass:"$JWT_PASSPHRASE_ACTUAL" -out "$JWT_DIR/private.pem" 4096
+  openssl genrsa -aes256 -passout pass:"$JWT_PASSPHRASE_GENERATED" -out "$JWT_DIR/private.pem" 4096
   
   # Generate public key from private key
-  openssl rsa -in "$JWT_DIR/private.pem" -passin pass:"$JWT_PASSPHRASE_ACTUAL" -pubout -out "$JWT_DIR/public.pem"
+  openssl rsa -in "$JWT_DIR/private.pem" -passin pass:"$JWT_PASSPHRASE_GENERATED" -pubout -out "$JWT_DIR/public.pem"
   
-  # Update environment with the actual passphrase used
-  export JWT_PASSPHRASE="$JWT_PASSPHRASE_ACTUAL"
+  # Export the generated passphrase as environment variable for the application
+  export JWT_PASSPHRASE="$JWT_PASSPHRASE_GENERATED"
+  
+  # Export JWT key paths as environment variables
+  export JWT_SECRET_KEY="$JWT_DIR/private.pem"
+  export JWT_PUBLIC_KEY="$JWT_DIR/public.pem"
+  
+  # Also write them to .env file for persistence
+  echo "JWT_PASSPHRASE=$JWT_PASSPHRASE_GENERATED" >> .env
+  echo "JWT_SECRET_KEY=$JWT_DIR/private.pem" >> .env
+  echo "JWT_PUBLIC_KEY=$JWT_DIR/public.pem" >> .env
   
   echo "[entrypoint] JWT keypair generated successfully"
 else
