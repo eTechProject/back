@@ -13,6 +13,33 @@ fi
 : "${MESSENGER_TRANSPORT_DSN:=doctrine://default?auto_setup=0}"
 export MESSENGER_TRANSPORT_DSN
 
+# Generate JWT keys if they don't exist (needed for Render deployment)
+JWT_DIR="config/jwt"
+if [ ! -d "$JWT_DIR" ]; then
+  echo "[entrypoint] Creating JWT directory"
+  mkdir -p "$JWT_DIR"
+fi
+
+if [ ! -f "$JWT_DIR/private.pem" ] || [ ! -f "$JWT_DIR/public.pem" ]; then
+  echo "[entrypoint] Generating JWT keypair (missing on deployment)"
+  
+  # Use JWT_PASSPHRASE from env or generate a random one
+  JWT_PASSPHRASE_ACTUAL="${JWT_PASSPHRASE:-$(openssl rand -base64 32)}"
+  
+  # Generate private key
+  openssl genpkey -algorithm RSA -out "$JWT_DIR/private.pem" -aes256 -pass pass:"$JWT_PASSPHRASE_ACTUAL" -pkcs8 -pkeyopt rsa_keygen_bits:4096
+  
+  # Generate public key from private key
+  openssl pkey -in "$JWT_DIR/private.pem" -passin pass:"$JWT_PASSPHRASE_ACTUAL" -out "$JWT_DIR/public.pem" -pubout
+  
+  # Update environment with the actual passphrase used
+  export JWT_PASSPHRASE="$JWT_PASSPHRASE_ACTUAL"
+  
+  echo "[entrypoint] JWT keypair generated successfully"
+else
+  echo "[entrypoint] JWT keypair already exists"
+fi
+
 # Ensure a minimal .env exists (Symfony Dotenv will fatal otherwise if it expects the file)
 if [ ! -f .env ]; then
   echo "[entrypoint] Creating fallback .env file (was missing)"
