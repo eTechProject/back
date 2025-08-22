@@ -27,12 +27,12 @@ services:
         fromService:
           type: web
           name: mercure-hub
-          property: url
+          property: host
       - key: MERCURE_PUBLIC_URL  
         fromService:
           type: web
           name: mercure-hub
-          property: url
+          property: host
       - key: MERCURE_JWT_SECRET
         generateValue: true
       - key: RUN_MIGRATIONS
