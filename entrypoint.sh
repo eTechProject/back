@@ -50,6 +50,10 @@ if [ ! -f .env ]; then
   } > .env
 fi
 
+# Clear Symfony cache to ensure fresh start
+echo "[entrypoint] Clearing Symfony cache"
+php bin/console cache:clear --env=prod --no-debug || echo "[entrypoint] Cache clear failed, continuing..."
+
 # Run database migrations (ignore failures if DB not reachable yet)
 if [ -n "${RUN_MIGRATIONS:-1}" ]; then
   # Ensure migrations directory exists
