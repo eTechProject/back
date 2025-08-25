@@ -38,7 +38,7 @@ class TaskRequestDTO
     #[Assert\All([
         new Assert\Type(type: 'numeric', message: 'Chaque coordonnée doit être numérique')
     ])]
-    public array $assignPositi;
+    public array $assignPosition;
 
     public function __construct(
         string $agentId = '',
