@@ -8,6 +8,7 @@ class TaskHistoryDTO
         public string $taskId,
         public string $description,
         public string $status,
+        public string $type,
         public string $startDate,
         public ?string $endDate,
         public string $orderId,

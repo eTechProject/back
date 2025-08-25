@@ -151,10 +151,10 @@ class AgentLocationService
             $rawLocation = $this->createRawLocation($agent, $task, $locationData, $recordedAt);
             
             // 5. If significant, create significant location entry
-            $significantLocation = null;
-            if ($locationData->isSignificant === true) {
-                $significantLocation = $this->createSignificantLocation($agent, $task, $locationData, $rawLocation, $recordedAt);
-            }
+            // $significantLocation = null;
+            // if ($locationData->isSignificant === true) {
+            //     $significantLocation = $this->createSignificantLocation($agent, $task, $locationData, $rawLocation, $recordedAt);
+            // }
 
             // 6. Batch flush for better performance
             $this->entityManager->flush();
@@ -166,7 +166,7 @@ class AgentLocationService
             }
 
             // 8. Publish to Mercure (async-like, doesn't block)
-            $this->publishLocationUpdate($agent,$task, $rawLocation, $significantLocation);
+            $this->publishLocationUpdate($agent,$task, $rawLocation, null);
 
             $this->logger->info('Location recorded successfully', [
                 'user_id' => $encryptedUserId,

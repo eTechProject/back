@@ -6,6 +6,7 @@ use App\Entity\Tasks;
 use App\Entity\ServiceOrders;
 use App\Entity\Agents;
 use App\Enum\Status;
+use App\Enum\TaskType;
 use App\Enum\EntityType;
 use App\Repository\TasksRepository;
 use App\Repository\ServiceOrdersRepository;
@@ -156,18 +157,19 @@ class TaskService
         $agent = $assignment['agent'];
         $coordinates = $assignment['coordinates'];
         
-        $task = new Tasks();
-        $task->setOrder($serviceOrder);
-        $task->setAgent($agent);
-        $task->setStatus(Status::PENDING);
-        $task->setDescription("Mission assignée aux coordonnées [{$coordinates[0]}, {$coordinates[1]}]");
-        $task->setStartDate(new \DateTimeImmutable());
-        
-        // Create Point geometry from coordinates [longitude, latitude]
-        $pointWKT = $this->createPointWKTFromCoordinates($coordinates);
-        $task->setAssignPosition($pointWKT);
+    $task = new Tasks();
+    $task->setOrder($serviceOrder);
+    $task->setAgent($agent);
+    $task->setStatus(Status::PENDING);
+    $task->setDescription("Mission assignée aux coordonnées [{$coordinates[0]}, {$coordinates[1]}]");
+    $task->setStartDate(new \DateTimeImmutable());
+    $task->setType(TaskType::PATROUILLE); // Default type, adjust as needed
 
-        return $task;
+    // Create Point geometry from coordinates [longitude, latitude]
+    $pointWKT = $this->createPointWKTFromCoordinates($coordinates);
+    $task->setAssignPosition($pointWKT);
+
+    return $task;
     }
 
     /**
@@ -256,6 +258,7 @@ class TaskService
             taskId: $this->cryptService->encryptId((string)$task->getId(), EntityType::TASK->value),
             description: $task->getDescription(),
             status: $task->getStatus()->value,
+            type: $task->getType()->value,
             startDate: $task->getStartDate()->format('Y-m-d\TH:i:s\Z'),
             endDate: $task->getEndDate()?->format('Y-m-d\TH:i:s\Z'),
             orderId: $this->cryptService->encryptId((string)$task->getOrder()->getId(), EntityType::SERVICE_ORDER->value),
