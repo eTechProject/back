@@ -9,7 +9,7 @@ use App\Enum\Status;
 use App\Enum\TaskType;
 use App\Enum\EntityType;
 use App\Repository\TasksRepository;
-use \App\DTO\Task\Request\TaskRequestDTO;
+use App\DTO\Task\Request\TaskRequestDTO;
 use App\Repository\ServiceOrdersRepository;
 use App\Repository\AgentsRepository;
 use App\DTO\Task\Response\TaskHistoryDTO;
@@ -61,26 +61,50 @@ class TaskService
     private function validateAgentAssignments(array $agentAssignments): array
     {
         $validatedAssignments = [];
-        foreach ($agentAssignments as $index => $taskDto) {
-            if (!$taskDto instanceof TaskRequestDTO) {
-                throw new \InvalidArgumentException("Assignation #{$index}: doit être une instance de TaskRequestDTO valide");
+
+        foreach ($agentAssignments as $index => $assignment) {
+            if (!is_array($assignment)) {
+                throw new \InvalidArgumentException("Assignation #{$index}: doit être un tableau valide");
             }
+
+            // Map array → DTO
+            $taskDto = new TaskRequestDTO(
+                $assignment['agentId'] ?? '',
+                $assignment['type'] ?? '',
+                $assignment['description'] ?? '',
+                $assignment['startDate'] ?? '',
+                $assignment['endDate'] ?? '',
+                $assignment['assignPosition'] ?? []
+            );
+
+            // Validate agent existence & availability
             $agent = $this->validateAndGetAgent($taskDto->agentId);
             $this->validateAgentAvailability($agent);
-            if (!isset($taskDto->assignPosition) || !is_array($taskDto->assignPosition) || count($taskDto->assignPosition) !== 2 || !is_numeric($taskDto->assignPosition[0]) || !is_numeric($taskDto->assignPosition[1])) {
+
+            // Validate assignPosition
+            if (
+                !is_array($taskDto->assignPosition) ||
+                count($taskDto->assignPosition) !== 2 ||
+                !is_numeric($taskDto->assignPosition[0]) ||
+                !is_numeric($taskDto->assignPosition[1])
+            ) {
                 throw new \InvalidArgumentException("Assignation #{$index}: assignPosition doit être un tableau [longitude, latitude] de deux valeurs numériques");
             }
+
+            // Normalize validated data
             $validatedAssignments[] = [
-                'agent' => $agent,
-                'type' => $taskDto->type,
-                'description' => $taskDto->description,
-                'startDate' => $taskDto->startDate,
-                'endDate' => $taskDto->endDate,
-                'assignPosition' => $taskDto->assignPosition
+                'agent'          => $agent,
+                'type'           => $taskDto->type,
+                'description'    => $taskDto->description,
+                'startDate'      => $taskDto->startDate,
+                'endDate'        => $taskDto->endDate,
+                'assignPosition' => $taskDto->assignPosition,
             ];
         }
+
         return $validatedAssignments;
     }
+
 
     /**
      * Validate assignment structure (agentId and coordinates presence)
