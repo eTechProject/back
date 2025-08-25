@@ -13,9 +13,7 @@ class AssignAgentsDTO
     #[Assert\NotBlank(message: 'Au moins un agent doit être assigné')]
     #[Assert\Type(type: 'array', message: 'Les assignations d\'agents doivent être un tableau')]
     #[Assert\Count(min: 1, minMessage: 'Au moins un agent doit être assigné')]
-    #[Assert\All([
-        new Assert\Type(type: TaskRequestDTO::class, message: 'Chaque assignation doit être une instance de TaskRequestDTO')
-    ])]
+    #[Assert\Valid]
     public array $agentAssignments;
 
     public function __construct(
