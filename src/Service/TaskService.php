@@ -9,6 +9,7 @@ use App\Enum\Status;
 use App\Enum\TaskType;
 use App\Enum\EntityType;
 use App\Repository\TasksRepository;
+use \App\DTO\Task\Request\TaskRequestDTO;
 use App\Repository\ServiceOrdersRepository;
 use App\Repository\AgentsRepository;
 use App\DTO\Task\Response\TaskHistoryDTO;
@@ -61,7 +62,7 @@ class TaskService
     {
         $validatedAssignments = [];
         foreach ($agentAssignments as $index => $taskDto) {
-            if (!is_object($taskDto) || !property_exists($taskDto, 'agentId')) {
+            if (!$taskDto instanceof TaskRequestDTO) {
                 throw new \InvalidArgumentException("Assignation #{$index}: doit être une instance de TaskRequestDTO valide");
             }
             $agent = $this->validateAndGetAgent($taskDto->agentId);
