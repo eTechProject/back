@@ -60,20 +60,24 @@ class TaskService
     private function validateAgentAssignments(array $agentAssignments): array
     {
         $validatedAssignments = [];
-        
-        foreach ($agentAssignments as $index => $assignment) {
-            $this->validateAssignmentStructure($assignment, $index);
-            
-            $agent = $this->validateAndGetAgent($assignment['agentId']);
+        foreach ($agentAssignments as $index => $taskDto) {
+            if (!is_object($taskDto) || !property_exists($taskDto, 'agentId')) {
+                throw new \InvalidArgumentException("Assignation #{$index}: doit être une instance de TaskRequestDTO valide");
+            }
+            $agent = $this->validateAndGetAgent($taskDto->agentId);
             $this->validateAgentAvailability($agent);
-            $coordinates = $this->validateCoordinates($assignment['coordinates'], $index);
-
+            if (!isset($taskDto->assignPosition) || !is_array($taskDto->assignPosition) || count($taskDto->assignPosition) !== 2 || !is_numeric($taskDto->assignPosition[0]) || !is_numeric($taskDto->assignPosition[1])) {
+                throw new \InvalidArgumentException("Assignation #{$index}: assignPosition doit être un tableau [longitude, latitude] de deux valeurs numériques");
+            }
             $validatedAssignments[] = [
                 'agent' => $agent,
-                'coordinates' => $coordinates
+                'type' => $taskDto->type,
+                'description' => $taskDto->description,
+                'startDate' => $taskDto->startDate,
+                'endDate' => $taskDto->endDate,
+                'assignPosition' => $taskDto->assignPosition
             ];
         }
-
         return $validatedAssignments;
     }
 
@@ -154,22 +158,18 @@ class TaskService
      */
     private function createTaskForAssignment(ServiceOrders $serviceOrder, array $assignment): Tasks
     {
-        $agent = $assignment['agent'];
-        $coordinates = $assignment['coordinates'];
-        
-    $task = new Tasks();
-    $task->setOrder($serviceOrder);
-    $task->setAgent($agent);
-    $task->setStatus(Status::PENDING);
-    $task->setDescription("Mission assignée aux coordonnées [{$coordinates[0]}, {$coordinates[1]}]");
-    $task->setStartDate(new \DateTimeImmutable());
-    $task->setType(TaskType::PATROUILLE); // Default type, adjust as needed
-
-    // Create Point geometry from coordinates [longitude, latitude]
-    $pointWKT = $this->createPointWKTFromCoordinates($coordinates);
-    $task->setAssignPosition($pointWKT);
-
-    return $task;
+        $task = new Tasks();
+        $task->setOrder($serviceOrder);
+        $task->setAgent($assignment['agent']);
+        $task->setStatus(Status::PENDING);
+        $task->setType(TaskType::from($assignment['type']));
+        $task->setDescription($assignment['description'] ?? '');
+        $task->setStartDate(new \DateTimeImmutable($assignment['startDate']));
+        $task->setEndDate(new \DateTimeImmutable($assignment['endDate']));
+        // assignPosition is an array [lng, lat]
+        $pointWKT = $this->createPointWKTFromCoordinates($assignment['assignPosition']);
+        $task->setAssignPosition($pointWKT);
+        return $task;
     }
 
     /**

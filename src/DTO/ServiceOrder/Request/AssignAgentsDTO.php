@@ -3,6 +3,7 @@
 namespace App\DTO\ServiceOrder\Request;
 
 use Symfony\Component\Validator\Constraints as Assert;
+use App\DTO\Task\Request\TaskRequestDTO;
 
 class AssignAgentsDTO
 {
@@ -10,33 +11,10 @@ class AssignAgentsDTO
     public string $orderId;
 
     #[Assert\NotBlank(message: 'Au moins un agent doit être assigné')]
-    #[Assert\Type(
-        type: 'array',
-        message: 'Les assignations d\'agents doivent être un tableau'
-    )]
-    #[Assert\Count(
-        min: 1,
-        minMessage: 'Au moins un agent doit être assigné'
-    )]
+    #[Assert\Type(type: 'array', message: 'Les assignations d\'agents doivent être un tableau')]
+    #[Assert\Count(min: 1, minMessage: 'Au moins un agent doit être assigné')]
     #[Assert\All([
-        new Assert\Collection([
-            'agentId' => [
-                new Assert\NotBlank(message: 'L\'ID de l\'agent est requis'),
-                new Assert\Type(type: 'string', message: 'L\'ID de l\'agent doit être une chaîne')
-            ],
-            'coordinates' => [
-                new Assert\NotBlank(message: 'Les coordonnées sont requises'),
-                new Assert\Type(type: 'array', message: 'Les coordonnées doivent être un tableau'),
-                new Assert\Count(
-                    min: 2,
-                    max: 2,
-                    exactMessage: 'Les coordonnées doivent contenir exactement 2 éléments [longitude, latitude]'
-                ),
-                new Assert\All([
-                    new Assert\Type(type: 'numeric', message: 'Chaque coordonnée doit être numérique')
-                ])
-            ]
-        ])
+        new Assert\Type(type: TaskRequestDTO::class, message: 'Chaque assignation doit être une instance de TaskRequestDTO')
     ])]
     public array $agentAssignments;
 
