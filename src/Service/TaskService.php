@@ -166,7 +166,6 @@ class TaskService
         $task->setDescription($assignment['description'] ?? '');
         $task->setStartDate(new \DateTimeImmutable($assignment['startDate']));
         $task->setEndDate(new \DateTimeImmutable($assignment['endDate']));
-        // assignPosition is an array [lng, lat]
         $pointWKT = $this->createPointWKTFromCoordinates($assignment['assignPosition']);
         $task->setAssignPosition($pointWKT);
         return $task;
