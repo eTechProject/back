@@ -357,7 +357,6 @@ class ClientMapServiceTest extends TestCase
             'encrypted_user_id',
             $agent->getUser()->getEmail(),
             $agent->getUser()->getName(),
-            $agent->getUser()->getRole()
         );
 
         return new AgentResponseDTO(

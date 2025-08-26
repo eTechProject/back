@@ -180,7 +180,6 @@ class AgentService
             $this->cryptService->encryptId($user->getId(), EntityType::USER->value),
             $user->getEmail(),
             $user->getName(),
-            $user->getRole(),
             $user->getPhone()
         );
 
