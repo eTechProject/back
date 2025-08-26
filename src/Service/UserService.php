@@ -279,6 +279,7 @@ class UserService
             userId: $this->cryptService->encryptId((string)$user->getId(), EntityType::USER->value),
             email: $user->getEmail(),
             name: $user->getName(),
+            role: $user->getRole(),
             phone: $user->getPhone()
         );
     }
