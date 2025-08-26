@@ -38,6 +38,7 @@ class ClientOrderService
             userId: $this->cryptService->encryptId((string)$client->getId(), EntityType::USER->value),
             email: $client->getEmail(),
             name: $client->getName(),
+            role: $client->getRole(),
             phone: $client->getPhone()
         );
 

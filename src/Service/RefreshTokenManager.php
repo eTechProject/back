@@ -23,11 +23,7 @@ class RefreshTokenManager
     {
         $plainToken = bin2hex(random_bytes(64));
         $hashedToken = password_hash($plainToken, PASSWORD_DEFAULT);
-        $refreshToken = new RefreshToken();
-        $refreshToken->setToken($hashedToken)
-            ->setUser($user)
-            ->setExpiresAt((new \DateTimeImmutable())->modify("+{$this->ttl} seconds"))
-            ->setRevoked(false);
+        $refreshToken = new RefreshToken($user, (new \DateTimeImmutable())->modify("+{$this->ttl} seconds"), $hashedToken);
         $this->em->persist($refreshToken);
         $this->em->flush();
         // Attach plainToken for controller access
@@ -76,6 +72,7 @@ class RefreshTokenManager
         }
         return false;
     }
+
     public function findValidRefreshToken(string $plainToken): ?RefreshToken
     {
         $tokens = $this->repository->findBy(['revoked' => false]);
