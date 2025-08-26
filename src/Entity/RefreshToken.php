@@ -4,74 +4,45 @@ namespace App\Entity;
 
 use App\Repository\RefreshTokenRepository;
 use Doctrine\ORM\Mapping as ORM;
-use Symfony\Component\Validator\Constraints as Assert;
 
-/**
- * @ORM\Entity(repositoryClass=RefreshTokenRepository::class)
- * @ORM\Table(name="refresh_token")
- */
+#[ORM\Entity(repositoryClass: RefreshTokenRepository::class)]
 class RefreshToken
 {
-    /**
-     * @var string|null
-     * Not persisted. Used to return the plain token to the client after generation.
-     */
-    private $plainToken;
+    #[ORM\Id]
+    #[ORM\GeneratedValue]
+    #[ORM\Column]
+    private ?int $id = null;
 
-    public function getPlainToken(): ?string
+    #[ORM\ManyToOne]
+    #[ORM\JoinColumn(nullable: false, onDelete: 'CASCADE')]
+    private ?User $user = null;
+
+    #[ORM\Column(type: 'string', length: 255, unique: true)]
+    private string $token;
+
+    #[ORM\Column(type: 'datetime')]
+    private \DateTimeInterface $expiresAt;
+
+    #[ORM\Column(type: 'boolean')]
+    private bool $revoked = false;
+
+    private ?string $plainToken = null;
+
+    public function __construct(User $user, \DateTimeInterface $expiresAt, string $token)
     {
-        return $this->plainToken;
+        $this->user = $user;
+        $this->expiresAt = $expiresAt;
+        $this->token = $token;
     }
 
-    public function setPlainToken(?string $plainToken): self
-    {
-        $this->plainToken = $plainToken;
-        return $this;
-    }
-    /**
-     * @ORM\Id
-     * @ORM\GeneratedValue
-     * @ORM\Column(type="integer")
-     */
-    private $id;
-
-    /**
-     * @ORM\Column(type="string", length=255, unique=true)
-     * @Assert\NotBlank
-     */
-    private $token;
-
-    /**
-     * @ORM\ManyToOne(targetEntity=User::class)
-     * @ORM\JoinColumn(nullable=false, onDelete="CASCADE")
-     */
-    private $user;
-
-    /**
-     * @ORM\Column(type="datetime")
-     * @Assert\NotBlank
-     */
-    private $expiresAt;
-
-    /**
-     * @ORM\Column(type="boolean")
-     */
-    private $revoked = false;
-
-    // Getters and setters ...
     public function getId(): ?int
     {
         return $this->id;
     }
 
-    public function getToken(): ?string
+    public function setId(int $id): self
     {
-        return $this->token;
-    }
-
-    public function setToken(string $token): self
-    {
-        $this->token = $token;
+        $this->id = $id;
         return $this;
     }
 
@@ -83,6 +54,17 @@ class RefreshToken
     public function setUser(User $user): self
     {
         $this->user = $user;
+        return $this;
+    }
+
+    public function getToken(): ?string
+    {
+        return $this->token;
+    }
+
+    public function setToken(string $token): self
+    {
+        $this->token = $token;
         return $this;
     }
 
@@ -105,6 +87,17 @@ class RefreshToken
     public function setRevoked(bool $revoked): self
     {
         $this->revoked = $revoked;
+        return $this;
+    }
+
+    public function getPlainToken(): ?string
+    {
+        return $this->plainToken;
+    }
+
+    public function setPlainToken(?string $plainToken): self
+    {
+        $this->plainToken = $plainToken;
         return $this;
     }
 }
