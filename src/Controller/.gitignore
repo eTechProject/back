@@ -32,3 +32,5 @@ var/log/
 
 # Composer
 composer.lock
+
+data.sql

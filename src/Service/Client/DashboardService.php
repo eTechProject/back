@@ -12,6 +12,47 @@ use App\Repository\PaymentHistoryRepository;
 
 class DashboardService
 {
+    /**
+     * Calcule la distance totale parcourue à partir des positions assign_position (WKT POINT)
+     */
+    private function calculateTotalDistance(array $tasks): float
+    {
+        $total = 0.0;
+        $lastPoint = null;
+        foreach ($tasks as $task) {
+            if (method_exists($task, 'getAssignPosition')) {
+                $point = $task->getAssignPosition(); // Format WKT: "POINT(lon lat)"
+                if ($lastPoint) {
+                    $total += $this->haversineDistance($lastPoint, $point);
+                }
+                $lastPoint = $point;
+            }
+        }
+        return round($total, 2); // en kilomètres
+    }
+
+    /**
+     * Calcule la distance entre deux points WKT (Haversine)
+     */
+    private function haversineDistance(string $pointA, string $pointB): float
+    {
+        // Extrait les coordonnées du WKT
+        if (!preg_match('/POINT\\(([-\\d\\.]+) ([-\\d\\.]+)\\)/', $pointA, $a)) return 0;
+        if (!preg_match('/POINT\\(([-\\d\\.]+) ([-\\d\\.]+)\\)/', $pointB, $b)) return 0;
+        $lon1 = (float)$a[1];
+        $lat1 = (float)$a[2];
+        $lon2 = (float)$b[1];
+        $lat2 = (float)$b[2];
+        $earthRadius = 6371; // km
+        $dLat = deg2rad($lat2 - $lat1);
+        $dLon = deg2rad($lon2 - $lon1);
+        $lat1 = deg2rad($lat1);
+        $lat2 = deg2rad($lat2);
+        $a = sin($dLat/2) * sin($dLat/2) +
+             sin($dLon/2) * sin($dLon/2) * cos($lat1) * cos($lat2);
+        $c = 2 * atan2(sqrt($a), sqrt(1-$a));
+        return $earthRadius * $c;
+    }
     public function __construct(
         private readonly ServiceOrdersRepository $serviceOrdersRepository,
         private readonly PaymentRepository $paymentRepository,
@@ -57,8 +98,9 @@ class DashboardService
         // fallback PHP (si pas d'id)
         $result = [];
         foreach ($tasks as $task) {
-            if (method_exists($task, 'getStatus') && method_exists($task, 'getStartDate')) {
-                if ((string)$task->getStatus() === 'INCIDENT') {
+            if (method_exists($task, 'getDescription') && method_exists($task, 'getStartDate')) {
+                $desc = $task->getDescription();
+                if ($desc && stripos($desc, 'incident') !== false) {
                     $month = $task->getStartDate()->format('Y-m');
                     if (!isset($result[$month])) {
                         $result[$month] = 0;
@@ -167,8 +209,10 @@ class DashboardService
                 }
                 return 0;
             }, $tasks)),
-            'distance' => 0, // À calculer selon ta logique métier
-            'incidents' => 0, // À calculer selon ta logique métier
+            'distance' => $this->calculateTotalDistance($tasks),
+            'incidents' => count(array_filter($tasks, function($task) {
+                return method_exists($task, 'getDescription') && $task->getDescription() && stripos($task->getDescription(), 'incident') !== false;
+            })),
             'subscription' => !empty($payments),
         ];
 
