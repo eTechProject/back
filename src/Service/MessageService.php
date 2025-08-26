@@ -9,6 +9,7 @@ use App\Repository\TasksRepository;
 use App\Enum\UserRole;
 use App\Enum\EntityType;
 use App\Service\CryptService;
+use App\Service\TimeService;
 use Doctrine\ORM\EntityManagerInterface;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Mercure\HubInterface;
@@ -26,6 +27,7 @@ class MessageService
         private HubInterface $mercureHub,
         private LoggerInterface $logger,
         private CryptService $cryptService,
+        private TimeService $timeService,
         MercureQueueService $mercureQueueService = null
     ) {
         $this->mercureQueueService = $mercureQueueService;
@@ -146,7 +148,8 @@ class MessageService
         $message->setSender($entities['sender']);
         $message->setReceiver($entities['receiver']);
         $message->setContent($content);
-        $message->setSentAt(new \DateTimeImmutable());
+        // Utiliser le TimeService pour avoir la bonne heure locale
+        $message->setSentAt($this->timeService->now());
 
         $this->em->persist($message);
         $this->em->flush();
@@ -208,7 +211,7 @@ class MessageService
             'sender_id' => $this->cryptService->encryptId((string) $sender->getId(), EntityType::USER->value),
             'receiver_id' => $this->cryptService->encryptId((string) $receiver->getId(), EntityType::USER->value),
             'content' => $content,
-            'sent_at' => $message->getSentAt()->format(\DateTimeInterface::ATOM),
+            'sent_at' => $this->timeService->formatForApi($message->getSentAt()),
         ];
 
         $this->logger->debug('Payload Mercure préparé avec IDs cryptés', [
@@ -435,7 +438,7 @@ class MessageService
                 'sender_id' => $this->cryptService->encryptId((string) $message->getSender()->getId(), EntityType::USER->value),
                 'receiver_id' => $this->cryptService->encryptId((string) $message->getReceiver()->getId(), EntityType::USER->value),
                 'content' => $message->getContent(),
-                'sent_at' => $message->getSentAt()->format(\DateTimeInterface::ATOM),
+                'sent_at' => $this->timeService->formatForApi($message->getSentAt()),
             ];
         }, $messages);
     }
@@ -515,6 +518,262 @@ class MessageService
                 'assigned_agents' => $assignedAgentUserIds
             ]);
             throw new \InvalidArgumentException('L\'agent destinataire n\'est pas assigné à cette commande');
+        }
+    }
+
+    /**
+     * Crée plusieurs messages vers différents destinataires en même temps.
+     * Chaque destinataire reçoit le même message comme une conversation distincte.
+     *
+     * @param array $data Données contenant sender_id, receiver_ids[], order_id, content
+     * @return array Résultat avec compteurs et détails des succès/échecs
+     * @throws \InvalidArgumentException si validation échoue
+     */
+    public function createMultipleMessages(array $data): array
+    {
+        $this->logger->info('Début de création de messages multiples', [
+            'sender_id' => $data['sender_id'] ?? null,
+            'receiver_count' => count($data['receiver_ids'] ?? []),
+            'order_id' => $data['order_id'] ?? null
+        ]);
+
+        // 1. Validation des données d'entrée pour multi-message
+        $validatedData = $this->validateMultiMessageData($data);
+        
+        // 2. Récupération des entités communes (sender et order)
+        $commonEntities = $this->retrieveCommonEntities($validatedData);
+        
+        // 3. Validation des règles métier communes
+        $this->validateCommonBusinessRules($commonEntities['order'], $commonEntities['sender']);
+        
+        // 4. Traitement de chaque destinataire
+        $results = $this->processMultipleReceivers($validatedData, $commonEntities);
+        
+        $this->logger->info('Fin de création de messages multiples', [
+            'total_sent' => $results['total_sent'],
+            'total_failed' => $results['total_failed']
+        ]);
+        
+        return $results;
+    }
+
+    /**
+     * Valide les données d'entrée pour un multi-message
+     */
+    private function validateMultiMessageData(array $data): array
+    {
+        $orderId = $data['order_id'] ?? null;
+        $senderId = $data['sender_id'] ?? null;
+        $receiverIds = $data['receiver_ids'] ?? [];
+        $content = trim($data['content'] ?? '');
+
+        if (!$orderId || !$senderId || empty($receiverIds) || empty($content)) {
+            $this->logger->error('Paramètres manquants ou invalides pour multi-message', $data);
+            throw new \InvalidArgumentException('Paramètres manquants ou invalides');
+        }
+
+        if (!is_array($receiverIds)) {
+            throw new \InvalidArgumentException('receiver_ids doit être un tableau');
+        }
+
+        if (count($receiverIds) === 0) {
+            throw new \InvalidArgumentException('Au moins un destinataire est requis');
+        }
+
+        // Suppression des doublons dans receiver_ids
+        $receiverIds = array_unique($receiverIds);
+
+        return [
+            'order_id' => $orderId,
+            'sender_id' => $senderId,
+            'receiver_ids' => $receiverIds,
+            'content' => $content
+        ];
+    }
+
+    /**
+     * Récupère les entités communes (sender et order)
+     */
+    private function retrieveCommonEntities(array $validatedData): array
+    {
+        $order = $this->ordersRepo->find($validatedData['order_id']);
+        $sender = $this->userRepo->find($validatedData['sender_id']);
+
+        if (!$order || !$sender) {
+            $this->logger->error('Entités communes non trouvées', [
+                'order_exists' => (bool)$order,
+                'sender_exists' => (bool)$sender
+            ]);
+            throw new \InvalidArgumentException('Commande ou expéditeur non trouvé');
+        }
+
+        return [
+            'order' => $order,
+            'sender' => $sender
+        ];
+    }
+
+    /**
+     * Valide les règles métier communes
+     */
+    private function validateCommonBusinessRules($order, $sender): void
+    {
+        // Valider le rôle de l'expéditeur
+        if (!in_array($sender->getRole(), [UserRole::CLIENT, UserRole::AGENT])) {
+            $this->logger->error('Sender n\'est ni client ni agent pour multi-message', [
+                'sender_id' => $sender->getId(),
+                'sender_role' => $sender->getRole()->value
+            ]);
+            throw new \InvalidArgumentException('L\'expéditeur doit être un client ou un agent');
+        }
+
+        // Vérifier que l'expéditeur a accès à cette commande
+        $this->validateSenderAccessToOrder($order, $sender);
+    }
+
+    /**
+     * Traite chaque destinataire individuellement
+     */
+    private function processMultipleReceivers(array $validatedData, array $commonEntities): array
+    {
+        $successfulConversations = [];
+        $failedConversations = [];
+        $totalSent = 0;
+        $totalFailed = 0;
+
+        foreach ($validatedData['receiver_ids'] as $receiverId) {
+            try {
+                // Récupérer le destinataire
+                $receiver = $this->userRepo->find($receiverId);
+                if (!$receiver) {
+                    $failedConversations[] = [
+                        'receiver_id' => $this->cryptService->encryptId((string)$receiverId, EntityType::USER->value),
+                        'error' => 'Destinataire non trouvé'
+                    ];
+                    $totalFailed++;
+                    continue;
+                }
+
+                // Éviter l'auto-envoi
+                if ($receiver->getId() === $commonEntities['sender']->getId()) {
+                    $failedConversations[] = [
+                        'receiver_id' => $this->cryptService->encryptId((string)$receiverId, EntityType::USER->value),
+                        'error' => 'Impossible d\'envoyer un message à soi-même'
+                    ];
+                    $totalFailed++;
+                    continue;
+                }
+
+                // Valider le destinataire pour cette commande
+                $this->validateReceiverForOrder($commonEntities['order'], $commonEntities['sender'], $receiver);
+
+                // Créer et persister le message
+                $message = $this->createAndPersistMessage([
+                    'order' => $commonEntities['order'],
+                    'sender' => $commonEntities['sender'],
+                    'receiver' => $receiver
+                ], $validatedData['content']);
+
+                // Publication Mercure
+                $this->publishMercureUpdate(
+                    $message,
+                    $commonEntities['order'],
+                    $commonEntities['sender'],
+                    $receiver,
+                    $validatedData['content']
+                );
+
+                $successfulConversations[] = [
+                    'receiver_id' => $this->cryptService->encryptId((string)$receiver->getId(), EntityType::USER->value),
+                    'message_id' => $this->cryptService->encryptId((string)$message->getId(), EntityType::MESSAGE->value)
+                ];
+                $totalSent++;
+
+                $this->logger->info('Message multi envoyé avec succès', [
+                    'message_id' => $message->getId(),
+                    'receiver_id' => $receiver->getId()
+                ]);
+
+            } catch (\Exception $e) {
+                $this->logger->error('Échec envoi message multi', [
+                    'receiver_id' => $receiverId,
+                    'error' => $e->getMessage()
+                ]);
+
+                $failedConversations[] = [
+                    'receiver_id' => $this->cryptService->encryptId((string)$receiverId, EntityType::USER->value),
+                    'error' => $e->getMessage()
+                ];
+                $totalFailed++;
+            }
+        }
+
+        return [
+            'total_sent' => $totalSent,
+            'total_failed' => $totalFailed,
+            'successful_conversations' => $successfulConversations,
+            'failed_conversations' => $failedConversations
+        ];
+    }
+
+    /**
+     * Valide que l'expéditeur a accès à la commande
+     */
+    private function validateSenderAccessToOrder($order, $sender): void
+    {
+        $orderId = $order->getId();
+        $clientId = $order->getClient()->getId();
+
+        // Si l'expéditeur est le client de la commande, il a accès
+        if ($sender->getId() === $clientId) {
+            return;
+        }
+
+        // Si l'expéditeur est un agent, vérifier qu'il est assigné à cette commande
+        if ($sender->getRole() === UserRole::AGENT) {
+            $tasks = $this->tasksRepo->findBy(['order' => $order]);
+            $assignedAgentUserIds = [];
+            
+            foreach ($tasks as $task) {
+                $assignedAgentUserIds[] = $task->getAgent()->getUser()->getId();
+            }
+
+            if (!in_array($sender->getId(), $assignedAgentUserIds)) {
+                throw new \InvalidArgumentException('L\'agent expéditeur n\'est pas assigné à cette commande');
+            }
+        }
+    }
+
+    /**
+     * Valide qu'un destinataire est valide pour cette commande
+     */
+    private function validateReceiverForOrder($order, $sender, $receiver): void
+    {
+        // Valider le rôle du destinataire
+        if (!in_array($receiver->getRole(), [UserRole::CLIENT, UserRole::AGENT])) {
+            throw new \InvalidArgumentException('Le destinataire doit être un client ou un agent');
+        }
+
+        $orderId = $order->getId();
+        $clientId = $order->getClient()->getId();
+
+        // Le destinataire doit être soit le client de la commande, soit un agent assigné
+        if ($receiver->getId() === $clientId) {
+            return; // Le client a toujours accès à ses commandes
+        }
+
+        // Si le destinataire est un agent, vérifier qu'il est assigné à cette commande
+        if ($receiver->getRole() === UserRole::AGENT) {
+            $tasks = $this->tasksRepo->findBy(['order' => $order]);
+            $assignedAgentUserIds = [];
+            
+            foreach ($tasks as $task) {
+                $assignedAgentUserIds[] = $task->getAgent()->getUser()->getId();
+            }
+
+            if (!in_array($receiver->getId(), $assignedAgentUserIds)) {
+                throw new \InvalidArgumentException('L\'agent destinataire n\'est pas assigné à cette commande');
+            }
         }
     }
 }
