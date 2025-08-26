@@ -6,8 +6,10 @@ use App\Entity\Tasks;
 use App\Entity\ServiceOrders;
 use App\Entity\Agents;
 use App\Enum\Status;
+use App\Enum\TaskType;
 use App\Enum\EntityType;
 use App\Repository\TasksRepository;
+use App\DTO\Task\Request\TaskRequestDTO;
 use App\Repository\ServiceOrdersRepository;
 use App\Repository\AgentsRepository;
 use App\DTO\Task\Response\TaskHistoryDTO;
@@ -59,22 +61,50 @@ class TaskService
     private function validateAgentAssignments(array $agentAssignments): array
     {
         $validatedAssignments = [];
-        
-        foreach ($agentAssignments as $index => $assignment) {
-            $this->validateAssignmentStructure($assignment, $index);
-            
-            $agent = $this->validateAndGetAgent($assignment['agentId']);
-            $this->validateAgentAvailability($agent);
-            $coordinates = $this->validateCoordinates($assignment['coordinates'], $index);
 
+        foreach ($agentAssignments as $index => $assignment) {
+            if (!is_array($assignment)) {
+                throw new \InvalidArgumentException("Assignation #{$index}: doit être un tableau valide");
+            }
+
+            // Map array → DTO
+            $taskDto = new TaskRequestDTO(
+                $assignment['agentId'] ?? '',
+                $assignment['type'] ?? '',
+                $assignment['description'] ?? '',
+                $assignment['startDate'] ?? '',
+                $assignment['endDate'] ?? '',
+                $assignment['assignPosition'] ?? []
+            );
+
+            // Validate agent existence & availability
+            $agent = $this->validateAndGetAgent($taskDto->agentId);
+            $this->validateAgentAvailability($agent);
+
+            // Validate assignPosition
+            if (
+                !is_array($taskDto->assignPosition) ||
+                count($taskDto->assignPosition) !== 2 ||
+                !is_numeric($taskDto->assignPosition[0]) ||
+                !is_numeric($taskDto->assignPosition[1])
+            ) {
+                throw new \InvalidArgumentException("Assignation #{$index}: assignPosition doit être un tableau [longitude, latitude] de deux valeurs numériques");
+            }
+
+            // Normalize validated data
             $validatedAssignments[] = [
-                'agent' => $agent,
-                'coordinates' => $coordinates
+                'agent'          => $agent,
+                'type'           => $taskDto->type,
+                'description'    => $taskDto->description,
+                'startDate'      => $taskDto->startDate,
+                'endDate'        => $taskDto->endDate,
+                'assignPosition' => $taskDto->assignPosition,
             ];
         }
 
         return $validatedAssignments;
     }
+
 
     /**
      * Validate assignment structure (agentId and coordinates presence)
@@ -153,20 +183,16 @@ class TaskService
      */
     private function createTaskForAssignment(ServiceOrders $serviceOrder, array $assignment): Tasks
     {
-        $agent = $assignment['agent'];
-        $coordinates = $assignment['coordinates'];
-        
         $task = new Tasks();
         $task->setOrder($serviceOrder);
-        $task->setAgent($agent);
+        $task->setAgent($assignment['agent']);
         $task->setStatus(Status::PENDING);
-        $task->setDescription("Mission assignée aux coordonnées [{$coordinates[0]}, {$coordinates[1]}]");
-        $task->setStartDate(new \DateTimeImmutable());
-        
-        // Create Point geometry from coordinates [longitude, latitude]
-        $pointWKT = $this->createPointWKTFromCoordinates($coordinates);
+        $task->setType(TaskType::from($assignment['type']));
+        $task->setDescription($assignment['description'] ?? '');
+        $task->setStartDate(new \DateTimeImmutable($assignment['startDate']));
+        $task->setEndDate(new \DateTimeImmutable($assignment['endDate']));
+        $pointWKT = $this->createPointWKTFromCoordinates($assignment['assignPosition']);
         $task->setAssignPosition($pointWKT);
-
         return $task;
     }
 
@@ -256,6 +282,7 @@ class TaskService
             taskId: $this->cryptService->encryptId((string)$task->getId(), EntityType::TASK->value),
             description: $task->getDescription(),
             status: $task->getStatus()->value,
+            type: $task->getType()->value,
             startDate: $task->getStartDate()->format('Y-m-d\TH:i:s\Z'),
             endDate: $task->getEndDate()?->format('Y-m-d\TH:i:s\Z'),
             orderId: $this->cryptService->encryptId((string)$task->getOrder()->getId(), EntityType::SERVICE_ORDER->value),
