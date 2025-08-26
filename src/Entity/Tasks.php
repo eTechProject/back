@@ -8,6 +8,7 @@ use Doctrine\ORM\Mapping as ORM;
 use App\Entity\ServiceOrders;
 use App\Entity\Agents;
 use App\Enum\Status;
+use App\Enum\TaskType;
 use Jsor\Doctrine\PostGIS\Types\PostGISType;
 
 #[ORM\Entity(repositoryClass: TasksRepository::class)]
@@ -20,6 +21,9 @@ class Tasks
 
     #[ORM\Column(length: 20, enumType: Status::class)]
     private Status $status;
+
+    #[ORM\Column(length: 30, enumType: TaskType::class)]
+    private TaskType $type;
 
     #[ORM\Column(type: Types::TEXT, nullable: true)]
     private ?string $description = null;
@@ -53,6 +57,17 @@ class Tasks
     {
         $this->id = $id;
 
+        return $this;
+    }
+
+    public function getType(): TaskType
+    {
+        return $this->type;
+    }
+
+    public function setType(TaskType $type): static
+    {
+        $this->type = $type;
         return $this;
     }
 
