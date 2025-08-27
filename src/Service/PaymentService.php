@@ -189,4 +189,30 @@ class PaymentService
             'limit' => $limit
         ];
     }
+
+    /**
+     * Retourne les paiements et l'historique d'abonnement d'un client
+     */
+    public function getClientPaymentsWithHistory(int $clientId): array
+    {
+        // Récupère les paiements du client
+        $payments = $this->paymentRepository->createQueryBuilder('p')
+            ->andWhere('p.client = :clientId')
+            ->setParameter('clientId', $clientId)
+            ->orderBy('p.createdAt', 'DESC')
+            ->getQuery()->getResult();
+
+        // Récupère l'historique des paiements du client
+        $history = $this->paymentHistoryRepository->createQueryBuilder('h')
+            ->join('h.payment', 'p')
+            ->andWhere('p.client = :clientId')
+            ->setParameter('clientId', $clientId)
+            ->orderBy('h.createdAt', 'DESC')
+            ->getQuery()->getResult();
+
+        return [
+            'payments' => $payments,
+            'history' => $history
+        ];
+    }
 }
