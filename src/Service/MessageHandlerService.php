@@ -73,7 +73,24 @@ class MessageHandlerService
             $totalItems = $result['total'] ?? count($messages);
             $totalPages = ceil($totalItems / $criteria['limit']);
 
-            $messageDTOs = array_map([$this, 'createMessageDTOFromArray'], $messages);
+            // Les messages sont déjà transformés par MessageService.transformMessagesToArray()
+            // Pas besoin de les re-transformer
+
+            // Réordonner les messages par date croissante
+            usort($messages, function($a, $b) {
+                return strtotime($a['sent_at']) <=> strtotime($b['sent_at']);
+            });
+
+            $messageDTOs = array_map(function($message) {
+                return new MessageDTO(
+                    encryptedId: $message['id'],
+                    order_id: $message['order_id'],
+                    sender_id: $message['sender_id'],
+                    receiver_id: $message['receiver_id'],
+                    content: $message['content'],
+                    sent_at: $message['sent_at']
+                );
+            }, $messages);
 
             return new JsonResponse([
                 'data' => $messageDTOs,
@@ -161,7 +178,7 @@ class MessageHandlerService
     {
         $repo = $this->em->getRepository(Messages::class);
 
-        // Requête principale avec pagination
+        // Requête principale sans pagination
         $qb = $repo->createQueryBuilder('m');
         $qb->where(
             $qb->expr()->orX(
@@ -177,31 +194,9 @@ class MessageHandlerService
         )
             ->setParameter('senderId', $senderId)
             ->setParameter('receiverId', $receiverId)
-            ->orderBy('m.sentAt', 'ASC')
-            ->setFirstResult(($page - 1) * $limit)
-            ->setMaxResults($limit);
+            ->orderBy('m.sentAt', 'ASC');
 
         $messages = $qb->getQuery()->getResult();
-
-        // Requête pour le total
-        $countQb = $repo->createQueryBuilder('m')
-            ->select('COUNT(m.id)')
-            ->where(
-                $qb->expr()->orX(
-                    $qb->expr()->andX(
-                        $qb->expr()->eq('m.sender', ':senderId'),
-                        $qb->expr()->eq('m.receiver', ':receiverId')
-                    ),
-                    $qb->expr()->andX(
-                        $qb->expr()->eq('m.sender', ':receiverId'),
-                        $qb->expr()->eq('m.receiver', ':senderId')
-                    )
-                )
-            )
-            ->setParameter('senderId', $senderId)
-            ->setParameter('receiverId', $receiverId);
-
-        $total = (int) $countQb->getQuery()->getSingleScalarResult();
 
         // Formatage : CRYPTER LES IDs ICI
         $messageData = array_map(function (Messages $m) {
@@ -215,8 +210,21 @@ class MessageHandlerService
             ];
         }, $messages);
 
+        // Trier en décroissant (plus récent en premier)
+        usort($messageData, function($a, $b) {
+            return strtotime($b['sent_at']) <=> strtotime($a['sent_at']);
+        });
+
+        // Pagination
+        $total = count($messageData);
+        $offset = ($page - 1) * $limit;
+        $pagedMessages = array_slice($messageData, $offset, $limit);
+
+        // Inverser la page pour que le plus récent soit à la fin
+        $pagedMessages = array_reverse($pagedMessages);
+
         return [
-            'messages' => $messageData,
+            'messages' => $pagedMessages,
             'total' => $total
         ];
     }

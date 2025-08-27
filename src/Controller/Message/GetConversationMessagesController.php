@@ -46,6 +46,12 @@ class GetConversationMessagesController extends AbstractController
         try {
             $messagesData = $this->messageHandler->getConversationMessages($senderId, $receiverId, $page, $limit);
 
+
+            // Réordonner les messages par date décroissante (le plus récent en dernier)
+            usort($messagesData['messages'], function($a, $b) {
+                return strtotime($a['sent_at']) > strtotime($b['sent_at']) ? 1 : -1;
+            });
+
             return $this->json([
                 'status' => 'success',
                 'data' => $messagesData['messages'],
