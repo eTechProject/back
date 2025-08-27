@@ -124,4 +124,69 @@ class PaymentService
 
         return [$payments, $total];
     }
+
+    /**
+     * Retourne la réponse complète pour le contrôleur client, avec mapping et historique, selon SOLID
+     */
+    public function getClientPaymentsResponse($user, int $clientId, int $page, int $limit, $statusFilter, $startDateFilter, $endDateFilter, CryptService $cryptService): array
+    {
+        [$payments, $total] = $this->getPaymentsByClientPaginated($user, $page, $limit, $statusFilter, $startDateFilter, $endDateFilter);
+
+        $activePayments = [];
+        $expiredPayments = [];
+        $otherPayments = [];
+        foreach ($payments as $payment) {
+            $pack = $payment->getPack();
+            $mapped = [
+                'id' => $cryptService->encryptId((string)$payment->getId(), EntityType::PAYMENT->value),
+                'pack_id' => (null !== $pack) ? $cryptService->encryptId((string)$pack->getId(), EntityType::PACK->value) : null,
+                'status' => $payment->getStatus()->value,
+                'createdAt' => $payment->getCreatedAt(),
+                'startDate' => $payment->getStartDate(),
+                'endDate' => $payment->getEndDate(),
+                'amount' => method_exists($payment, 'getAmount') ? $payment->getAmount() : null,
+                'pack' => [
+                    'id' => (null !== $pack) ? $cryptService->encryptId((string)$pack->getId(), EntityType::PACK->value) : null,
+                    'name' => method_exists($pack, 'getName') ? $pack->getName() : null,
+                    'nb_agents' => method_exists($pack, 'getNbAgents') ? $pack->getNbAgents() : null,
+                    'price' => method_exists($pack, 'getPrice') ? $pack->getPrice() : null,
+                    'description' => method_exists($pack, 'getDescription') ? $pack->getDescription() : null,
+                ],
+                'subscription_status' => $payment->getStatus()->value,
+                'subscription_start' => $payment->getStartDate(),
+                'subscription_end' => $payment->getEndDate(),
+            ];
+            if ($payment->getStatus() === \App\Enum\PaymentStatus::ACTIF) {
+                $activePayments[] = $mapped;
+            } elseif ($payment->getStatus() === \App\Enum\PaymentStatus::EXPIRE) {
+                $expiredPayments[] = $mapped;
+            } else {
+                $otherPayments[] = $mapped;
+            }
+        }
+
+        // Historique complet
+        $result = $this->getClientPaymentsWithHistory($clientId);
+        $history = array_map(function ($h) use ($cryptService) {
+            return [
+                'id' => $cryptService->encryptId((string)$h->getId(), EntityType::PAYMENT_HISTORY->value),
+                'payment_id' => $cryptService->encryptId((string)$h->getPayment()->getId(), EntityType::PAYMENT->value),
+                'amount' => method_exists($h, 'getAmount') ? $h->getAmount() : null,
+                'status' => method_exists($h, 'getStatus') ? $h->getStatus() : null,
+                'createdAt' => method_exists($h, 'getCreatedAt') ? $h->getCreatedAt() : null,
+                'provider' => method_exists($h, 'getProvider') ? $h->getProvider() : null,
+                'provider_response' => method_exists($h, 'getProviderResponse') ? $h->getProviderResponse() : null,
+            ];
+        }, $result['history']);
+
+        return [
+            'history' => $history,
+            'active_payments' => $activePayments,
+            'expired_payments' => $expiredPayments,
+            'other_payments' => $otherPayments,
+            'total' => $total,
+            'page' => $page,
+            'limit' => $limit
+        ];
+    }
 }

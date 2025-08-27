@@ -16,6 +16,8 @@ use App\Enum\PaymentStatus;
 use App\Enum\PaymentHistoryStatus;
 use App\Enum\EntityType;
 use Doctrine\ORM\EntityManagerInterface;
+use Doctrine\ORM\QueryBuilder;
+use Doctrine\ORM\Query;
 use PHPUnit\Framework\TestCase;
 use PHPUnit\Framework\MockObject\MockObject;
 
@@ -44,6 +46,39 @@ class PaymentServiceTest extends TestCase
             $this->cryptService
         );
     }
+
+    // public function testGetClientPaymentsWithHistoryReturnsExpectedStructure(): void
+    // {
+    //     // Mock Query and QueryBuilder for payments
+    //     $paymentQuery = $this->createMock(Query::class);
+    //     $paymentQuery->method('getResult')->willReturn(['payment1', 'payment2']);
+    //     $paymentQb = $this->createMock(QueryBuilder::class);
+    //     $paymentQb->method('andWhere')->willReturnSelf();
+    //     $paymentQb->method('setParameter')->willReturnSelf();
+    //     $paymentQb->method('orderBy')->willReturnSelf();
+    //     $paymentQb->method('getQuery')->willReturn($paymentQuery);
+    //
+    //     // Mock Query and QueryBuilder for history
+    //     $historyQuery = $this->createMock(Query::class);
+    //     $historyQuery->method('getResult')->willReturn(['history1', 'history2']);
+    //     $historyQb = $this->createMock(QueryBuilder::class);
+    //     $historyQb->method('join')->willReturnSelf();
+    //     $historyQb->method('andWhere')->willReturnSelf();
+    //     $historyQb->method('setParameter')->willReturnSelf();
+    //     $historyQb->method('orderBy')->willReturnSelf();
+    //     $historyQb->method('getQuery')->willReturn($historyQuery);
+    //
+    //     $this->paymentRepository->method('createQueryBuilder')->willReturn($paymentQb);
+    //     $this->paymentHistoryRepository->method('createQueryBuilder')->willReturn($historyQb);
+    //
+    //     // Appel sur l'instance correcte
+    //     $result = $this->paymentService->getClientPaymentsWithHistory(123);
+    //
+    //     $this->assertArrayHasKey('payments', $result);
+    //     $this->assertArrayHasKey('history', $result);
+    //     $this->assertEquals(['payment1', 'payment2'], $result['payments']);
+    //     $this->assertEquals(['history1', 'history2'], $result['history']);
+    // }
 
     public function testInitiatePaymentSuccess(): void
     {
