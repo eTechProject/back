@@ -180,10 +180,10 @@ class PaymentService
         }, $result['history']);
 
         return [
-            'history' => $history,
             'active_payments' => $activePayments,
             'expired_payments' => $expiredPayments,
             'other_payments' => $otherPayments,
+            'history' => $history,
             'total' => $total,
             'page' => $page,
             'limit' => $limit
