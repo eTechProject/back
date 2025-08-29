@@ -289,4 +289,18 @@ class TaskService
             orderDescription: $task->getOrder()->getDescription() ?? 'Ordre de service'
         );
     }
+    public function getTaskByEncryptedId(string $encryptedTaskId): ?Tasks
+    {
+        $taskId = $this->cryptService->decryptId($encryptedTaskId, EntityType::TASK->value);
+        return $this->tasksRepository->find($taskId);
+    }
+
+    /**
+     * Save a Task entity (flush changes)
+     */
+    public function saveTask(Tasks $task): void
+    {
+        $this->entityManager->persist($task);
+        $this->entityManager->flush();
+    }
 }
