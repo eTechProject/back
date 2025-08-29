@@ -156,14 +156,18 @@ class AgentLocationService
             //     $significantLocation = $this->createSignificantLocation($agent, $task, $locationData, $rawLocation, $recordedAt);
             // }
 
-            // 6. Batch flush for better performance
-            $this->entityManager->flush();
-            $this->entityManager->commit();
 
-            // 7. Check if this is an end_task event and create archive
+            // 6. Set status based on event
+            if ($locationData->isSignificant === true && $locationData->reason === 'start_task') {
+                $task->setStatus(Status::IN_PROGRESS);
+            }
             if ($locationData->isSignificant === true && $locationData->reason === 'end_task') {
+                $task->setStatus(Status::COMPLETED);
                 $this->createTaskArchiveOnEnd($agent, $task);
             }
+
+            $this->entityManager->flush();
+            $this->entityManager->commit();
 
             // 8. Publish to Mercure (async-like, doesn't block)
             $this->publishLocationUpdate($agent,$task, $rawLocation, null);
@@ -230,9 +234,14 @@ class AgentLocationService
         }
 
         // Verify the task is active
-        if (!in_array($task->getStatus(), [Status::PENDING, Status::IN_PROGRESS])) {
-            throw new \InvalidArgumentException('La tâche n\'est pas active');
+        if (in_array($task->getStatus(), [Status::COMPLETED])) {
+            throw new \InvalidArgumentException('La tâche est terminée');
         }
+        // Verify the task isn't canceled
+        if (in_array($task->getStatus(), [Status::CANCELLED])) {
+            throw new \InvalidArgumentException('La tâche a été annulée');
+        }
+
 
         return $task;
     }

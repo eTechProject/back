@@ -42,7 +42,7 @@ class AgentLocationArchiveService
 
             // Persist archive
             $this->entityManager->persist($archive);
-            $this->entityManager->flush();
+            // $this->entityManager->flush();
 
             $this->logger->info('Task archive created successfully', [
                 'agent_id' => $agent->getId(),

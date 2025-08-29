@@ -50,9 +50,11 @@ class AgentsRepository extends ServiceEntityRepository
     public function findAvailableAgents(): array
     {
         return $this->createQueryBuilder('a')
-            ->leftJoin('App\Entity\Tasks', 't', 'WITH', 't.agent = a.id AND t.status NOT IN (:availableStatuses)')
-            ->where('t.id IS NULL')
-            ->setParameter('availableStatuses', [Status::COMPLETED->value, Status::CANCELLED->value])
+            ->leftJoin('App\\Entity\\Tasks', 't', 'WITH', 't.agent = a')
+            ->leftJoin('App\\Entity\\Tasks', 't2', 'WITH', 't2.agent = a AND t2.startDate > t.startDate')
+            ->where('t2.id IS NULL')
+            ->andWhere('t.id IS NULL OR t.status IN (:completedStatuses)')
+            ->setParameter('completedStatuses', [Status::COMPLETED->value, Status::CANCELLED->value])
             ->orderBy('a.id', 'ASC')
             ->getQuery()
             ->getResult();

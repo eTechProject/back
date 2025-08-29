@@ -47,7 +47,7 @@ class AgentMapService
         // Get the current assigned task for this agent (IN_PROGRESS status)
         $task = $this->tasksRepository->findOneBy([
             'agent' => $agent,
-            'status' => \App\Enum\Status::PENDING
+            'status' => [\App\Enum\Status::IN_PROGRESS, \App\Enum\Status::PENDING]
         ]);
         
         if (!$task) {
