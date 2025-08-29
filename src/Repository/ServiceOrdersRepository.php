@@ -6,6 +6,7 @@ use App\Entity\ServiceOrders;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 use App\Enum\UserRole;
+use App\Entity\User;
 
 /**
  * @extends ServiceEntityRepository<ServiceOrders>
@@ -88,5 +89,15 @@ class ServiceOrdersRepository extends ServiceEntityRepository
             // En cas d'erreur, logger et retourner un tableau vide
             return [];
         }
+    }
+    public function findLastByUser(User $user): ?ServiceOrders
+    {
+      return $this->createQueryBuilder('o')
+        ->andWhere('o.client = :user')
+        ->setParameter('user', $user)
+        ->orderBy('o.createdAt', 'DESC')
+        ->setMaxResults(1)
+        ->getQuery()
+        ->getOneOrNullResult();
     }
 }

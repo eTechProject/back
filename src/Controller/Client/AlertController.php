@@ -26,33 +26,27 @@ class AlertController extends AbstractController
 
     #[IsGranted('IS_AUTHENTICATED_FULLY')]
 
-    public function __invoke(Request $request): JsonResponse
-    {
-        $data = json_decode($request->getContent(), true);
-        if ($data === null) {
-            return $this->json(['status' => 'error', 'message' => 'JSON invalide'], 400);
-        }
-        // Décrypter les IDs AVANT la désérialisation
-        try {
-            $data['userId'] = (int) $this->cryptService->decryptId($data['userId'], 'user');
-            $data['orderId'] = (int) $this->cryptService->decryptId($data['orderId'], 'service_order');
-        } catch (\Throwable $e) {
-            return $this->json(['status' => 'error', 'message' => 'ID utilisateur ou commande invalide'], 400);
-        }
-        $dto = $this->serializer->denormalize($data, AlertRequestDTO::class);
-        $errors = $this->validator->validate($dto);
-        if (count($errors) > 0) {
-            return $this->json(['status' => 'error', 'message' => (string) $errors], 400);
-        }
-        try {
-            $alert = $this->alertCreator->create($dto);
-        } catch (\InvalidArgumentException $e) {
-            return $this->json(['status' => 'error', 'message' => $e->getMessage()], 400);
-        }
-        return $this->json([
-            'status' => 'success',
-            'alertId' => $this->cryptService->encryptId((string)$alert->getId(), 'ALERT'),
-            'timestamp' => $alert->getTimestamp()->format(DATE_ATOM)
-        ]);
+public function __invoke(Request $request): JsonResponse
+{
+    $data = json_decode($request->getContent(), true);
+    if ($data === null) {
+        return $this->json(['status' => 'error', 'message' => 'JSON invalide'], 400);
     }
+    $dto = $this->serializer->denormalize($data, AlertRequestDTO::class);
+    $errors = $this->validator->validate($dto);
+    if (count($errors) > 0) {
+        return $this->json(['status' => 'error', 'message' => (string) $errors], 400);
+    }
+    try {
+        $alert = $this->alertCreator->create($dto); // Le service va chercher la dernière commande du user
+    } catch (\InvalidArgumentException $e) {
+        return $this->json(['status' => 'error', 'message' => $e->getMessage()], 400);
+    }
+    return $this->json([
+        'status' => 'success',
+        'alertId' => $this->cryptService->encryptId((string)$alert->getId(), 'ALERT'),
+        'timestamp' => $alert->getTimestamp()->format(DATE_ATOM)
+    ]);
+}
+    
 }

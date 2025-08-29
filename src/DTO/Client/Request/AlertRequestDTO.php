@@ -3,23 +3,15 @@
 namespace App\DTO\Client\Request;
 
 use Symfony\Component\Validator\Constraints as Assert;
+use App\Enum\AlertType;
 
 class AlertRequestDTO
 {
     #[Assert\NotBlank]
-    #[Assert\Type('integer')]
-    public ?int $userId = null;
+    public string $userId;
 
     #[Assert\NotBlank]
-    #[Assert\Type('integer')]
-    public ?int $orderId = null;
+    #[Assert\Choice(callback: [AlertType::class, 'values'])]
+    public string $type;
 
-    #[Assert\NotBlank]
-    #[Assert\Choice(['danger', 'incident', 'urgence'])]
-    public ?string $type = null;
-
-    public ?string $message = null;
-
-    #[Assert\NotBlank]
-    public ?string $position = null;
 }
