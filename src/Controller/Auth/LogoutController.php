@@ -2,7 +2,7 @@
 
 namespace App\Controller\Auth;
 
-use App\Dto\User\Request\RefreshTokenRequest;
+use App\DTO\User\Request\RefreshTokenRequest;
 use App\Service\RefreshTokenManager;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\HttpFoundation\JsonResponse;
