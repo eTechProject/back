@@ -4,6 +4,7 @@ namespace App\Entity;
 
 use App\Repository\AlertRepository;
 use Doctrine\ORM\Mapping as ORM;
+use App\Enum\AlertType;
 use Doctrine\DBAL\Types\Types;
 
 #[ORM\Entity(repositoryClass: AlertRepository::class)]
@@ -22,14 +23,8 @@ class Alert
     #[ORM\JoinColumn(name: 'idorder', referencedColumnName: 'id', nullable: false)]
     private ?ServiceOrders $order = null;
 
-    #[ORM\Column(type: Types::STRING, length: 32)]
-    private string $type;
-
-    #[ORM\Column(type: Types::TEXT, nullable: true)]
-    private ?string $message = null;
-
-    #[ORM\Column(type: Types::STRING, length: 255)]
-    private string $position;
+    #[ORM\Column(type: Types::STRING, enumType: AlertType::class, length: 32)]
+    private AlertType $type;
 
     #[ORM\Column(type: Types::DATETIME_IMMUTABLE)]
     private \DateTimeImmutable $timestamp;
@@ -39,12 +34,8 @@ class Alert
     public function setUser(User $user): self { $this->user = $user; return $this; }
     public function getOrder(): ?ServiceOrders { return $this->order; }
     public function setOrder(ServiceOrders $order): self { $this->order = $order; return $this; }
-    public function getType(): string { return $this->type; }
-    public function setType(string $type): self { $this->type = $type; return $this; }
-    public function getMessage(): ?string { return $this->message; }
-    public function setMessage(?string $message): self { $this->message = $message; return $this; }
-    public function getPosition(): string { return $this->position; }
-    public function setPosition(string $position): self { $this->position = $position; return $this; }
+    public function getType(): AlertType { return $this->type; }
+    public function setType(AlertType $type): self { $this->type = $type; return $this; }
     public function getTimestamp(): \DateTimeImmutable { return $this->timestamp; }
-    public function setTimestamp(\DateTimeImmutable $timestamp): self { $this->timestamp = $timestamp; return $this; }
+    public function setTimestamp(\DateTimeImmutable $timestamp): self { $this->timestamp = $timestamp; return $this; }    
 }
