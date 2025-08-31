@@ -63,7 +63,7 @@ class MessagesRepository extends ServiceEntityRepository
                     $endOfDay = clone $now;
                     $endOfDay->setTime(23, 59, 59);
                     
-                    $qb->andWhere('a.createdAt BETWEEN :startDate AND :endDate')
+                    $qb->andWhere('m.sentAt BETWEEN :startDate AND :endDate')
                     ->setParameter('startDate', $startOfDay)
                     ->setParameter('endDate', $endOfDay);
                     break;
@@ -72,7 +72,7 @@ class MessagesRepository extends ServiceEntityRepository
                     $startDate = clone $now;
                     $startDate->modify('-7 days')->setTime(0, 0, 0);
                     
-                    $qb->andWhere('a.createdAt >= :startDate')
+                    $qb->andWhere('m.sentAt >= :startDate')
                     ->setParameter('startDate', $startDate);
                     break;
                     
@@ -80,7 +80,7 @@ class MessagesRepository extends ServiceEntityRepository
                     $startOfMonth = clone $now;
                     $startOfMonth->modify('first day of this month')->setTime(0, 0, 0);
                     
-                    $qb->andWhere('a.createdAt >= :startDate')
+                    $qb->andWhere('m.sentAt >= :startDate')
                     ->setParameter('startDate', $startOfMonth);
                     break;
                     
@@ -88,7 +88,7 @@ class MessagesRepository extends ServiceEntityRepository
                     $startDate = clone $now;
                     $startDate->modify('-30 days')->setTime(0, 0, 0);
                     
-                    $qb->andWhere('a.createdAt >= :startDate')
+                    $qb->andWhere('m.sentAt >= :startDate')
                     ->setParameter('startDate', $startDate);
                     break;
                     
@@ -96,7 +96,7 @@ class MessagesRepository extends ServiceEntityRepository
                     $startOfYear = clone $now;
                     $startOfYear->setDate((int)$now->format('Y'), 1, 1)->setTime(0, 0, 0);
                     
-                    $qb->andWhere('a.createdAt >= :startDate')
+                    $qb->andWhere('m.sentAt >= :startDate')
                     ->setParameter('startDate', $startOfYear);
                     break;
             }
@@ -106,14 +106,14 @@ class MessagesRepository extends ServiceEntityRepository
             if ($filters->dateStart !== null) {
                 $startDate = new \DateTime($filters->dateStart);
                 $startDate->setTime(0, 0, 0);
-                $qb->andWhere('a.createdAt >= :startDate')
+                $qb->andWhere('m.sentAt >= :startDate')
                 ->setParameter('startDate', $startDate);
             }
             
             if ($filters->dateEnd !== null) {
                 $endDate = new \DateTime($filters->dateEnd);
                 $endDate->setTime(23, 59, 59);
-                $qb->andWhere('a.createdAt <= :endDate')
+                $qb->andWhere('m.sentAt <= :endDate')
                 ->setParameter('endDate', $endDate);
             }
         }
