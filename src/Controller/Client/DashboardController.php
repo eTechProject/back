@@ -23,17 +23,7 @@ class DashboardController extends AbstractController
     public function __invoke(string $encryptedId, Request $request): JsonResponse
     {
         try {
-            // Décrypter l'id client
             $clientId = $this->cryptService->decryptId($encryptedId, EntityType::USER->value);
-
-            // Vérification stricte : seul le client connecté peut accéder à son dashboard
-            $user = $this->getUser();
-            if (!$user || !in_array('ROLE_CLIENT', $user->getRoles(), true) || (method_exists($user, 'getId') && $user->getId() !== $clientId)) {
-                return $this->json([
-                    'status' => 'error',
-                    'message' => 'Accès refusé : seul le client concerné peut accéder à ce dashboard',
-                ], 403);
-            }
 
             $filters = new DashboardFiltersDTO();
             $filters->dateRange = $request->query->get('dateRange', 'all');
