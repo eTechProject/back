@@ -101,7 +101,7 @@ class AgentMapService
      */
     private function buildAssignedAgentsDTO($serviceOrder): array
     {
-        $tasks = $this->tasksRepository->findBy(['order' => $serviceOrder]);
+        $tasks = $this->tasksRepository->findBy(['order' => $serviceOrder, 'status' => [\App\Enum\Status::IN_PROGRESS, \App\Enum\Status::PENDING]]);
         $assignedAgents = [];
 
         foreach ($tasks as $task) {

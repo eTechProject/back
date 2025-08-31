@@ -170,7 +170,7 @@ class AgentLocationService
             $this->entityManager->commit();
 
             // 8. Publish to Mercure (async-like, doesn't block)
-            $this->publishLocationUpdate($agent,$task, $rawLocation, null);
+            $this->publishLocationUpdate($agent,$task, $rawLocation, $locationData->reason);
 
             $this->logger->info('Location recorded successfully', [
                 'user_id' => $encryptedUserId,
@@ -308,7 +308,7 @@ class AgentLocationService
         Agents $agent,
         Tasks $task, 
         AgentLocationsRaw $rawLocation, 
-        ?AgentLocationSignificant $significantLocation
+        string $reason
     ): void {
         try {
             // Check if Mercure is configured
@@ -336,7 +336,7 @@ class AgentLocationService
                 'battery_level' => $rawLocation->getBatteryLevel(),
                 'recorded_at' => $rawLocation->getRecordedAt()->format(\DateTimeInterface::ATOM),
                 'is_significant' => $rawLocation->isSignificant(),
-                'reason' => $significantLocation?->getReason()->value
+                'reason' => $reason
             ];
 
             // Topic: /agents/{encrypted_id}/location
