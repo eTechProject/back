@@ -15,29 +15,33 @@ class AgentLocationsRawRepository extends ServiceEntityRepository
     {
         parent::__construct($registry, AgentLocationsRaw::class);
     }
+    /**
+     * @param int $taskId
+     * @return AgentLocationsRaw|null
+     */
+    public function findFirstLocationForTask(int $taskId): ?AgentLocationsRaw
+    {
+        return $this->createQueryBuilder('a')
+            ->andWhere('a.task = :taskId')
+            ->setParameter('taskId', $taskId)
+            ->orderBy('a.recordedAt', 'ASC')
+            ->setMaxResults(1)
+            ->getQuery()
+            ->getOneOrNullResult();
+    }
 
-    //    /**
-    //     * @return AgentLocationsRaw[] Returns an array of AgentLocationsRaw objects
-    //     */
-    //    public function findByExampleField($value): array
-    //    {
-    //        return $this->createQueryBuilder('a')
-    //            ->andWhere('a.exampleField = :val')
-    //            ->setParameter('val', $value)
-    //            ->orderBy('a.id', 'ASC')
-    //            ->setMaxResults(10)
-    //            ->getQuery()
-    //            ->getResult()
-    //        ;
-    //    }
-
-    //    public function findOneBySomeField($value): ?AgentLocationsRaw
-    //    {
-    //        return $this->createQueryBuilder('a')
-    //            ->andWhere('a.exampleField = :val')
-    //            ->setParameter('val', $value)
-    //            ->getQuery()
-    //            ->getOneOrNullResult()
-    //        ;
-    //    }
+    /**
+     * @param int $taskId
+     * @return AgentLocationsRaw|null
+     */
+    public function findLastLocationForTask(int $taskId): ?AgentLocationsRaw
+    {
+        return $this->createQueryBuilder('a')
+            ->andWhere('a.task = :taskId')
+            ->setParameter('taskId', $taskId)
+            ->orderBy('a.recordedAt', 'DESC')
+            ->setMaxResults(1)
+            ->getQuery()
+            ->getOneOrNullResult();
+    }
 }

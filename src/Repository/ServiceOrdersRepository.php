@@ -13,9 +13,31 @@ use App\Entity\User;
  */
 class ServiceOrdersRepository extends ServiceEntityRepository
 {
+
     public function __construct(ManagerRegistry $registry)
     {
         parent::__construct($registry, ServiceOrders::class);
+    }
+
+    /**
+     * Find the latest service order for a client (for dashboard usage)
+     *
+     * @param int $clientId
+     * @return ServiceOrders|null
+     */
+    public function findOneByClientId(int $clientId): ?ServiceOrders
+    {
+        try {
+            return $this->createQueryBuilder('s')
+                ->andWhere('s.client = :clientId')
+                ->setParameter('clientId', $clientId)
+                ->orderBy('s.createdAt', 'DESC')
+                ->setMaxResults(1)
+                ->getQuery()
+                ->getOneOrNullResult();
+        } catch (\Exception $e) {
+            return null;
+        }
     }
     
     /**
