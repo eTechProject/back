@@ -12,4 +12,8 @@ class CreatePaymentDTO
     public ?float $amount = null;
 
     public ?string $currency = null;
+
+    public ?string $description = null;
+
+    public string $stripePaymentId = '';
 }

@@ -32,7 +32,7 @@ class PaymentHistory
         max: 50,
         maxMessage: 'Le provider ne peut pas dépasser {{ limit }} caractères'
     )]
-    private string $provider = 'cybersource';
+    private string $provider = 'stripe';
 
     #[ORM\Column(type: Types::DECIMAL, precision: 10, scale: 2)]
     #[Assert\NotNull(message: 'Le montant est requis')]
@@ -49,6 +49,13 @@ class PaymentHistory
     // New field: providerResponse (nullable) to store provider session/token/etc.
     #[ORM\Column(type: Types::TEXT, nullable: true)]
     private ?string $providerResponse = null;
+
+    #[ORM\Column(type: Types::STRING, length: 255, nullable: true)]
+    #[Assert\Length(
+        max: 255,
+        maxMessage: 'L\'ID de paiement Stripe ne peut pas dépasser {{ limit }} caractères'
+    )]
+    private ?string $stripePaymentId = null;
 
     public function __construct()
     {
@@ -102,6 +109,17 @@ class PaymentHistory
     public function setProviderResponse(?string $providerResponse): static
     {
         $this->providerResponse = $providerResponse;
+        return $this;
+    }
+
+    public function getStripePaymentId(): ?string
+    {
+        return $this->stripePaymentId;
+    }
+
+    public function setStripePaymentId(?string $stripePaymentId): static
+    {
+        $this->stripePaymentId = $stripePaymentId;
         return $this;
     }
 
