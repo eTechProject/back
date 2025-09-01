@@ -54,7 +54,7 @@ class AlertService
             $order,
             "ALERT!!!!",
             "Une nouvelle alerte a été créée par {$user->getName()}",
-            NotificationType::ALERT
+            NotificationType::ALERT_START
         );
         return $alert;
     }
