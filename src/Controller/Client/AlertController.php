@@ -5,6 +5,7 @@ namespace App\Controller\Client;
 use App\DTO\Client\Request\AlertRequestDTO;
 use App\Service\AlertService;
 use App\Service\CryptService;
+use App\Enum\EntityType;
 use OpenApi\Annotations as OA;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -44,7 +45,7 @@ public function __invoke(Request $request): JsonResponse
     }
     return $this->json([
         'status' => 'success',
-        'alertId' => $this->cryptService->encryptId((string)$alert->getId(), 'ALERT'),
+        'alertId' => $this->cryptService->encryptId((string)$alert->getId(), EntityType::ALERT->value),
         'timestamp' => $alert->getTimestamp()->format(DATE_ATOM)
     ]);
 }
