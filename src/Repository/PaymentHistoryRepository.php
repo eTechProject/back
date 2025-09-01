@@ -23,19 +23,17 @@ class PaymentHistoryRepository extends ServiceEntityRepository
      * @param Payment $payment
      * @return PaymentHistory|null
      */
-    public function findLastPaymentHistoryForClient(Payment $payment): ?PaymentHistory
+   public function findLastPaymentHistoryForClient(Payment $payment): ?PaymentHistory
     {
-        if (!$payment) {
-            return null;
-        }
         return $this->createQueryBuilder('ph')
-            ->andWhere('ph.payment = (:paymentId)')
-            ->setParameter('paymentId', $payment->getId())
-            ->orderBy('ph.date', 'DESC')
+            ->andWhere('ph.payment = :payment')
+            ->setParameter('payment', $payment)
+            ->orderBy('ph.createdAt', 'DESC')
             ->setMaxResults(1)
             ->getQuery()
             ->getOneOrNullResult();
     }
+
 
 
     /**

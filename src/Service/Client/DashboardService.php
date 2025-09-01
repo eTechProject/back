@@ -52,7 +52,10 @@ class DashboardService
 
         $tasks = $this->getFilteredTasks($order, $filters);
         $agents = $this->getUniqueAgents($tasks);
-        $payment = $this->paymentRepository->findLastByClient($clientId);
+        $payment = $this->paymentRepository->findOneBy(
+            ['client' => $clientId],
+            ['createdAt' => 'DESC']
+        );
         $alerts = $this->alertRepository->findByOrderId($order->getId(), $filters);
 
         // Calculate KPIs
@@ -179,8 +182,6 @@ class DashboardService
         // Completion rate
         $completionRate = $totalTasks > 0 ? round(($completedTasks / $totalTasks) * 100, 1) : 0;
 
-        // Subscription status
-        $subscriptionActive = !isset($payment) && $this->isSubscriptionActive($payment);
 
         return [
             'totalTasks' => $totalTasks,
@@ -188,7 +189,7 @@ class DashboardService
             'avgTaskDuration' => $avgDurationFormatted,
             'avgDistancePerAgent' => round($avgDistancePerAgent, 1) . ' km',
             'totalAlerts' => count($alerts),
-            'subscription' => $subscriptionActive ? 'Actif' : 'Inactif'
+            'subscription' => $payment->getStatus()
         ];
     }
 
@@ -197,32 +198,6 @@ class DashboardService
         $hours = floor($seconds / 3600);
         $minutes = floor(($seconds % 3600) / 60);
         return sprintf('%dh %02dm', $hours, $minutes);
-    }
-
-    private function isSubscriptionActive(?Payment $payment): bool
-    {
-        $thirtyDaysAgo = new \DateTimeImmutable('-30 days');
-        
-        // Get the most recent payment history for this client
-        $lastPaymentHistory = $this->paymentHistoryRepository->findLastPaymentHistoryForClient($payment);
-        
-        if (!$lastPaymentHistory || 
-            !method_exists($lastPaymentHistory, 'getDate') || 
-            !method_exists($lastPaymentHistory, 'getStatus')) {
-            return false;
-        }
-
-        $paymentDate = $lastPaymentHistory->getDate();
-        $paymentStatus = $lastPaymentHistory->getStatus();
-
-        // Convert DateTime to DateTimeImmutable for comparison if needed
-        if ($paymentDate instanceof \DateTime) {
-            $paymentDate = \DateTimeImmutable::createFromMutable($paymentDate);
-        }
-
-        // Check if last payment is within 30 days and has successful status
-        return $paymentDate >= $thirtyDaysAgo && 
-               $paymentStatus->value === PaymentHistoryStatus::SUCCESS;
     }
 
     private function buildTasksOverTimeChart(array $tasks): array

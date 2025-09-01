@@ -3,6 +3,8 @@
 namespace App\Service;
 
 use App\DTO\Payment\CreatePaymentDTO;
+use App\DTO\Payment\PaymentResponseDTO;
+use App\DTO\Payment\PackResponseDTO;
 use App\Entity\Payment;
 use App\Entity\PaymentHistory;
 use App\Enum\PaymentStatus;
@@ -47,45 +49,32 @@ class PaymentService
         $pack = $this->em->getRepository(\App\Entity\Pack::class)->find($packId);
         if (!$pack) throw new \InvalidArgumentException('Pack introuvable');
 
-        // 2. Create Payment entity
-        $payment = new Payment();
-        $payment->setClient($client);
-        $payment->setPack($pack);
-        $payment->setStatus(PaymentStatus::NON_PAYE);
-        $this->em->persist($payment);
+        $payment=$this->paymentRepository->findByClient($client->getId())[0] ?? null;
+        if(!$payment){
+            // 2. Create Payment entity
+            $payment = new Payment();
+            $payment->setClient($client);
+            $payment->setPack($pack);
+            $payment->setStatus(PaymentStatus::ACTIF);
+            $this->em->persist($payment);
+        }
 
         // 3. Create PaymentHistory initial entry
         $history = new PaymentHistory();
         $history->setPayment($payment);
         $history->setAmount($dto->amount ?? 0.0);
-        $history->setStatus(PaymentHistoryStatus::PENDING);
-        $history->setProvider('cybersource');
+        $history->setStatus(PaymentHistoryStatus::SUCCESS);
+        $history->setProvider('stripe');
+        $history->setStripePaymentId($dto->stripePaymentId);
         $this->em->persist($history);
 
         $this->em->flush();
 
-        // 4. Call Cybersource to create a payment session (client-token / redirect url)
-        $cybersourcePayload = [
-            'amount' => $history->getAmount(),
-            'currency' => $dto->currency ?? 'EUR',
-            'reference' => 'payment_'.$payment->getId(),
-            'customer' => [
-                'id' => $client->getId(),
-                'email' => $client->getEmail()
-            ]
-        ];
-
-        $csResponse = $this->cybersourceClient->createPaymentSession($cybersourcePayload);
-
-        // 5. Update history with provider response token/url if any
-        $history->setProviderResponse($csResponse['providerResponse'] ?? null);
-        $this->em->flush();
-
+        
         return [
             'paymentId' => $this->cryptService->encryptId((string)$payment->getId(), EntityType::PAYMENT->value),
             'historyId' => $this->cryptService->encryptId((string)$history->getId(), EntityType::PAYMENT_HISTORY->value),
-            'provider' => 'cybersource',
-            'session' => $csResponse
+            'provider' => 'stripe'
         ];
     }
 
@@ -123,5 +112,46 @@ class PaymentService
         $total = (int) $countQb->getQuery()->getSingleScalarResult();
 
         return [$payments, $total];
+    }
+
+    /**
+     * Get all payments for a specific client
+     */
+    public function getPaymentsByClient(int $clientId): array
+    {
+        return $this->paymentRepository->findByClient($clientId);
+    }
+
+    /**
+     * Converts a Payment entity to PaymentResponseDTO
+     */
+    public function convertToDTO(Payment $payment): PaymentResponseDTO
+    {
+        $dto = new PaymentResponseDTO();
+        $dto->id = $this->cryptService->encryptId($payment->getId(), EntityType::PAYMENT->value);
+        $dto->status = $payment->getStatus()->value;
+        $dto->startDate = $payment->getStartDate()->format('Y-m-d H:i:s');
+        $dto->endDate = $payment->getEndDate()?->format('Y-m-d H:i:s');
+        $dto->createdAt = $payment->getCreatedAt()->format('Y-m-d H:i:s');
+        $dto->updatedAt = $payment->getUpdatedAt()->format('Y-m-d H:i:s');
+
+        // Convert pack to DTO
+        $packDto = new PackResponseDTO();
+        $packDto->id = $this->cryptService->encryptId($payment->getPack()->getId(), EntityType::PACK->value);
+        $packDto->description = $payment->getPack()->getDescription();
+        $packDto->nbAgents = $payment->getPack()->getNbAgents();
+        $packDto->price = $payment->getPack()->getPrix();
+        
+        $dto->pack = $packDto;
+
+        return $dto;
+    }
+
+    /**
+     * Converts an array of Payment entities to an array of PaymentResponseDTOs
+     */
+    public function convertArrayToDTO(array $payments): array
+    {
+        return array_map(fn(Payment $payment) => $this->convertToDTO($payment), $payments);
     }
 }

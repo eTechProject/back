@@ -1,6 +1,8 @@
 parameters:
     mercure_jwt_token: '%env(MERCURE_JWT_PUBLISHER)%'
     mercure_jwt_secret: '%env(MERCURE_JWT_SECRET)%'
+    stripe.secret_key: '%env(STRIPE_SECRET_KEY)%'
+    stripe.public_key: '%env(STRIPE_PUBLIC_KEY)%'
 
 services:
     _defaults:
