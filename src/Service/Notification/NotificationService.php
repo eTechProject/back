@@ -92,7 +92,7 @@ class NotificationService
             'type' => $notification->getType()->value,
             'cible' => $notification->getCible()->value,
             'isRead' => $notification->isRead(),
-            'createdAt' => $notification->getCreatedAt()->format('c'),
+            'createdAt' => $notification->getCreatedAt()->format('Y-m-d H:i:s'),
             'userId' => $notification->getUser() ? $this->cryptService->encryptId($notification->getUser()->getId(), EntityType::USER->value) : null
         ];
     }

@@ -14,7 +14,7 @@ class NotificationResponseDTO
         public readonly NotificationType $type,
         public readonly NotificationTarget $cible,
         public readonly bool $isRead,
-        public readonly \DateTimeInterface $createdAt,
+        public readonly string $createdAt,
         public readonly ?string $userId = null
     ) {}
 }

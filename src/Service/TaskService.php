@@ -14,6 +14,9 @@ use App\Repository\ServiceOrdersRepository;
 use App\Repository\AgentsRepository;
 use App\DTO\Task\Response\TaskHistoryDTO;
 use Doctrine\ORM\EntityManagerInterface;
+use App\Service\Notification\NotificationService;
+use App\Enum\NotificationTarget;
+use App\Enum\NotificationType;
 
 class TaskService
 {
@@ -22,7 +25,8 @@ class TaskService
         private ServiceOrdersRepository $serviceOrdersRepository,
         private AgentsRepository $agentsRepository,
         private CryptService $cryptService,
-        private EntityManagerInterface $entityManager
+        private EntityManagerInterface $entityManager,
+        private NotificationService $notificationService
     ) {}
 
     /**
@@ -165,7 +169,6 @@ class TaskService
             foreach ($validatedAssignments as $assignment) {
                 $task = $this->createTaskForAssignment($serviceOrder, $assignment);
                 $this->entityManager->persist($task);
-                $tasks[] = $task;
             }
 
             $this->entityManager->flush();
@@ -193,6 +196,17 @@ class TaskService
         $task->setEndDate(new \DateTimeImmutable($assignment['endDate']));
         $pointWKT = $this->createPointWKTFromCoordinates($assignment['assignPosition']);
         $task->setAssignPosition($pointWKT);
+        
+        // Format coordinates for notification message
+        $positionText = "({$assignment['assignPosition'][0]}, {$assignment['assignPosition'][1]})";
+        
+        $this->notificationService->createNotification(
+            "Nouvelle Mission Assignée",
+            "Vous avez été assigné à une nouvelle mission à la position {$positionText} qui commence le {$assignment['startDate']} et se termine le {$assignment['endDate']}.",
+            NotificationType::ASSIGNMENT,
+            NotificationTarget::AGENT,
+            $assignment['agent']->getUser()
+        );
         return $task;
     }
 
@@ -302,5 +316,17 @@ class TaskService
     {
         $this->entityManager->persist($task);
         $this->entityManager->flush();
+        
+        // Extract coordinates from WKT format for display
+        $position = $task->getAssignPosition();
+        $positionText = $position ? str_replace(['POINT(', ')'], ['(', ')'], $position) : 'position inconnue';
+        
+        $this->notificationService->createNotification(
+            "Mission Annulée",
+            "La mission à la position {$positionText} qui commençait le {$task->getStartDate()->format('Y-m-d H:i:s')} et se terminait le {$task->getEndDate()->format('Y-m-d H:i:s')} a été annulée.",
+            NotificationType::ASSIGNMENT,
+            NotificationTarget::AGENT,
+            $task->getAgent()->getUser()
+        );
     }
 }

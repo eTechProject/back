@@ -12,7 +12,6 @@ use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 #[Route('/api/notifications', methods: ['GET'])]
-#[IsGranted('ROLE_CLIENT')]
 class GetUserNotificationsController extends AbstractController
 {
     public function __construct(
@@ -23,6 +22,9 @@ class GetUserNotificationsController extends AbstractController
     public function __invoke(Request $request): JsonResponse
     {
         $user = $this->getUser();
+        if (!$user instanceof \App\Entity\User) {
+            throw new \LogicException('User is not valid.');
+        }
         
         $page = max(1, (int) $request->query->get('page', 1));
         $limit = min(50, max(1, (int) $request->query->get('limit', 20)));

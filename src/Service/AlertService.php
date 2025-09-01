@@ -11,6 +11,8 @@ use App\Repository\AlertRepository;
 use App\Repository\UserRepository;
 use App\Repository\ServiceOrdersRepository;
 use Doctrine\ORM\EntityManagerInterface;
+use App\Enum\NotificationType;
+use App\Service\ServiceOrderService;
 
 class AlertService
 {
@@ -19,7 +21,8 @@ class AlertService
         private UserRepository $userRepo,
         private ServiceOrdersRepository $orderRepo,
         private AlertRepository $alertRepo,
-        private CryptService $cryptService
+        private CryptService $cryptService,
+        private ServiceOrderService $serviceOrdersService
     ) {}
 
     /**
@@ -47,6 +50,13 @@ class AlertService
         $alert->setTimestamp(new \DateTimeImmutable());
         $this->em->persist($alert);
         $this->em->flush();
+        $this->serviceOrdersService->notifyRelatedAgents(
+            $order,
+            "ALERT!!!!",
+            "Une nouvelle alerte a été créée par {$user->getName()}",
+            NotificationType::ALERT
+        );
         return $alert;
     }
+
 }

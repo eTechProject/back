@@ -9,7 +9,6 @@ use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 #[Route('/api/mercure/token', methods: ['GET'])]
-#[IsGranted('ROLE_CLIENT')]
 class GetMercureTokenController extends AbstractController
 {
     public function __construct(
@@ -19,9 +18,9 @@ class GetMercureTokenController extends AbstractController
     public function __invoke(): JsonResponse
     {
         $user = $this->getUser();
-        
-        $token = $this->tokenGenerator->generateUserToken($user->getId());
-        
+        $currentUserId = method_exists($user, 'getId') ? $user->getId() : $user?->getUserIdentifier();
+        $token = $this->tokenGenerator->generateUserToken($currentUserId);
+
         return new JsonResponse([
             'token' => $token,
             'expires_at' => (new \DateTime('+1 hour'))->format(\DateTime::ATOM)
