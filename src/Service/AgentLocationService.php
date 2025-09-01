@@ -9,6 +9,8 @@ use App\Entity\AgentLocationSignificant;
 use App\Entity\Agents;
 use App\Entity\Tasks;
 use App\Enum\EntityType;
+use App\Enum\NotificationTarget;
+use App\Enum\NotificationType;
 use App\Enum\Reason;
 use App\Enum\Status;
 use App\Repository\AgentLocationsRawRepository;
@@ -21,6 +23,7 @@ use Symfony\Component\Mercure\HubInterface;
 use Symfony\Component\Mercure\Update;
 use Symfony\Component\Serializer\SerializerInterface;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
+use App\Service\Notification\NotificationService;
 
 class AgentLocationService
 {
@@ -35,7 +38,8 @@ class AgentLocationService
         private LoggerInterface $logger,
         private SerializerInterface $serializer,
         private ValidatorInterface $validator,
-        private AgentLocationArchiveService $archiveService
+        private AgentLocationArchiveService $archiveService,
+        private NotificationService $notificationService
     ) {}
 
     /**
@@ -160,10 +164,32 @@ class AgentLocationService
             // 6. Set status based on event
             if ($locationData->isSignificant === true && $locationData->reason === 'start_task') {
                 $task->setStatus(Status::IN_PROGRESS);
+                
+                // Format coordinates for notification message
+                $positionText = "({$locationData->longitude}, {$locationData->latitude})";
+                
+                $this->notificationService->createNotification(
+                    "Mission Commencée",
+                    "L'agent {$agent->getUser()->getName()} a commencé sa mission à la position {$positionText}",
+                    NotificationType::TASK_UPDATE,
+                    NotificationTarget::CLIENT,
+                    $task->getOrder()->getClient()
+                );
             }
             if ($locationData->isSignificant === true && $locationData->reason === 'end_task') {
                 $task->setStatus(Status::COMPLETED);
                 $this->createTaskArchiveOnEnd($agent, $task);
+                
+                // Format coordinates for notification message
+                $positionText = "({$locationData->longitude}, {$locationData->latitude})";
+                
+                $this->notificationService->createNotification(
+                    "Mission Terminée",
+                    "L'agent {$agent->getUser()->getName()} a terminé sa mission à la position {$positionText}",
+                    NotificationType::TASK_UPDATE,
+                    NotificationTarget::CLIENT,
+                    $task->getOrder()->getClient()
+                );
             }
 
             $this->entityManager->flush();

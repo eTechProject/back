@@ -32,7 +32,7 @@ public function __invoke(Request $request): JsonResponse
     if ($data === null) {
         return $this->json(['status' => 'error', 'message' => 'JSON invalide'], 400);
     }
-    $dto = $this->serializer->denormalize($data, AlertRequestDTO::class);
+    $dto = $this->serializer->deserialize($request->getContent(), AlertRequestDTO::class, 'json');
     $errors = $this->validator->validate($dto);
     if (count($errors) > 0) {
         return $this->json(['status' => 'error', 'message' => (string) $errors], 400);
