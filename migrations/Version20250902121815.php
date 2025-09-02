@@ -10,7 +10,7 @@ use Doctrine\Migrations\AbstractMigration;
 /**
  * Auto-generated Migration: Please modify to your needs!
  */
-final class Version20250902120824 extends AbstractMigration
+final class Version20250902121815 extends AbstractMigration
 {
     public function getDescription(): string
     {
@@ -30,94 +30,86 @@ final class Version20250902120824 extends AbstractMigration
         $this->addSql('ALTER TABLE alert ADD CONSTRAINT FK_17FD46C15E5C27E9 FOREIGN KEY (iduser) REFERENCES users (id) NOT DEFERRABLE INITIALLY IMMEDIATE');
         $this->addSql('ALTER TABLE alert ADD CONSTRAINT FK_17FD46C1232CFF81 FOREIGN KEY (idorder) REFERENCES service_orders (id) NOT DEFERRABLE INITIALLY IMMEDIATE');
         $this->addSql('ALTER TABLE refresh_token ADD CONSTRAINT FK_C74F2195A76ED395 FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE NOT DEFERRABLE INITIALLY IMMEDIATE');
-        $this->addSql('CREATE SEQUENCE agent_location_significant_id_seq');
-        $this->addSql('SELECT setval(\'agent_location_significant_id_seq\', (SELECT MAX(id) FROM agent_location_significant))');
-        $this->addSql('ALTER TABLE agent_location_significant ALTER id SET DEFAULT nextval(\'agent_location_significant_id_seq\')');
+        // Skip sequence management for identity columns - PostgreSQL handles this automatically
+        // $this->addSql('SELECT setval(\'agent_location_significant_id_seq\', (SELECT MAX(id) FROM agent_location_significant))');
+        // $this->addSql('ALTER TABLE agent_location_significant ALTER id SET DEFAULT nextval(\'agent_location_significant_id_seq\')');
         $this->addSql('ALTER TABLE agent_location_significant ALTER recorded_at TYPE TIMESTAMP(0) WITHOUT TIME ZONE');
         $this->addSql('COMMENT ON COLUMN agent_location_significant.recorded_at IS \'(DC2Type:datetime_immutable)\'');
         $this->addSql('ALTER INDEX idx_significant_agent RENAME TO IDX_5A8F7BD3414710B');
         $this->addSql('ALTER INDEX idx_significant_task RENAME TO IDX_5A8F7BD8DB60186');
-        $this->addSql('CREATE SEQUENCE agent_locations_archive_id_seq');
-        $this->addSql('SELECT setval(\'agent_locations_archive_id_seq\', (SELECT MAX(id) FROM agent_locations_archive))');
-        $this->addSql('ALTER TABLE agent_locations_archive ALTER id SET DEFAULT nextval(\'agent_locations_archive_id_seq\')');
+        // Skip sequence management for identity columns - PostgreSQL handles this automatically  
+        // $this->addSql('SELECT setval(\'agent_locations_archive_id_seq\', (SELECT MAX(id) FROM agent_locations_archive))');
+        // $this->addSql('ALTER TABLE agent_locations_archive ALTER id SET DEFAULT nextval(\'agent_locations_archive_id_seq\')');
         $this->addSql('ALTER TABLE agent_locations_archive ALTER start_time TYPE TIMESTAMP(0) WITHOUT TIME ZONE');
         $this->addSql('ALTER TABLE agent_locations_archive ALTER end_time TYPE TIMESTAMP(0) WITHOUT TIME ZONE');
         $this->addSql('COMMENT ON COLUMN agent_locations_archive.start_time IS \'(DC2Type:datetime_immutable)\'');
         $this->addSql('COMMENT ON COLUMN agent_locations_archive.end_time IS \'(DC2Type:datetime_immutable)\'');
         $this->addSql('ALTER INDEX idx_archive_agent RENAME TO IDX_3F3E3AC73414710B');
         $this->addSql('ALTER INDEX idx_archive_task RENAME TO IDX_3F3E3AC78DB60186');
-        $this->addSql('CREATE SEQUENCE agent_locations_raw_id_seq');
-        $this->addSql('SELECT setval(\'agent_locations_raw_id_seq\', (SELECT MAX(id) FROM agent_locations_raw))');
-        $this->addSql('ALTER TABLE agent_locations_raw ALTER id SET DEFAULT nextval(\'agent_locations_raw_id_seq\')');
+        // Skip sequence management for identity columns - PostgreSQL handles this automatically
+        // $this->addSql('SELECT setval(\'agent_locations_raw_id_seq\', (SELECT MAX(id) FROM agent_locations_raw))');
+        // $this->addSql('ALTER TABLE agent_locations_raw ALTER id SET DEFAULT nextval(\'agent_locations_raw_id_seq\')');
         $this->addSql('ALTER TABLE agent_locations_raw ALTER recorded_at TYPE TIMESTAMP(0) WITHOUT TIME ZONE');
         $this->addSql('COMMENT ON COLUMN agent_locations_raw.recorded_at IS \'(DC2Type:datetime_immutable)\'');
         $this->addSql('ALTER INDEX idx_raw_task RENAME TO IDX_DF2DE25DE3272D31');
         $this->addSql('ALTER INDEX idx_raw_agent RENAME TO IDX_DF2DE25D3414710B');
-        $this->addSql('CREATE SEQUENCE agents_id_seq');
-        $this->addSql('SELECT setval(\'agents_id_seq\', (SELECT MAX(id) FROM agents))');
-        $this->addSql('ALTER TABLE agents ALTER id SET DEFAULT nextval(\'agents_id_seq\')');
+        // Skip sequence management for identity columns - PostgreSQL handles this automatically
+        // $this->addSql('SELECT setval(\'agents_id_seq\', (SELECT MAX(id) FROM agents))');
+        // $this->addSql('ALTER TABLE agents ALTER id SET DEFAULT nextval(\'agents_id_seq\')');
         $this->addSql('ALTER INDEX uniq_agents_user RENAME TO UNIQ_9596AB6EA76ED395');
-        $this->addSql('CREATE SEQUENCE messages_id_seq');
-        $this->addSql('SELECT setval(\'messages_id_seq\', (SELECT MAX(id) FROM messages))');
-        $this->addSql('ALTER TABLE messages ALTER id SET DEFAULT nextval(\'messages_id_seq\')');
+        // $this->addSql('SELECT setval(\'messages_id_seq\', (SELECT MAX(id) FROM messages))');
+        // $this->addSql('ALTER TABLE messages ALTER id SET DEFAULT nextval(\'messages_id_seq\')');
         $this->addSql('ALTER TABLE messages ALTER sent_at TYPE TIMESTAMP(0) WITHOUT TIME ZONE');
         $this->addSql('COMMENT ON COLUMN messages.sent_at IS \'(DC2Type:datetime_immutable)\'');
         $this->addSql('ALTER INDEX idx_messages_order RENAME TO IDX_DB021E968D9F6D38');
         $this->addSql('ALTER INDEX idx_messages_sender RENAME TO IDX_DB021E96F624B39D');
         $this->addSql('ALTER INDEX idx_messages_receiver RENAME TO IDX_DB021E96CD53EDB6');
-        $this->addSql('CREATE SEQUENCE notifications_id_seq');
-        $this->addSql('SELECT setval(\'notifications_id_seq\', (SELECT MAX(id) FROM notifications))');
-        $this->addSql('ALTER TABLE notifications ALTER id SET DEFAULT nextval(\'notifications_id_seq\')');
+        // $this->addSql('SELECT setval(\'notifications_id_seq\', (SELECT MAX(id) FROM notifications))');
+        // $this->addSql('ALTER TABLE notifications ALTER id SET DEFAULT nextval(\'notifications_id_seq\')');
         $this->addSql('ALTER INDEX idx_notifications_user RENAME TO IDX_6000B0D3A76ED395');
-        $this->addSql('CREATE SEQUENCE packs_id_seq');
-        $this->addSql('SELECT setval(\'packs_id_seq\', (SELECT MAX(id) FROM packs))');
-        $this->addSql('ALTER TABLE packs ALTER id SET DEFAULT nextval(\'packs_id_seq\')');
-        $this->addSql('CREATE SEQUENCE payment_id_seq');
-        $this->addSql('SELECT setval(\'payment_id_seq\', (SELECT MAX(id) FROM payment))');
-        $this->addSql('ALTER TABLE payment ALTER id SET DEFAULT nextval(\'payment_id_seq\')');
+        // $this->addSql('SELECT setval(\'packs_id_seq\', (SELECT MAX(id) FROM packs))');
+        // $this->addSql('ALTER TABLE packs ALTER id SET DEFAULT nextval(\'packs_id_seq\')');
+        // $this->addSql('SELECT setval(\'payment_id_seq\', (SELECT MAX(id) FROM payment))');
+        // $this->addSql('ALTER TABLE payment ALTER id SET DEFAULT nextval(\'payment_id_seq\')');
         $this->addSql('ALTER INDEX idx_payment_client RENAME TO IDX_6D28840D19EB6921');
         $this->addSql('ALTER INDEX idx_payment_pack RENAME TO IDX_6D28840D1919B217');
         $this->addSql('ALTER TABLE payment_history ADD provider_response TEXT DEFAULT NULL');
         $this->addSql('ALTER TABLE payment_history ADD stripe_payment_id VARCHAR(255) DEFAULT NULL');
-        $this->addSql('CREATE SEQUENCE payment_history_id_seq');
-        $this->addSql('SELECT setval(\'payment_history_id_seq\', (SELECT MAX(id) FROM payment_history))');
-        $this->addSql('ALTER TABLE payment_history ALTER id SET DEFAULT nextval(\'payment_history_id_seq\')');
+        // $this->addSql('SELECT setval(\'payment_history_id_seq\', (SELECT MAX(id) FROM payment_history))');
+        // $this->addSql('ALTER TABLE payment_history ALTER id SET DEFAULT nextval(\'payment_history_id_seq\')');
         $this->addSql('ALTER INDEX idx_payment_history_payment RENAME TO IDX_3EF37EA14C3A3BB');
         $this->addSql('DROP INDEX idx_reset_pwd_selector');
-        $this->addSql('CREATE SEQUENCE reset_password_request_id_seq');
-        $this->addSql('SELECT setval(\'reset_password_request_id_seq\', (SELECT MAX(id) FROM reset_password_request))');
-        $this->addSql('ALTER TABLE reset_password_request ALTER id SET DEFAULT nextval(\'reset_password_request_id_seq\')');
+        // $this->addSql('SELECT setval(\'reset_password_request_id_seq\', (SELECT MAX(id) FROM reset_password_request))');
+        // $this->addSql('ALTER TABLE reset_password_request ALTER id SET DEFAULT nextval(\'reset_password_request_id_seq\')');
         $this->addSql('ALTER TABLE reset_password_request ALTER requested_at TYPE TIMESTAMP(0) WITHOUT TIME ZONE');
         $this->addSql('ALTER TABLE reset_password_request ALTER expires_at TYPE TIMESTAMP(0) WITHOUT TIME ZONE');
         $this->addSql('ALTER TABLE reset_password_request ALTER used DROP DEFAULT');
         $this->addSql('COMMENT ON COLUMN reset_password_request.requested_at IS \'(DC2Type:datetime_immutable)\'');
         $this->addSql('COMMENT ON COLUMN reset_password_request.expires_at IS \'(DC2Type:datetime_immutable)\'');
         $this->addSql('ALTER INDEX idx_reset_pwd_user RENAME TO IDX_7CE748AA76ED395');
-        $this->addSql('CREATE SEQUENCE secured_zones_id_seq');
-        $this->addSql('SELECT setval(\'secured_zones_id_seq\', (SELECT MAX(id) FROM secured_zones))');
-        $this->addSql('ALTER TABLE secured_zones ALTER id SET DEFAULT nextval(\'secured_zones_id_seq\')');
+        // $this->addSql('SELECT setval(\'secured_zones_id_seq\', (SELECT MAX(id) FROM secured_zones))');
+        // $this->addSql('ALTER TABLE secured_zones ALTER id SET DEFAULT nextval(\'secured_zones_id_seq\')');
         $this->addSql('ALTER TABLE secured_zones ALTER created_at TYPE TIMESTAMP(0) WITHOUT TIME ZONE');
         $this->addSql('COMMENT ON COLUMN secured_zones.created_at IS \'(DC2Type:datetime_immutable)\'');
-        $this->addSql('CREATE SEQUENCE service_orders_id_seq');
-        $this->addSql('SELECT setval(\'service_orders_id_seq\', (SELECT MAX(id) FROM service_orders))');
-        $this->addSql('ALTER TABLE service_orders ALTER id SET DEFAULT nextval(\'service_orders_id_seq\')');
+        // $this->addSql('SELECT setval(\'service_orders_id_seq\', (SELECT MAX(id) FROM service_orders))');
+        // $this->addSql('ALTER TABLE service_orders ALTER id SET DEFAULT nextval(\'service_orders_id_seq\')');
         $this->addSql('ALTER TABLE service_orders ALTER created_at TYPE TIMESTAMP(0) WITHOUT TIME ZONE');
         $this->addSql('COMMENT ON COLUMN service_orders.created_at IS \'(DC2Type:datetime_immutable)\'');
         $this->addSql('ALTER INDEX idx_service_orders_secured_zone RENAME TO IDX_DBE8F8D8D915E713');
         $this->addSql('ALTER INDEX idx_service_orders_client RENAME TO IDX_DBE8F8D819EB6921');
-        $this->addSql('ALTER TABLE tasks ADD type VARCHAR(30) NOT NULL');
-        $this->addSql('CREATE SEQUENCE tasks_id_seq');
-        $this->addSql('SELECT setval(\'tasks_id_seq\', (SELECT MAX(id) FROM tasks))');
-        $this->addSql('ALTER TABLE tasks ALTER id SET DEFAULT nextval(\'tasks_id_seq\')');
+        $this->addSql('ALTER TABLE tasks ADD type VARCHAR(30) DEFAULT NULL');
+        $this->addSql('UPDATE tasks SET type = \'surveillance\' WHERE type IS NULL');
+        $this->addSql('ALTER TABLE tasks ALTER COLUMN type SET NOT NULL');
+        // $this->addSql('SELECT setval(\'tasks_id_seq\', (SELECT MAX(id) FROM tasks))');
+        // $this->addSql('ALTER TABLE tasks ALTER id SET DEFAULT nextval(\'tasks_id_seq\')');
         $this->addSql('ALTER TABLE tasks ALTER end_date TYPE TIMESTAMP(0) WITHOUT TIME ZONE');
         $this->addSql('ALTER TABLE tasks ALTER start_date TYPE TIMESTAMP(0) WITHOUT TIME ZONE');
         $this->addSql('COMMENT ON COLUMN tasks.end_date IS \'(DC2Type:datetime_immutable)\'');
         $this->addSql('COMMENT ON COLUMN tasks.start_date IS \'(DC2Type:datetime_immutable)\'');
         $this->addSql('ALTER INDEX idx_tasks_order RENAME TO IDX_505865978D9F6D38');
         $this->addSql('ALTER INDEX idx_tasks_agent RENAME TO IDX_505865973414710B');
-        $this->addSql('CREATE SEQUENCE users_id_seq');
-        $this->addSql('SELECT setval(\'users_id_seq\', (SELECT MAX(id) FROM users))');
-        $this->addSql('ALTER TABLE users ALTER id SET DEFAULT nextval(\'users_id_seq\')');
+        // $this->addSql('SELECT setval(\'users_id_seq\', (SELECT MAX(id) FROM users))');
+        // $this->addSql('ALTER TABLE users ALTER id SET DEFAULT nextval(\'users_id_seq\')');
         $this->addSql('ALTER INDEX uniq_users_email RENAME TO UNIQ_1483A5E9E7927C74');
         $this->addSql('ALTER TABLE messenger_messages ALTER queue_name TYPE VARCHAR(190)');
         $this->addSql('ALTER TABLE messenger_messages ALTER created_at TYPE TIMESTAMP(0) WITHOUT TIME ZONE');
