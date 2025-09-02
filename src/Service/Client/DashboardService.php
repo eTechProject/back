@@ -181,6 +181,8 @@ class DashboardService
 
         // Completion rate
         $completionRate = $totalTasks > 0 ? round(($completedTasks / $totalTasks) * 100, 1) : 0;
+        $status="inactif";
+        if($payment!=null) $status= $payment->getStatus();
 
 
         return [
@@ -189,7 +191,7 @@ class DashboardService
             'avgTaskDuration' => $avgDurationFormatted,
             'avgDistancePerAgent' => round($avgDistancePerAgent, 1) . ' km',
             'totalAlerts' => count($alerts),
-            'subscription' => $payment->getStatus()
+            'subscription' => $status
         ];
     }
 
