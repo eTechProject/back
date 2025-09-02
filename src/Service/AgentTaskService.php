@@ -7,16 +7,19 @@ use App\Entity\User;
 use App\Repository\AgentsRepository;
 use App\Service\TaskService;
 use App\Service\CryptService;
+use App\Repository\TaskRepository;
 use App\Enum\EntityType;
 use App\DTO\Agent\Response\SimpleAssignedTaskDTO;
 use App\DTO\Agent\Response\SimpleClientDTO;
+use App\Repository\TasksRepository;
 
 class AgentTaskService
 {
     public function __construct(
         private readonly TaskService $taskService,
         private readonly CryptService $cryptService,
-        private readonly AgentsRepository $agentsRepository
+        private readonly AgentsRepository $agentsRepository,
+        private readonly TasksRepository $tasksRepository
     ) {}
 
     /**
@@ -56,7 +59,7 @@ class AgentTaskService
     private function getAssignedTasksForAgent(Agents $agent): array
     {
         // Get all tasks assigned to this agent
-        $tasks = $this->taskService->getTasksByAgent($agent);
+        $tasks = $this->tasksRepository->findBy(['agent' => $agent, 'status' => [\App\Enum\Status::IN_PROGRESS, \App\Enum\Status::PENDING]]);
 
         // Transform tasks into response DTOs
         $tasksDTOs = [];

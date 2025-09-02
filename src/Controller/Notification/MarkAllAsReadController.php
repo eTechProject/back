@@ -23,7 +23,6 @@ class MarkAllAsReadController extends AbstractController
     }
 
     #[Route('/api/notifications/mark-all-read', name: 'api_notification_mark_all_read', methods: ['PATCH'])]
-    #[IsGranted('ROLE_CLIENT')]
     public function markAllAsRead(): JsonResponse
     {
         $user = $this->getUser();

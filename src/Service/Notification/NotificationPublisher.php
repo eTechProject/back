@@ -8,6 +8,7 @@ use App\Service\CryptService;
 use Symfony\Component\Mercure\HubInterface;
 use Symfony\Component\Mercure\Update;
 use Psr\Log\LoggerInterface;
+use App\Enum\EntityType;
 
 class NotificationPublisher
 {
@@ -30,14 +31,13 @@ class NotificationPublisher
 
             $topics = ['/notifications'];
             if ($notification->getUser()) {
-                $encryptedUserId = $this->cryptService->encryptId($notification->getUser()->getId(), 'user');
+                $encryptedUserId = $this->cryptService->encryptId($notification->getUser()->getId(), EntityType::USER->value);
                 $topics[] = "/users/{$encryptedUserId}/notifications";
             }
 
             $update = new Update(
-                topics: $topics,
-                data: $data,
-                private: true
+                $topics,
+                $data
             );
 
             $this->hub->publish($update);
@@ -62,9 +62,8 @@ class NotificationPublisher
             $serializedData = json_encode($data);
 
             $update = new Update(
-                topics: ["/users/{$encryptedUserId}/notifications"],
-                data: $serializedData,
-                private: true
+                 ["/users/{$encryptedUserId}/notifications"],
+                 $serializedData,
             );
 
             $this->hub->publish($update);
@@ -130,7 +129,7 @@ class NotificationPublisher
             type: $notification->getType(),
             cible: $notification->getCible(),
             isRead: $notification->isRead(),
-            createdAt: $notification->getCreatedAt(),
+            createdAt: $notification->getCreatedAt()->format('Y-m-d H:i:s'),
             userId: $notification->getUser() ? $this->cryptService->encryptId($notification->getUser()->getId(), 'user') : null
         );
     }

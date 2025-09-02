@@ -89,7 +89,10 @@ class ClientMapService
      */
     private function buildAssignedAgentsDTO(ServiceOrders $serviceOrder): array
     {
-        $tasks = $this->tasksRepository->findBy(['order' => $serviceOrder]);
+        $tasks = $this->tasksRepository->findBy([
+            'order' => $serviceOrder,
+            'status' => [Status::PENDING, Status::IN_PROGRESS]
+        ]);
         $assignedAgents = [];
 
         foreach ($tasks as $task) {
@@ -106,7 +109,7 @@ class ClientMapService
 
         // Get agent's most recent raw position
         $agentRawLocation = $this->agentLocationsRawRepository->findOneBy(
-            ['agent' => $task->getAgent()],
+            ['agent' => $task->getAgent(), 'task' => $task],
             ['recordedAt' => 'DESC']
         );
 

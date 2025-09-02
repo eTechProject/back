@@ -42,7 +42,7 @@ class AgentLocationArchiveService
 
             // Persist archive
             $this->entityManager->persist($archive);
-            $this->entityManager->flush();
+            // $this->entityManager->flush();
 
             $this->logger->info('Task archive created successfully', [
                 'agent_id' => $agent->getId(),
@@ -196,7 +196,7 @@ class AgentLocationArchiveService
      * Calculate distance between two coordinates using Haversine formula
      * Returns distance in meters
      */
-    private function calculateDistance(array $coord1, array $coord2): float
+    public function calculateDistance(array $coord1, array $coord2): float
     {
         $earthRadius = 6371000; // Earth radius in meters
 

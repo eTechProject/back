@@ -35,6 +35,11 @@ security:
             stateless: true
             security: false
 
+        test_payment:
+            pattern: ^/api/test-payment
+            stateless: true
+            security: false
+
         api:
             pattern: ^/api
             stateless: true
@@ -43,6 +48,9 @@ security:
 
     access_control:
         - { path: ^/api/public, roles: IS_AUTHENTICATED_ANONYMOUSLY }
+
+        # API de test de paiement Stripe (accès libre pour les tests)
+        - { path: ^/api/test-payment, roles: IS_AUTHENTICATED_ANONYMOUSLY }
 
         # accès libre au login
         - { path: ^/api/login_check, roles: IS_AUTHENTICATED_ANONYMOUSLY }

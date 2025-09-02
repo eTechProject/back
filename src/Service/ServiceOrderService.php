@@ -12,6 +12,11 @@ use App\Enum\EntityType;
 use App\Repository\ServiceOrdersRepository;
 use App\Repository\UserRepository;
 use Doctrine\ORM\EntityManagerInterface;
+use App\Entity\Agents;
+use App\Entity\Tasks;
+use App\Enum\NotificationTarget;
+use App\Enum\NotificationType;
+use App\Service\Notification\NotificationService;
 
 class ServiceOrderService
 {
@@ -20,7 +25,8 @@ class ServiceOrderService
         private UserRepository $userRepository,
         private SecuredZoneService $securedZoneService,
         private CryptService $cryptService,
-        private EntityManagerInterface $entityManager
+        private EntityManagerInterface $entityManager,
+        private NotificationService $notificationService
     ) {}
 
     public function createServiceOrderFromRequest(CreateServiceOrderDTO $request): ServiceOrders
@@ -109,5 +115,47 @@ class ServiceOrderService
             ['client' => $clientId, 'status' => Status::IN_PROGRESS],
             ['createdAt' => 'DESC']
         );
+    }
+    /**
+     * Get all agents related to an order with tasks in pending or in_progress status
+     *
+     * @param ServiceOrders $order
+     * @return array<Agents>
+     */
+    public function getRelatedAgentsWithActiveTasks(ServiceOrders $order): array
+    {
+        $qb = $this->entityManager->createQueryBuilder();
+
+        return $qb->select('a')
+            ->from(Agents::class, 'a')
+            ->innerJoin(Tasks::class, 't', 'WITH', 't.agent = a')
+            ->where('t.order = :order')
+            ->andWhere('t.status IN (:statuses)')
+            ->setParameter('order', $order)
+            ->setParameter('statuses', [Status::PENDING, Status::IN_PROGRESS])
+            ->getQuery()
+            ->getResult();
+    }
+    /**
+     * Send notification to all agents related to an order with active tasks
+     *
+     * @param ServiceOrders $order
+     * @param string $title
+     * @param string $message
+     * @param NotificationType $type
+     */
+    public function notifyRelatedAgents(ServiceOrders $order, string $title, string $message, NotificationType $type): void
+    {
+        $agents = $this->getRelatedAgentsWithActiveTasks($order);
+        
+        foreach ($agents as $agent) {
+            $this->notificationService->createNotification(
+                $title,
+                $message,
+                $type,
+                NotificationTarget::AGENT,
+                $agent->getUser()
+            );
+        }
     }
 }

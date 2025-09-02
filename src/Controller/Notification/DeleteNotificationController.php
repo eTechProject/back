@@ -10,7 +10,6 @@ use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 #[Route('/api/notifications/{id}', name: 'api_notifications_delete', methods: ['DELETE'])]
-#[IsGranted('ROLE_CLIENT')]
 class DeleteNotificationController extends AbstractController
 {
     public function __construct(
@@ -50,7 +49,9 @@ class DeleteNotificationController extends AbstractController
 
             // Vérifier les permissions
             $isAdmin = in_array('ROLE_ADMIN', $currentUser->getRoles());
-            $isOwner = $notification->getUser() && $notification->getUser()->getId() === $currentUser->getId();
+            // Cast $currentUser to your User entity class to access getId()
+            $userEntity = $currentUser instanceof \App\Entity\User ? $currentUser : null;
+            $isOwner = $notification->getUser() && $userEntity && $notification->getUser()->getId() === $userEntity->getId();
             
             if (!$isAdmin && !$isOwner) {
                 return $this->json([

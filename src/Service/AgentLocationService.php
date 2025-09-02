@@ -9,6 +9,8 @@ use App\Entity\AgentLocationSignificant;
 use App\Entity\Agents;
 use App\Entity\Tasks;
 use App\Enum\EntityType;
+use App\Enum\NotificationTarget;
+use App\Enum\NotificationType;
 use App\Enum\Reason;
 use App\Enum\Status;
 use App\Repository\AgentLocationsRawRepository;
@@ -21,6 +23,7 @@ use Symfony\Component\Mercure\HubInterface;
 use Symfony\Component\Mercure\Update;
 use Symfony\Component\Serializer\SerializerInterface;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
+use App\Service\Notification\NotificationService;
 
 class AgentLocationService
 {
@@ -35,7 +38,8 @@ class AgentLocationService
         private LoggerInterface $logger,
         private SerializerInterface $serializer,
         private ValidatorInterface $validator,
-        private AgentLocationArchiveService $archiveService
+        private AgentLocationArchiveService $archiveService,
+        private NotificationService $notificationService
     ) {}
 
     /**
@@ -151,22 +155,48 @@ class AgentLocationService
             $rawLocation = $this->createRawLocation($agent, $task, $locationData, $recordedAt);
             
             // 5. If significant, create significant location entry
-            $significantLocation = null;
-            if ($locationData->isSignificant === true) {
-                $significantLocation = $this->createSignificantLocation($agent, $task, $locationData, $rawLocation, $recordedAt);
+            // $significantLocation = null;
+            // if ($locationData->isSignificant === true) {
+            //     $significantLocation = $this->createSignificantLocation($agent, $task, $locationData, $rawLocation, $recordedAt);
+            // }
+
+
+            // 6. Set status based on event
+            if ($locationData->isSignificant === true && $locationData->reason === 'start_task') {
+                $task->setStatus(Status::IN_PROGRESS);
+                
+                // Format coordinates for notification message
+                $positionText = "({$locationData->longitude}, {$locationData->latitude})";
+                
+                $this->notificationService->createNotification(
+                    "Mission Commencée",
+                    "L'agent {$agent->getUser()->getName()} a commencé sa mission à la position {$positionText}",
+                    NotificationType::TASK_UPDATE,
+                    NotificationTarget::CLIENT,
+                    $task->getOrder()->getClient()
+                );
+            }
+            if ($locationData->isSignificant === true && $locationData->reason === 'end_task') {
+                $task->setStatus(Status::COMPLETED);
+                $this->createTaskArchiveOnEnd($agent, $task);
+                
+                // Format coordinates for notification message
+                $positionText = "({$locationData->longitude}, {$locationData->latitude})";
+                
+                $this->notificationService->createNotification(
+                    "Mission Terminée",
+                    "L'agent {$agent->getUser()->getName()} a terminé sa mission à la position {$positionText}",
+                    NotificationType::TASK_UPDATE,
+                    NotificationTarget::CLIENT,
+                    $task->getOrder()->getClient()
+                );
             }
 
-            // 6. Batch flush for better performance
             $this->entityManager->flush();
             $this->entityManager->commit();
 
-            // 7. Check if this is an end_task event and create archive
-            if ($locationData->isSignificant === true && $locationData->reason === 'end_task') {
-                $this->createTaskArchiveOnEnd($agent, $task);
-            }
-
             // 8. Publish to Mercure (async-like, doesn't block)
-            $this->publishLocationUpdate($agent,$task, $rawLocation, $significantLocation);
+            $this->publishLocationUpdate($agent,$task, $rawLocation, $locationData->reason);
 
             $this->logger->info('Location recorded successfully', [
                 'user_id' => $encryptedUserId,
@@ -230,9 +260,14 @@ class AgentLocationService
         }
 
         // Verify the task is active
-        if (!in_array($task->getStatus(), [Status::PENDING, Status::IN_PROGRESS])) {
-            throw new \InvalidArgumentException('La tâche n\'est pas active');
+        if (in_array($task->getStatus(), [Status::COMPLETED])) {
+            throw new \InvalidArgumentException('La tâche est terminée');
         }
+        // Verify the task isn't canceled
+        if (in_array($task->getStatus(), [Status::CANCELLED])) {
+            throw new \InvalidArgumentException('La tâche a été annulée');
+        }
+
 
         return $task;
     }
@@ -299,7 +334,7 @@ class AgentLocationService
         Agents $agent,
         Tasks $task, 
         AgentLocationsRaw $rawLocation, 
-        ?AgentLocationSignificant $significantLocation
+        string $reason
     ): void {
         try {
             // Check if Mercure is configured
@@ -327,7 +362,7 @@ class AgentLocationService
                 'battery_level' => $rawLocation->getBatteryLevel(),
                 'recorded_at' => $rawLocation->getRecordedAt()->format(\DateTimeInterface::ATOM),
                 'is_significant' => $rawLocation->isSignificant(),
-                'reason' => $significantLocation?->getReason()->value
+                'reason' => $reason
             ];
 
             // Topic: /agents/{encrypted_id}/location

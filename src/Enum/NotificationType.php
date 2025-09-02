@@ -11,4 +11,8 @@ enum NotificationType: string
     case ASSIGNMENT = 'assignment';
     case MESSAGE = 'message';
     case TASK_UPDATE = 'task_update';
+    case ALERT_STOP = 'alert_stop';
+    case ALERT = 'alert';
+    case ALERT_START = 'alert_start';
+
 }

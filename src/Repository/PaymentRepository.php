@@ -12,6 +12,7 @@ use Doctrine\Persistence\ManagerRegistry;
  */
 class PaymentRepository extends ServiceEntityRepository
 {
+
     public function __construct(ManagerRegistry $registry)
     {
         parent::__construct($registry, Payment::class);
@@ -28,6 +29,21 @@ class PaymentRepository extends ServiceEntityRepository
             ->orderBy('p.createdAt', 'DESC')
             ->getQuery()
             ->getResult();
+    }
+    /**
+     * Returns the most recent Payment for a client
+     * @param int $clientId
+     * @return Payment|null
+     */
+    public function findLastByClient(int $clientId): ?Payment
+    {
+        return $this->createQueryBuilder('p')
+            ->andWhere('p.client = :clientId')
+            ->setParameter('clientId', $clientId)
+            ->orderBy('p.createdAt', 'DESC')
+            ->setMaxResults(1)
+            ->getQuery()
+            ->getOneOrNullResult();
     }
 
     /**

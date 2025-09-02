@@ -7,9 +7,11 @@ use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Annotation\Route;
 use App\Service\Client\DashboardService;
-use App\DTO\Client\Dashboard\Request\DashboardFiltersDTO;
+use App\DTO\Dashboard\Request\DashboardFiltersDTO;
 use App\Service\CryptService;
 use App\Enum\EntityType;
+use Sensio\Bundle\FrameworkExtraBundle\Configuration\IsGranted;
+
 
 class DashboardController extends AbstractController
 {
@@ -17,25 +19,17 @@ class DashboardController extends AbstractController
         private readonly DashboardService $dashboardService,
         private readonly CryptService $cryptService
     ) {}
-
     #[Route('/api/client/{encryptedId}/dashboard', name: 'client_dashboard', methods: ['GET'])]
     public function __invoke(string $encryptedId, Request $request): JsonResponse
     {
         try {
-            // Décrypter l'id client
             $clientId = $this->cryptService->decryptId($encryptedId, EntityType::USER->value);
 
-            // Vérification sécurité : l'utilisateur connecté doit être le client demandé
-            $user = $this->getUser();
-            if (!$user || (method_exists($user, 'getId') && $user->getId() !== $clientId)) {
-                return $this->json([
-                    'status' => 'error',
-                    'message' => 'Accès refusé : client non autorisé',
-                ], 403);
-            }
-
             $filters = new DashboardFiltersDTO();
-            // TODO: Hydrater $filters avec les paramètres de la requête si besoin
+            $filters->dateRange = $request->query->get('dateRange', 'all');
+            $filters->choice = $request->query->get('choice');
+            $filters->dateStart = $request->query->get('dateStart');
+            $filters->dateEnd = $request->query->get('dateEnd');
 
             $dashboardData = $this->dashboardService->getDashboardData($clientId, $filters);
 

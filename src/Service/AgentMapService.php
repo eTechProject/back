@@ -47,7 +47,7 @@ class AgentMapService
         // Get the current assigned task for this agent (IN_PROGRESS status)
         $task = $this->tasksRepository->findOneBy([
             'agent' => $agent,
-            'status' => \App\Enum\Status::PENDING
+            'status' => [\App\Enum\Status::IN_PROGRESS, \App\Enum\Status::PENDING]
         ]);
         
         if (!$task) {
@@ -101,7 +101,7 @@ class AgentMapService
      */
     private function buildAssignedAgentsDTO($serviceOrder): array
     {
-        $tasks = $this->tasksRepository->findBy(['order' => $serviceOrder]);
+        $tasks = $this->tasksRepository->findBy(['order' => $serviceOrder, 'status' => [\App\Enum\Status::IN_PROGRESS, \App\Enum\Status::PENDING]]);
         $assignedAgents = [];
 
         foreach ($tasks as $task) {
@@ -118,7 +118,7 @@ class AgentMapService
 
         // Get agent's most recent raw position
         $agentRawLocation = $this->agentLocationsRawRepository->findOneBy(
-            ['agent' => $task->getAgent()],
+            ['agent' => $task->getAgent(), 'task' => $task],
             ['recordedAt' => 'DESC']
         );
 

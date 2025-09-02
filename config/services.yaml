@@ -2,6 +2,8 @@ parameters:
     # Use consistent MERCURE_JWT_SECRET for both publisher and subscriber (matching working config)
     mercure_jwt_token: '%env(MERCURE_JWT_PUBLISHER)%'
     mercure_jwt_secret: '%env(MERCURE_JWT_SECRET)%'
+    stripe.secret_key: '%env(STRIPE_SECRET_KEY)%'
+    stripe.public_key: '%env(STRIPE_PUBLIC_KEY)%'
 
 services:
     _defaults:
@@ -75,3 +77,16 @@ services:
         resource: '../src/Controller/ResetPassword/'
         public: true
         tags: ['controller.service_arguments']
+
+    # Contrôleurs invokables SOLID pour Payment (initiation endpoint)
+    App\Controller\Payment\:
+        resource: '../src/Controller/Payment/'
+        public: true
+        tags: ['controller.service_arguments']
+
+    # Cybersource client configuration - values come from environment or Symfony secrets
+    App\Service\CybersourceClient:
+        arguments:
+            $apiKey: '%env(CYBERSOURCE_API_KEY)%'
+            $orgId: '%env(CYBERSOURCE_ORG_ID)%'
+            $sharedSecret: '%env(CYBERSOURCE_SHARED_SECRET)%'

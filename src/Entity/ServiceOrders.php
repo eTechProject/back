@@ -40,11 +40,23 @@ class ServiceOrders
     #[ORM\OneToMany(mappedBy: 'order', targetEntity: Messages::class)]
     private Collection $messages;
 
+    #[ORM\OneToMany(mappedBy: 'order', targetEntity: Tasks::class)]
+    private Collection $tasks;
+
     public function __construct()
     {
         $this->createdAt = new \DateTimeImmutable();
         $this->status = Status::PENDING;
         $this->messages = new ArrayCollection();
+        $this->tasks = new ArrayCollection();
+    }
+
+    /**
+     * @return Collection<int, Tasks>
+     */
+    public function getTasks(): Collection
+    {
+        return $this->tasks;
     }
 
     // Getters et setters

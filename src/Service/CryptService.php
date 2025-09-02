@@ -20,8 +20,8 @@ class CryptService
      */
     private function getEntityKey(string $entityType): string
     {
-        // Use HMAC-SHA256 to derive a proper entity-specific key
-        return hash('sha256', $this->baseSecret . '_entity_' . $entityType);
+        // Use HMAC-SHA256 and return raw binary to be compatible with AES-256 key length
+        return hash('sha256', $this->baseSecret . '_entity_' . $entityType, true);
     }
 
     /**

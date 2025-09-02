@@ -1,23 +1,25 @@
 <?php
-
 namespace App\Controller\Notification;
 
 use App\Enum\EntityType;
 use App\Repository\NotificationRepository;
 use App\Service\CryptService;
+use App\DTO\Notification\Response\NotificationResponseDTO;
+use App\Entity\Notification;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
+use App\Service\Notification\NotificationService;
 
 #[Route('/api/users/{userId}/notifications', name: 'api_get_notifications_by_user_id', methods: ['GET'])]
-#[IsGranted('ROLE_CLIENT')]
 class GetNotificationsByUserController extends AbstractController
 {
     public function __construct(
         private NotificationRepository $notificationRepository,
-        private CryptService $cryptService
+        private CryptService $cryptService,
+        private NotificationService $notificationService
     ) {
     }
 
@@ -32,7 +34,9 @@ class GetNotificationsByUserController extends AbstractController
 
         // Verify that user can only access their own notifications
         $currentUser = $this->getUser();
-        if (!$currentUser || $currentUser->getId() !== $decryptedUserId) {
+        // Assuming your User entity implements getId(), otherwise use getUserIdentifier()
+        $currentUserId = method_exists($currentUser, 'getId') ? $currentUser->getId() : $currentUser?->getUserIdentifier();
+        if (!$currentUser || $currentUserId != $decryptedUserId) {
             return new JsonResponse(['error' => 'Access denied'], 403);
         }
 
@@ -50,14 +54,10 @@ class GetNotificationsByUserController extends AbstractController
         $total = $this->notificationRepository->countByUser($decryptedUserId);
 
         return new JsonResponse([
-            'notifications' => array_map(fn($notification) => [
-                'id' => $this->cryptService->encryptId($notification->getId(), EntityType::NOTIFICATION->value),
-                'title' => $notification->getTitre(),
-                'message' => $notification->getMessage(),
-                'type' => $notification->getType(),
-                'isRead' => $notification->isRead(),
-                'createdAt' => $notification->getCreatedAt()->format('Y-m-d H:i:s')
-            ], $notifications),
+            'status' => 'success',
+            'data' => array_map(function (Notification $notification) {
+                return $this->notificationService->toDTO($notification);
+            }, $notifications),
             'total' => $total,
             'page' => $page,
             'limit' => $limit,

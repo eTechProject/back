@@ -2,6 +2,7 @@
 
 namespace App\Repository;
 
+use App\Entity\Payment;
 use App\Entity\PaymentHistory;
 use App\Enum\PaymentHistoryStatus;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
@@ -12,10 +13,28 @@ use Doctrine\Persistence\ManagerRegistry;
  */
 class PaymentHistoryRepository extends ServiceEntityRepository
 {
+
     public function __construct(ManagerRegistry $registry)
     {
         parent::__construct($registry, PaymentHistory::class);
     }
+    /**
+     * Returns the most recent PaymentHistory for a payment
+     * @param Payment $payment
+     * @return PaymentHistory|null
+     */
+   public function findLastPaymentHistoryForClient(Payment $payment): ?PaymentHistory
+    {
+        return $this->createQueryBuilder('ph')
+            ->andWhere('ph.payment = :payment')
+            ->setParameter('payment', $payment)
+            ->orderBy('ph.createdAt', 'DESC')
+            ->setMaxResults(1)
+            ->getQuery()
+            ->getOneOrNullResult();
+    }
+
+
 
     /**
      * @return PaymentHistory[] Returns an array of PaymentHistory objects

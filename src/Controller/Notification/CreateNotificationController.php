@@ -16,8 +16,7 @@ use Symfony\Component\Serializer\SerializerInterface;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
 use Sensio\Bundle\FrameworkExtraBundle\Configuration\IsGranted;
 
-#[Route('/api/notifications', name: 'api_notifications_create', methods: ['POST'])]
-#[IsGranted('ROLE_CLIENT')]
+#[Route('/api/public/notifications', name: 'api_notifications_create', methods: ['POST'])]
 class CreateNotificationController extends AbstractController
 {
     public function __construct(
