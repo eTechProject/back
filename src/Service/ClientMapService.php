@@ -109,7 +109,7 @@ class ClientMapService
 
         // Get agent's most recent raw position
         $agentRawLocation = $this->agentLocationsRawRepository->findOneBy(
-            ['agent' => $task->getAgent()],
+            ['agent' => $task->getAgent(), 'task' => $task],
             ['recordedAt' => 'DESC']
         );
 
