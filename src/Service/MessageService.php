@@ -182,9 +182,13 @@ class MessageService
         
         // Génération du topic de conversation avec IDs cryptés
         $conversationTopic = $this->generateConversationTopic($sender, $receiver);
-        
+
         // Publication du message
         $this->publishToMercure($conversationTopic, $payload, $message);
+
+        $globalChatTopic = $this->generateGlobalChatTopic($receiver);
+
+        $this->publishToMercure($globalChatTopic, $payload, $message);
     }
 
     /**
@@ -209,7 +213,9 @@ class MessageService
             'id' => $this->cryptService->encryptId((string) $message->getId(), EntityType::MESSAGE->value),
             'order_id' => $this->cryptService->encryptId((string) $order->getId(), EntityType::SERVICE_ORDER->value),
             'sender_id' => $this->cryptService->encryptId((string) $sender->getId(), EntityType::USER->value),
+            'sender_name' => $sender->getName(),
             'receiver_id' => $this->cryptService->encryptId((string) $receiver->getId(), EntityType::USER->value),
+            'receiver_name' => $receiver->getName(),
             'content' => $content,
             'sent_at' => $this->timeService->formatForApi($message->getSentAt()),
         ];
@@ -241,6 +247,20 @@ class MessageService
         
         $this->logger->debug('Topic de conversation généré', [
             'sender_id' => $sender->getId(),
+            'receiver_id' => $receiver->getId(),
+            'topic' => $conversationTopic
+        ]);
+
+        return $conversationTopic;
+    }
+
+    private function generateGlobalChatTopic($receiver): string
+    {
+        $receiverEncryptedId = $this->cryptService->encryptId((string) $receiver->getId(), EntityType::USER->value);
+
+        $conversationTopic = "chat/{$receiverEncryptedId}";
+
+        $this->logger->debug('Topic de conversation généré', [
             'receiver_id' => $receiver->getId(),
             'topic' => $conversationTopic
         ]);
