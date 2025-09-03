@@ -15,4 +15,5 @@ enum EntityType: string
     case PAYMENT = 'payment';
     case PAYMENT_HISTORY = 'payment_history';
     case ALERT = 'alert';
+    case REPORT = 'report';
 }
