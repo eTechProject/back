@@ -61,28 +61,25 @@ class TaskHistoryResponseService
             'taskCompletion' => $this->buildTaskCompletionChart($allAgentTasks)
         ];
 
-        // Informations sur l'agent avec ses tâches
-        $agentInfo = [
-            'agentId' => $agentId,
-            'name' => $agent->getUser()->getName(),
-            'email' => $agent->getUser()->getEmail(),
+        $data = [
+            'kpis' => $taskStats,
+            'charts' => $charts,
             'tasks' => $taskDTOs
         ];
 
         return [
             'status' => 'success',
             'message' => 'Historique des tâches récupéré avec succès',
-            'data' => $agentInfo,
             'filters' => [
                 'choice' => $filters?->choice,
                 'dateStart' => $filters?->dateStart,
                 'dateEnd' => $filters?->dateEnd,
             ],
-            'kpis' => $taskStats,
-            'charts' => $charts,
+            'data' => $data,    
             'total' => $total,
             'page' => $page,
             'pages' => $pages,
+            'limit' => $limit
         ];
     }
     public function buildTaskHistoryResponse(
@@ -130,6 +127,7 @@ class TaskHistoryResponseService
             'total' => $total,
             'page' => $page,
             'pages' => $pages,
+            'limit' => $limit
         ];
     }
 
