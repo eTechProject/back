@@ -12,6 +12,7 @@ class TaskHistoryDTO
         public string $startDate,
         public ?string $endDate,
         public string $orderId,
-        public string $orderDescription
+        public string $orderDescription,
+        public ?string $assignPosition = null
     ) {}
 }

@@ -54,7 +54,8 @@ class TasksHistoryController extends AbstractController
                 $page, 
                 $limit, 
                 $statusFilter,
-                $encryptedId
+                $encryptedId,
+                null
             );
             
             // Mettre à jour le message pour l'admin
