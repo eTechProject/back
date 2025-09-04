@@ -11,13 +11,15 @@ use App\DTO\Dashboard\Request\DashboardFiltersDTO;
 use App\Service\CryptService;
 use App\Enum\EntityType;
 use Sensio\Bundle\FrameworkExtraBundle\Configuration\IsGranted;
+use Symfony\Component\Validator\Validator\ValidatorInterface;
 
 
 class DashboardController extends AbstractController
 {
     public function __construct(
         private readonly DashboardService $dashboardService,
-        private readonly CryptService $cryptService
+        private readonly CryptService $cryptService,
+        private readonly ValidatorInterface $validator
     ) {}
     #[Route('/api/client/{encryptedId}/dashboard', name: 'client_dashboard', methods: ['GET'])]
     public function __invoke(string $encryptedId, Request $request): JsonResponse
@@ -30,6 +32,20 @@ class DashboardController extends AbstractController
             $filters->choice = $request->query->get('choice');
             $filters->dateStart = $request->query->get('dateStart');
             $filters->dateEnd = $request->query->get('dateEnd');
+
+            $errors = $this->validator->validate($filters);
+            if (count($errors) > 0) {
+                $errorMessages = [];
+                foreach ($errors as $error) {
+                    $errorMessages[] = $error->getMessage();
+                }
+                
+                return $this->json([
+                    'status' => 'error',
+                    'message' => 'Données invalides',
+                    'errors' => $errorMessages
+                ], 400);
+            }
 
             $dashboardData = $this->dashboardService->getDashboardData($clientId, $filters);
 

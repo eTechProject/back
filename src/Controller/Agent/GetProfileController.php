@@ -10,7 +10,7 @@ use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 #[IsGranted('ROLE_AGENT')]
-#[Route('/api/agent/{encryptedId}', name: 'api_agent_get_profile', methods: ['GET'])]
+#[Route('/api/agent/{encryptedId}', name: 'api_agent_get_profile', methods: ['GET'], requirements: ['encryptedId' => '^(?!tasks-history$|assigned-tasks$|map-data$|locations$).+'])]
 class GetProfileController extends AbstractController
 {
     public function __construct(private AgentService $agentService, private CryptService $cryptService) {}

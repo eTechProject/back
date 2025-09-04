@@ -9,7 +9,7 @@ class DashboardFiltersDTO
     public ?string $dateRange = null;
 
     #[Assert\Choice(
-        choices: ['today', 'last7days', 'thisMonth', 'last30days', 'thisYear'],
+        choices: ['today', 'last7days', 'week', 'thisMonth', 'last30days', 'thisYear'],
         message: 'Choix invalide. Valeurs autorisées: {{ choices }}'
     )]
     public ?string $choice = null;
