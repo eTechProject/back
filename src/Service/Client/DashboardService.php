@@ -99,6 +99,11 @@ class DashboardService
                         $sevenDaysAgo = $now->modify('-6 days')->setTime(0,0,0);
                         if ($start < $sevenDaysAgo || $start > $now) return false;
                         break;
+                    case 'week':
+                        $monday = (clone $now)->modify('monday this week')->setTime(0, 0, 0);
+                        $sunday = (clone $now)->modify('sunday this week')->setTime(23, 59, 59);
+                        if ($start < $monday || $start > $sunday) return false;
+                        break;
                     case 'thisMonth':
                         if ($start->format('Y-m') !== $now->format('Y-m')) return false;
                         break;
