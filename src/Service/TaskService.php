@@ -18,6 +18,7 @@ use App\Service\Notification\NotificationService;
 use App\Enum\NotificationTarget;
 use App\Enum\NotificationType;
 use App\DTO\Dashboard\Request\DashboardFiltersDTO;
+use App\Entity\User;
 
 class TaskService
 {
@@ -289,15 +290,15 @@ class TaskService
     }
 
     /**
-     * Get tasks history for a specific agent with pagination, optional status filter and date filters
+     * Get tasks history for a specific order with pagination, optional date filters
      */
-    public function getFilteredTasksHistoryByAgent(Agents $agent, int $page, int $limit, ?Status $statusFilter = null, ?DashboardFiltersDTO $filters = null): array
+    public function getFilteredTasksHistoryByOrder(ServiceOrders $order, int $page, int $limit, ?DashboardFiltersDTO $filters = null, ?string $statusFilter = null): array
     {
         $offset = ($page - 1) * $limit;
         
         $queryBuilder = $this->tasksRepository->createQueryBuilder('t')
-            ->where('t.agent = :agent')
-            ->setParameter('agent', $agent)
+            ->where('t.order = :order')
+            ->setParameter('order', $order)
             ->setFirstResult($offset)
             ->setMaxResults($limit)
             ->orderBy('t.startDate', 'DESC');
@@ -318,8 +319,8 @@ class TaskService
         // Count total tasks for pagination
         $countQueryBuilder = $this->tasksRepository->createQueryBuilder('t')
             ->select('COUNT(t.id)')
-            ->where('t.agent = :agent')
-            ->setParameter('agent', $agent);
+            ->where('t.order = :order')
+            ->setParameter('order', $order);
 
         if ($statusFilter) {
             $countQueryBuilder
@@ -408,6 +409,96 @@ class TaskService
             }
         }
     }
+
+    /**
+     * Get tasks history for a specific order with pagination
+     */
+    public function getTasksHistoryByOrder(ServiceOrders $order, int $page, int $limit, ?string $statusFilter = null): array
+    {
+        $offset = ($page - 1) * $limit;
+        
+        $queryBuilder = $this->tasksRepository->createQueryBuilder('t')
+            ->where('t.order = :order')
+            ->setParameter('order', $order)
+            ->setFirstResult($offset)
+            ->setMaxResults($limit)
+            ->orderBy('t.startDate', 'DESC');
+
+        if ($statusFilter) {
+            $queryBuilder
+                ->andWhere('t.status = :status')
+                ->setParameter('status', $statusFilter);
+        }
+
+
+        $tasks = $queryBuilder->getQuery()->getResult();
+        
+        // Count total tasks for pagination
+        $countQueryBuilder = $this->tasksRepository->createQueryBuilder('t')
+            ->select('COUNT(t.id)')
+            ->where('t.order = :order')
+            ->setParameter('order', $order);
+
+        if ($statusFilter) {
+            $countQueryBuilder
+                ->andWhere('t.status = :status')
+                ->setParameter('status', $statusFilter);
+        }
+
+        $total = $countQueryBuilder->getQuery()->getSingleScalarResult();
+
+        return [$tasks, $total];
+    }
+
+    /**
+     * Get tasks history for a specific agent with pagination, optional status filter and date filters
+     */
+    public function getFilteredTasksHistoryByAgent(Agents $agent, int $page, int $limit, ?Status $statusFilter = null, ?DashboardFiltersDTO $filters = null): array
+    {
+        $offset = ($page - 1) * $limit;
+        
+        $queryBuilder = $this->tasksRepository->createQueryBuilder('t')
+            ->where('t.agent = :agent')
+            ->setParameter('agent', $agent)
+            ->setFirstResult($offset)
+            ->setMaxResults($limit)
+            ->orderBy('t.startDate', 'DESC');
+
+        if ($statusFilter) {
+            $queryBuilder
+                ->andWhere('t.status = :status')
+                ->setParameter('status', $statusFilter);
+        }
+
+        // Apply date filters
+        if ($filters) {
+            $this->applyDateFiltersToQuery($queryBuilder, $filters);
+        }
+
+        $tasks = $queryBuilder->getQuery()->getResult();
+        
+        // Count total tasks for pagination
+        $countQueryBuilder = $this->tasksRepository->createQueryBuilder('t')
+            ->select('COUNT(t.id)')
+            ->where('t.agent = :agent')
+            ->setParameter('agent', $agent);
+
+        if ($statusFilter) {
+            $countQueryBuilder
+                ->andWhere('t.status = :status')
+                ->setParameter('status', $statusFilter);
+        }
+
+        // Apply same date filters to count query
+        if ($filters) {
+            $this->applyDateFiltersToQuery($countQueryBuilder, $filters);
+        }
+
+        $total = $countQueryBuilder->getQuery()->getSingleScalarResult();
+
+        return [$tasks, $total];
+    }
+
 
     /**
      * Convert a Task entity to TaskHistoryDTO
