@@ -276,14 +276,7 @@ class DashboardService
     public function getQuickActions(): QuickActionsResponseDTO
     {
         $actions = [
-            new QuickActionDTO(
-                'generate_report',
-                'Générer un rapport',
-                '/api/admin/reports/generate',
-                'POST',
-                'file-text',
-                true
-            )
+            // Actions supprimées - plus de génération de rapport
         ];
 
         return new QuickActionsResponseDTO($actions);

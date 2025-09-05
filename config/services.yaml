@@ -90,7 +90,3 @@ services:
             $apiKey: '%env(CYBERSOURCE_API_KEY)%'
             $orgId: '%env(CYBERSOURCE_ORG_ID)%'
             $sharedSecret: '%env(CYBERSOURCE_SHARED_SECRET)%'
-
-    App\Service\Admin\ReportService:
-        arguments:
-            $reportsDirectory: '%reports_directory%'
