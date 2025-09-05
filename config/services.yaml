@@ -3,6 +3,7 @@ parameters:
     mercure_jwt_secret: '%env(MERCURE_JWT_SECRET)%'
     stripe.secret_key: '%env(STRIPE_SECRET_KEY)%'
     stripe.public_key: '%env(STRIPE_PUBLIC_KEY)%'
+    reports_directory: '%kernel.project_dir%/var/reports'
 
 services:
     _defaults:
