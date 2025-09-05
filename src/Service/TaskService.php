@@ -414,6 +414,15 @@ class TaskService
      */
     public function taskToHistoryDTO(Tasks $task): TaskHistoryDTO
     {
+        // Extract coordinates from WKT format: "POINT(longitude latitude)" -> [longitude, latitude]
+        $assignPosition = null;
+        if ($task->getAssignPosition()) {
+            $wktString = $task->getAssignPosition();
+            if (preg_match('/POINT\(([+-]?\d*\.?\d+)\s+([+-]?\d*\.?\d+)\)/', $wktString, $matches)) {
+                $assignPosition = [(float)$matches[1], (float)$matches[2]];
+            }
+        }
+
         return new TaskHistoryDTO(
             taskId: $this->cryptService->encryptId((string)$task->getId(), EntityType::TASK->value),
             description: $task->getDescription(),
@@ -423,7 +432,7 @@ class TaskService
             endDate: $task->getEndDate()?->format('Y-m-d\TH:i:s\Z'),
             orderId: $this->cryptService->encryptId((string)$task->getOrder()->getId(), EntityType::SERVICE_ORDER->value),
             orderDescription: $task->getOrder()->getDescription() ?? 'Ordre de service',
-            assignPosition: $task->getAssignPosition() ? json_encode($task->getAssignPosition()) : null
+            assignPosition: $assignPosition
         );
     }
     public function getTaskByEncryptedId(string $encryptedTaskId): ?Tasks
