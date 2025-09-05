@@ -18,6 +18,9 @@ use App\Repository\AgentLocationsRawRepository;
 use App\Repository\AgentLocationsArchiveRepository;
 use App\Repository\MessagesRepository;
 use \App\Service\AgentLocationArchiveService;
+use \App\Service\CryptService;
+use App\Service\TaskService;
+use \App\Service\UserService;
 
 class DashboardService
 {
@@ -31,23 +34,26 @@ class DashboardService
         private readonly AgentLocationsRawRepository $agentLocationsRawRepository,
         private readonly AgentLocationsArchiveRepository $agentLocationsArchiveRepository,
         private readonly MessagesRepository $messagesRepository,
-        private readonly AgentLocationArchiveService $agentLocationArchiveService
+        private readonly AgentLocationArchiveService $agentLocationArchiveService,
+        private readonly CryptService $cryptService,
+        private readonly TaskService $taskService,
+        private readonly UserService $userService
     ) {}
 
-    public function getDashboardData(int $clientId, ?DashboardFiltersDTO $filters = null): DashboardResponseDTO
+    public function getDashboardData(int $clientId, ?DashboardFiltersDTO $filters = null, int $page, int $limit, ?string $statusFilter=null): array
     {
-        $response = new DashboardResponseDTO();
+        $dashboardData = new DashboardResponseDTO();        
+        
 
-        $response->filters = [
-            'choice' => $filters?->choice,
-            'dateStart' => $filters?->dateStart,
-            'dateEnd' => $filters?->dateEnd,
-        ];
-
-        // Get client's service order (only one per client)
         $order = $this->serviceOrdersRepository->findOneByClientId($clientId);
         if (!$order) {
-            return $this->getEmptyDashboard($response);
+            return $this->getEmptyDashboard($dashboardData);
+        }
+
+        if ($filters) {
+            [$tasksFilters, $total] = $this->taskService->getFilteredTasksHistoryByOrder($order, $page, $limit, $filters, $statusFilter);
+        } else {
+            [$tasksFilters, $total] = $this->taskService->getTasksHistoryByOrder($order, $page, $limit, $statusFilter);
         }
 
         $tasks = $this->getFilteredTasks($order, $filters);
@@ -59,14 +65,37 @@ class DashboardService
         $alerts = $this->alertRepository->findByOrderId($order->getId(), $filters);
 
         // Calculate KPIs
-        $response->kpis = $this->calculateKPIs($tasks, $agents, $payment, $alerts);
+        $dashboardData->kpis = $this->calculateKPIs($tasks, $agents, $payment, $alerts);
+
+        $taskDTOs = [];
+        foreach ($tasksFilters as $task) {
+            $taskDTOs[] = $this->taskService->taskToHistoryDTO($task);
+        }
+
+        $dashboardData->tasksHistory = $taskDTOs;
+        $pages = (int) ceil($total / $limit);
 
         // Build Charts
-        $response->charts = [
+        $dashboardData->charts = [
             'tasksOverTime' => $this->buildTasksOverTimeChart($tasks),
             'taskCompletion' => $this->buildTaskCompletionChart($tasks),
             'agentPunctuality' => $this->buildAgentPunctualityChart($tasks, $clientId),
             'averageResponseTime' => $this->buildAverageResponseTimeChart($order, $agents, $clientId, $filters),
+        ];
+
+        $response=[
+            'status' => 'success',
+            'message' => 'Historique des tâches récupéré avec succès',
+            'filters' => [
+                'choice' => $filters?->choice,
+                'dateStart' => $filters?->dateStart,
+                'dateEnd' => $filters?->dateEnd,
+            ],
+            'data' => $dashboardData,
+            'total' => $total,
+            'page' => $page,
+            'pages' => $pages,
+            'limit' => $limit
         ];
 
         return $response;
@@ -564,9 +593,9 @@ class DashboardService
         return null;
     }
 
-    private function getEmptyDashboard(DashboardResponseDTO $response): DashboardResponseDTO
+    private function getEmptyDashboard(DashboardResponseDTO $data): array
     {
-        $response->kpis = [
+        $data->kpis = [
             'totalTasks' => 0,
             'completionRate' => '0%',
             'avgTaskDuration' => '0h 00m',
@@ -575,11 +604,20 @@ class DashboardService
             'subscription' => 'Inactif'
         ];
 
-        $response->charts = [
+        $data->tasksHistory = [];
+        $data->totalTasks = 0;
+
+        $data->charts = [
             'tasksOverTime' => ['type' => 'line', 'labels' => [], 'datasets' => []],
             'taskCompletion' => ['type' => 'doughnut', 'labels' => [], 'datasets' => []],
             'agentPunctuality' => ['type' => 'bar', 'labels' => [], 'datasets' => []],
             'averageResponseTime' => ['type' => 'bar', 'labels' => [], 'datasets' => []]
+        ];
+
+        $response=[
+            'status' => 'success',
+            'message' => 'Pas de taches trouvées pour ce client.',
+            'data' => $data,
         ];
 
         return $response;
