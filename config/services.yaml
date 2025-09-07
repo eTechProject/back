@@ -89,3 +89,8 @@ services:
             $apiKey: '%env(CYBERSOURCE_API_KEY)%'
             $orgId: '%env(CYBERSOURCE_ORG_ID)%'
             $sharedSecret: '%env(CYBERSOURCE_SHARED_SECRET)%'
+
+    # AI Report service configuration
+    App\Service\AIReportService:
+        arguments:
+            $googleApiKey: '%env(GOOGLE_AI_API_KEY)%'
