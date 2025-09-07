@@ -343,7 +343,7 @@ class TaskService
      */
     private function applyDateFiltersToQuery($queryBuilder, DashboardFiltersDTO $filters): void
     {
-        $now = new \DateTime();
+        $now = new \DateTimeImmutable();
         
         // Handle predefined date choices
         if ($filters->choice !== null) {
@@ -365,6 +365,16 @@ class TaskService
                     
                     $queryBuilder->andWhere('t.startDate >= :startDate')
                         ->setParameter('startDate', $startDate);
+                    break;
+
+                case 'week':
+                    $startOfDay = clone $now;
+                    $startDate = $now->modify('monday this week')->setTime(0, 0, 0);
+                    $endOfDay = clone $now;
+                    $endDate = $now->modify('sunday this week')->setTime(23, 59, 59);
+                    $queryBuilder->andWhere('t.startDate BETWEEN :startDate AND :endDate')
+                        ->setParameter('startDate', $startDate)
+                        ->setParameter('endDate', $endDate);
                     break;
                     
                 case 'thisMonth':
