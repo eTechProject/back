@@ -118,4 +118,30 @@ class MessagesRepository extends ServiceEntityRepository
             }
         }
     }
+
+    /**
+     * Find messages for a specific order within a date range
+     * @param int $orderId
+     * @param \DateTimeInterface $startDate
+     * @param \DateTimeInterface|null $endDate
+     * @return Messages[]
+     */
+    public function findMessagesByOrderAndDateRange(int $orderId, \DateTimeInterface $startDate, ?\DateTimeInterface $endDate = null): array
+    {
+        $qb = $this->createQueryBuilder('m')
+            ->where('m.order = :orderId')
+            ->andWhere('m.sentAt >= :startDate')
+            ->setParameter('orderId', $orderId)
+            ->setParameter('startDate', $startDate);
+
+        if ($endDate !== null) {
+            $qb->andWhere('m.sentAt <= :endDate')
+               ->setParameter('endDate', $endDate);
+        }
+
+        return $qb
+            ->orderBy('m.sentAt', 'ASC')
+            ->getQuery()
+            ->getResult();
+    }
 }
