@@ -343,7 +343,11 @@ class TaskService
      */
     private function applyDateFiltersToQuery($queryBuilder, DashboardFiltersDTO $filters): void
     {
-        $now = new \DateTimeImmutable();
+        $now = $this->entityManager
+            ->createQuery("SELECT CURRENT_TIMESTAMP()")
+            ->getSingleScalarResult();
+
+        $now = new \DateTimeImmutable($now);
 
         // Handle predefined date choices
         if ($filters->choice !== null) {
