@@ -17,6 +17,8 @@ use Doctrine\ORM\EntityManagerInterface;
 use App\Service\Notification\NotificationService;
 use App\Enum\NotificationTarget;
 use App\Enum\NotificationType;
+use App\DTO\Dashboard\Request\DashboardFiltersDTO;
+use App\Entity\User;
 
 class TaskService
 {
@@ -288,10 +290,230 @@ class TaskService
     }
 
     /**
+     * Get tasks history for a specific order with pagination, optional date filters
+     */
+    public function getFilteredTasksHistoryByOrder(ServiceOrders $order, int $page, int $limit, ?DashboardFiltersDTO $filters = null, ?string $statusFilter = null): array
+    {
+        $offset = ($page - 1) * $limit;
+        
+        $queryBuilder = $this->tasksRepository->createQueryBuilder('t')
+            ->where('t.order = :order')
+            ->setParameter('order', $order)
+            ->setFirstResult($offset)
+            ->setMaxResults($limit)
+            ->orderBy('t.startDate', 'DESC');
+
+        if ($statusFilter) {
+            $queryBuilder
+                ->andWhere('t.status = :status')
+                ->setParameter('status', $statusFilter);
+        }
+
+        // Apply date filters
+        if ($filters) {
+            $this->applyDateFiltersToQuery($queryBuilder, $filters);
+        }
+
+        $tasks = $queryBuilder->getQuery()->getResult();
+        
+        // Count total tasks for pagination
+        $countQueryBuilder = $this->tasksRepository->createQueryBuilder('t')
+            ->select('COUNT(t.id)')
+            ->where('t.order = :order')
+            ->setParameter('order', $order);
+
+        if ($statusFilter) {
+            $countQueryBuilder
+                ->andWhere('t.status = :status')
+                ->setParameter('status', $statusFilter);
+        }
+
+        // Apply same date filters to count query
+        if ($filters) {
+            $this->applyDateFiltersToQuery($countQueryBuilder, $filters);
+        }
+
+        $total = $countQueryBuilder->getQuery()->getSingleScalarResult();
+
+        return [$tasks, $total];
+    }
+
+    /**
+     * Apply date filters to query builder based on DashboardFiltersDTO
+     */
+    private function applyDateFiltersToQuery($queryBuilder, DashboardFiltersDTO $filters): void
+    {
+        $now = new \DateTime();
+        
+        // Handle predefined date choices
+        if ($filters->choice !== null) {
+            switch ($filters->choice) {
+                case 'today':
+                    $startOfDay = clone $now;
+                    $startOfDay->setTime(0, 0, 0);
+                    $endOfDay = clone $now;
+                    $endOfDay->setTime(23, 59, 59);
+                    
+                    $queryBuilder->andWhere('t.startDate BETWEEN :startDate AND :endDate')
+                        ->setParameter('startDate', $startOfDay)
+                        ->setParameter('endDate', $endOfDay);
+                    break;
+                    
+                case 'last7days':
+                    $startDate = clone $now;
+                    $startDate->modify('-7 days')->setTime(0, 0, 0);
+                    
+                    $queryBuilder->andWhere('t.startDate >= :startDate')
+                        ->setParameter('startDate', $startDate);
+                    break;
+                    
+                case 'thisMonth':
+                    $startOfMonth = clone $now;
+                    $startOfMonth->modify('first day of this month')->setTime(0, 0, 0);
+                    
+                    $queryBuilder->andWhere('t.startDate >= :startDate')
+                        ->setParameter('startDate', $startOfMonth);
+                    break;
+                    
+                case 'last30days':
+                    $startDate = clone $now;
+                    $startDate->modify('-30 days')->setTime(0, 0, 0);
+                    
+                    $queryBuilder->andWhere('t.startDate >= :startDate')
+                        ->setParameter('startDate', $startDate);
+                    break;
+                    
+                case 'thisYear':
+                    $startOfYear = clone $now;
+                    $startOfYear->setDate((int)$now->format('Y'), 1, 1)->setTime(0, 0, 0);
+                    
+                    $queryBuilder->andWhere('t.startDate >= :startDate')
+                        ->setParameter('startDate', $startOfYear);
+                    break;
+            }
+        }
+        // Handle custom date range
+        elseif ($filters->dateStart !== null || $filters->dateEnd !== null) {
+            if ($filters->dateStart !== null) {
+                $startDate = new \DateTime($filters->dateStart);
+                $startDate->setTime(0, 0, 0);
+                $queryBuilder->andWhere('t.startDate >= :startDate')
+                    ->setParameter('startDate', $startDate);
+            }
+            
+            if ($filters->dateEnd !== null) {
+                $endDate = new \DateTime($filters->dateEnd);
+                $endDate->setTime(23, 59, 59);
+                $queryBuilder->andWhere('t.startDate <= :endDate')
+                    ->setParameter('endDate', $endDate);
+            }
+        }
+    }
+
+    /**
+     * Get tasks history for a specific order with pagination
+     */
+    public function getTasksHistoryByOrder(ServiceOrders $order, int $page, int $limit, ?string $statusFilter = null): array
+    {
+        $offset = ($page - 1) * $limit;
+        
+        $queryBuilder = $this->tasksRepository->createQueryBuilder('t')
+            ->where('t.order = :order')
+            ->setParameter('order', $order)
+            ->setFirstResult($offset)
+            ->setMaxResults($limit)
+            ->orderBy('t.startDate', 'DESC');
+
+        if ($statusFilter) {
+            $queryBuilder
+                ->andWhere('t.status = :status')
+                ->setParameter('status', $statusFilter);
+        }
+
+
+        $tasks = $queryBuilder->getQuery()->getResult();
+        
+        // Count total tasks for pagination
+        $countQueryBuilder = $this->tasksRepository->createQueryBuilder('t')
+            ->select('COUNT(t.id)')
+            ->where('t.order = :order')
+            ->setParameter('order', $order);
+
+        if ($statusFilter) {
+            $countQueryBuilder
+                ->andWhere('t.status = :status')
+                ->setParameter('status', $statusFilter);
+        }
+
+        $total = $countQueryBuilder->getQuery()->getSingleScalarResult();
+
+        return [$tasks, $total];
+    }
+
+    /**
+     * Get tasks history for a specific agent with pagination, optional status filter and date filters
+     */
+    public function getFilteredTasksHistoryByAgent(Agents $agent, int $page, int $limit, ?Status $statusFilter = null, ?DashboardFiltersDTO $filters = null): array
+    {
+        $offset = ($page - 1) * $limit;
+        
+        $queryBuilder = $this->tasksRepository->createQueryBuilder('t')
+            ->where('t.agent = :agent')
+            ->setParameter('agent', $agent)
+            ->setFirstResult($offset)
+            ->setMaxResults($limit)
+            ->orderBy('t.startDate', 'DESC');
+
+        if ($statusFilter) {
+            $queryBuilder
+                ->andWhere('t.status = :status')
+                ->setParameter('status', $statusFilter);
+        }
+
+        // Apply date filters
+        if ($filters) {
+            $this->applyDateFiltersToQuery($queryBuilder, $filters);
+        }
+
+        $tasks = $queryBuilder->getQuery()->getResult();
+        
+        // Count total tasks for pagination
+        $countQueryBuilder = $this->tasksRepository->createQueryBuilder('t')
+            ->select('COUNT(t.id)')
+            ->where('t.agent = :agent')
+            ->setParameter('agent', $agent);
+
+        if ($statusFilter) {
+            $countQueryBuilder
+                ->andWhere('t.status = :status')
+                ->setParameter('status', $statusFilter);
+        }
+
+        // Apply same date filters to count query
+        if ($filters) {
+            $this->applyDateFiltersToQuery($countQueryBuilder, $filters);
+        }
+
+        $total = $countQueryBuilder->getQuery()->getSingleScalarResult();
+
+        return [$tasks, $total];
+    }
+
+
+    /**
      * Convert a Task entity to TaskHistoryDTO
      */
     public function taskToHistoryDTO(Tasks $task): TaskHistoryDTO
     {
+        // Extract coordinates from WKT format: "POINT(longitude latitude)" -> [longitude, latitude]
+        $assignPosition = null;
+        if ($task->getAssignPosition()) {
+            $wktString = $task->getAssignPosition();
+            if (preg_match('/POINT\(([+-]?\d*\.?\d+)\s+([+-]?\d*\.?\d+)\)/', $wktString, $matches)) {
+                $assignPosition = [(float)$matches[1], (float)$matches[2]];
+            }
+        }
+
         return new TaskHistoryDTO(
             taskId: $this->cryptService->encryptId((string)$task->getId(), EntityType::TASK->value),
             description: $task->getDescription(),
@@ -300,7 +522,8 @@ class TaskService
             startDate: $task->getStartDate()->format('Y-m-d\TH:i:s\Z'),
             endDate: $task->getEndDate()?->format('Y-m-d\TH:i:s\Z'),
             orderId: $this->cryptService->encryptId((string)$task->getOrder()->getId(), EntityType::SERVICE_ORDER->value),
-            orderDescription: $task->getOrder()->getDescription() ?? 'Ordre de service'
+            orderDescription: $task->getOrder()->getDescription() ?? 'Ordre de service',
+            assignPosition: $assignPosition
         );
     }
     public function getTaskByEncryptedId(string $encryptedTaskId): ?Tasks

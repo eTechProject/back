@@ -15,7 +15,7 @@ use Symfony\Component\Validator\Validator\ValidatorInterface;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 #[IsGranted('ROLE_AGENT')]
-#[Route('/api/agent/{encryptedId}', name: 'api_agent_update_profile', methods: ['PUT'])]
+#[Route('/api/agent/{encryptedId}', name: 'api_agent_update_profile', methods: ['PUT'], requirements: ['encryptedId' => '^(?!tasks-history$|assigned-tasks$|map-data$|locations$).+'])]
 class UpdateProfileController extends AbstractController
 {
     public function __construct(private AgentService $agentService, private CryptService $cryptService) {}

@@ -7,22 +7,33 @@ use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Annotation\Route;
 use App\Service\Client\DashboardService;
+use App\Service\RequestValidationService;
+use App\Service\TaskHistoryResponseService;
 use App\DTO\Dashboard\Request\DashboardFiltersDTO;
 use App\Service\CryptService;
 use App\Enum\EntityType;
 use Sensio\Bundle\FrameworkExtraBundle\Configuration\IsGranted;
+use Symfony\Component\Validator\Validator\ValidatorInterface;
+
 
 
 class DashboardController extends AbstractController
 {
     public function __construct(
         private readonly DashboardService $dashboardService,
-        private readonly CryptService $cryptService
+        private readonly CryptService $cryptService,
+        private RequestValidationService $requestValidationService,
+        private TaskHistoryResponseService $taskHistoryResponseService,
+        private readonly ValidatorInterface $validator
     ) {}
     #[Route('/api/client/{encryptedId}/dashboard', name: 'client_dashboard', methods: ['GET'])]
     public function __invoke(string $encryptedId, Request $request): JsonResponse
     {
         try {
+
+            [$page, $limit] = $this->requestValidationService->validatePaginationParams($request);
+            $statusFilter = $this->requestValidationService->validateStatusParam($request);
+
             $clientId = $this->cryptService->decryptId($encryptedId, EntityType::USER->value);
 
             $filters = new DashboardFiltersDTO();
@@ -31,13 +42,23 @@ class DashboardController extends AbstractController
             $filters->dateStart = $request->query->get('dateStart');
             $filters->dateEnd = $request->query->get('dateEnd');
 
-            $dashboardData = $this->dashboardService->getDashboardData($clientId, $filters);
+            $errors = $this->validator->validate($filters);
+            if (count($errors) > 0) {
+                $errorMessages = [];
+                foreach ($errors as $error) {
+                    $errorMessages[] = $error->getMessage();
+                }
+                
+                return $this->json([
+                    'status' => 'error',
+                    'message' => 'Données invalides',
+                    'errors' => $errorMessages
+                ], 400);
+            }
 
-            return $this->json([
-                'status' => 'success',
-                'data' => $dashboardData,
-                'message' => 'Données dashboard récupérées avec succès'
-            ]);
+            $response = $this->dashboardService->getDashboardData($clientId, $filters, $page, $limit, $statusFilter);
+
+            return $this->json($response);
         } catch (\Exception $e) {
             return $this->json([
                 'status' => 'error',
