@@ -343,72 +343,78 @@ class TaskService
      */
     private function applyDateFiltersToQuery($queryBuilder, DashboardFiltersDTO $filters): void
     {
-        $now = new \DateTime();
-        
+        $now = new \DateTimeImmutable();
+
         // Handle predefined date choices
         if ($filters->choice !== null) {
             switch ($filters->choice) {
                 case 'today':
-                    $startOfDay = clone $now;
-                    $startOfDay->setTime(0, 0, 0);
-                    $endOfDay = clone $now;
-                    $endOfDay->setTime(23, 59, 59);
-                    
+                    $startDate = $now->setTime(0, 0, 0);
+                    $endDate = $now->setTime(23, 59, 59);
                     $queryBuilder->andWhere('t.startDate BETWEEN :startDate AND :endDate')
-                        ->setParameter('startDate', $startOfDay)
-                        ->setParameter('endDate', $endOfDay);
+                        ->setParameter('startDate', $startDate)
+                        ->setParameter('endDate', $endDate);
                     break;
-                    
+
                 case 'last7days':
-                    $startDate = clone $now;
-                    $startDate->modify('-7 days')->setTime(0, 0, 0);
-                    
-                    $queryBuilder->andWhere('t.startDate >= :startDate')
-                        ->setParameter('startDate', $startDate);
+                    $startDate = $now->modify('-6 days')->setTime(0, 0, 0); // last 7 days including today
+                    $endDate = $now->setTime(23, 59, 59);
+                    $queryBuilder->andWhere('t.startDate BETWEEN :startDate AND :endDate')
+                        ->setParameter('startDate', $startDate)
+                        ->setParameter('endDate', $endDate);
                     break;
-                    
+
+                case 'week':
+                    $startDate = $now->modify('monday this week')->setTime(0, 0, 0);
+                    $endDate = $now->modify('sunday this week')->setTime(23, 59, 59);
+                    $queryBuilder->andWhere('t.startDate BETWEEN :startDate AND :endDate')
+                        ->setParameter('startDate', $startDate)
+                        ->setParameter('endDate', $endDate);
+                    break;
+
                 case 'thisMonth':
-                    $startOfMonth = clone $now;
-                    $startOfMonth->modify('first day of this month')->setTime(0, 0, 0);
-                    
-                    $queryBuilder->andWhere('t.startDate >= :startDate')
-                        ->setParameter('startDate', $startOfMonth);
+                    $startDate = $now->modify('first day of this month')->setTime(0, 0, 0);
+                    $endDate = $now->modify('last day of this month')->setTime(23, 59, 59);
+                    $queryBuilder->andWhere('t.startDate BETWEEN :startDate AND :endDate')
+                        ->setParameter('startDate', $startDate)
+                        ->setParameter('endDate', $endDate);
                     break;
-                    
+
                 case 'last30days':
-                    $startDate = clone $now;
-                    $startDate->modify('-30 days')->setTime(0, 0, 0);
-                    
-                    $queryBuilder->andWhere('t.startDate >= :startDate')
-                        ->setParameter('startDate', $startDate);
+                    $startDate = $now->modify('-29 days')->setTime(0, 0, 0); // last 30 days including today
+                    $endDate = $now->setTime(23, 59, 59);
+                    $queryBuilder->andWhere('t.startDate BETWEEN :startDate AND :endDate')
+                        ->setParameter('startDate', $startDate)
+                        ->setParameter('endDate', $endDate);
                     break;
-                    
+
                 case 'thisYear':
-                    $startOfYear = clone $now;
-                    $startOfYear->setDate((int)$now->format('Y'), 1, 1)->setTime(0, 0, 0);
-                    
-                    $queryBuilder->andWhere('t.startDate >= :startDate')
-                        ->setParameter('startDate', $startOfYear);
+                    $startDate = $now->setDate((int)$now->format('Y'), 1, 1)->setTime(0, 0, 0);
+                    $endDate = $now->setDate((int)$now->format('Y'), 12, 31)->setTime(23, 59, 59);
+                    $queryBuilder->andWhere('t.startDate BETWEEN :startDate AND :endDate')
+                        ->setParameter('startDate', $startDate)
+                        ->setParameter('endDate', $endDate);
                     break;
             }
-        }
+        } 
         // Handle custom date range
         elseif ($filters->dateStart !== null || $filters->dateEnd !== null) {
             if ($filters->dateStart !== null) {
-                $startDate = new \DateTime($filters->dateStart);
-                $startDate->setTime(0, 0, 0);
+                $startDate = new \DateTimeImmutable($filters->dateStart);
+                $startDate = $startDate->setTime(0, 0, 0);
                 $queryBuilder->andWhere('t.startDate >= :startDate')
                     ->setParameter('startDate', $startDate);
             }
-            
+
             if ($filters->dateEnd !== null) {
-                $endDate = new \DateTime($filters->dateEnd);
-                $endDate->setTime(23, 59, 59);
+                $endDate = new \DateTimeImmutable($filters->dateEnd);
+                $endDate = $endDate->setTime(23, 59, 59);
                 $queryBuilder->andWhere('t.startDate <= :endDate')
                     ->setParameter('endDate', $endDate);
             }
         }
     }
+
 
     /**
      * Get tasks history for a specific order with pagination
