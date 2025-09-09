@@ -343,9 +343,7 @@ class TaskService
      */
     private function applyDateFiltersToQuery($queryBuilder, DashboardFiltersDTO $filters): void
     {
-        $connection = $this->entityManager->getConnection();
-        $now = $connection->fetchOne("SELECT NOW()");
-        $now = new \DateTimeImmutable($now);
+        $now = new \DateTimeImmutable();
 
         // Handle predefined date choices
         if ($filters->choice !== null) {
