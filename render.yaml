@@ -1,0 +1,72 @@
+# Render Blueprint: defines infrastructure for deployment
+
+services:
+  - type: web
+    name: guard-api
+    env: docker
+    plan: free
+    dockerfilePath: Dockerfile.render
+    autoDeploy: true
+    healthCheckPath: /healthz.php
+    envVars:
+      - key: APP_ENV
+        value: prod
+      - key: APP_SECRET
+        generateValue: true
+      - key: DATABASE_URL
+        fromDatabase:
+          name: guard-db
+          property: connectionString
+      - key: JWT_SECRET_KEY
+        value: /var/www/app/config/jwt/private.pem
+      - key: JWT_PUBLIC_KEY
+        value: /var/www/app/config/jwt/public.pem
+      - key: JWT_PASSPHRASE
+        sync: false # set this manually in the Render dashboard or via 'render env:set'
+      - key: MERCURE_URL
+        fromService:
+          type: web
+          name: mercure-hub
+          property: host
+      - key: MERCURE_PUBLIC_URL  
+        fromService:
+          type: web
+          name: mercure-hub
+          property: host
+      - key: MERCURE_JWT_SECRET
+        generateValue: true
+      - key: RUN_MIGRATIONS
+        value: "1"
+      - key: MESSENGER_TRANSPORT_DSN
+        value: doctrine://default?auto_setup=0
+      - key: AUTO_GENERATE_MIGRATION
+        value: "0"
+
+# Mercure hub service for real-time notifications  
+  - type: web
+    name: mercure-hub
+    runtime: go
+    plan: free
+    buildCommand: |
+      wget -O mercure.tar.gz https://github.com/dunglas/mercure/releases/download/v0.15.8/mercure_Linux_x86_64.tar.gz
+      tar -xzf mercure.tar.gz
+      chmod +x mercure
+    startCommand: ./mercure run
+    envVars:
+      - key: SERVER_NAME
+        value: ':10000'
+      - key: MERCURE_PUBLISHER_JWT_KEY
+        generateValue: true
+      - key: MERCURE_SUBSCRIBER_JWT_KEY
+        generateValue: true
+      - key: MERCURE_EXTRA_DIRECTIVES
+        value: |
+          cors_origins *
+          anonymous 1
+
+
+databases:
+  - name: guard-db
+    plan: free
+    databaseName: guard
+    user: app

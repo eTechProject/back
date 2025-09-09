@@ -215,8 +215,10 @@ class DashboardService
 
         // Completion rate
         $completionRate = $totalTasks > 0 ? round(($completedTasks / $totalTasks) * 100, 1) : 0;
-        $status="inactif";
-        if($payment!=null) $status= $payment->getStatus();
+        $status = "inactif";
+        if ($payment != null) {
+            $status = $payment->getStatus()->value;
+        }
 
 
         return [
