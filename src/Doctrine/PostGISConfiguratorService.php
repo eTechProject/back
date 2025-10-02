@@ -15,7 +15,6 @@ use Jsor\Doctrine\PostGIS\Functions\ST_Within;
 use Jsor\Doctrine\PostGIS\Functions\ST_X;
 use Jsor\Doctrine\PostGIS\Functions\ST_Y;
 use Jsor\Doctrine\PostGIS\Types\GeometryType;
-use Jsor\Doctrine\PostGIS\Types\PointType;
 use Doctrine\DBAL\Types\Type;
 use Doctrine\ORM\Configuration;
 
@@ -28,7 +27,7 @@ class PostGISConfiguratorService
             Type::addType('geometry', GeometryType::class);
         }
         if (!Type::hasType('point')) {
-            Type::addType('point', PointType::class);
+            Type::addType('point', GeometryType::class);
         }
 
         // Register PostGIS functions

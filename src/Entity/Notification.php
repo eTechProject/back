@@ -4,6 +4,7 @@ namespace App\Entity;
 
 use App\Enum\NotificationType;
 use App\Enum\NotificationTarget;
+use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Validator\Constraints as Assert;
 use Symfony\Component\Serializer\Annotation\Groups;
@@ -14,34 +15,34 @@ class Notification
 {
     #[ORM\Id]
     #[ORM\GeneratedValue]
-    #[ORM\Column(type: 'integer')]
+    #[ORM\Column(type: Types::INTEGER)]
     #[Groups(['notification:read'])]
     private ?int $id = null;
 
-    #[ORM\Column(type: 'string', length: 255)]
+    #[ORM\Column(type: Types::STRING, length: 255)]
     #[Assert\NotBlank]
     #[Assert\Length(min: 1, max: 255)]
     #[Groups(['notification:read'])]
     private string $titre;
 
-    #[ORM\Column(type: 'text')]
+    #[ORM\Column(type: Types::TEXT)]
     #[Assert\NotBlank]
     #[Groups(['notification:read'])]
     private string $message;
 
-    #[ORM\Column(type: 'string', length: 50, enumType: NotificationType::class)]
+    #[ORM\Column(type: Types::STRING, length: 50, enumType: NotificationType::class)]
     #[Groups(['notification:read'])]
     private NotificationType $type = NotificationType::INFO;
 
-    #[ORM\Column(type: 'string', length: 20, enumType: NotificationTarget::class)]
+    #[ORM\Column(type: Types::STRING, length: 20, enumType: NotificationTarget::class)]
     #[Groups(['notification:read'])]
     private NotificationTarget $cible = NotificationTarget::USER;
 
-    #[ORM\Column(type: 'boolean')]
+    #[ORM\Column(type: Types::BOOLEAN)]
     #[Groups(['notification:read'])]
     private bool $isRead = false;
 
-    #[ORM\Column(type: 'datetime')]
+    #[ORM\Column(type: Types::DATETIME_MUTABLE)]
     #[Groups(['notification:read'])]
     private \DateTimeInterface $createdAt;
 

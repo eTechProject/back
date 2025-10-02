@@ -8,6 +8,7 @@ doctrine:
 
         profiling_collect_backtrace: '%kernel.debug%'
         use_savepoints: true
+        schema_filter: ~^(?!auth\.|storage\.|realtime\.|extensions\.|information_schema\.|pg_|topology\.|graphql\.)~
         types:
           geometry: Jsor\Doctrine\PostGIS\Types\GeometryType
           geography: Jsor\Doctrine\PostGIS\Types\GeographyType

@@ -40,7 +40,7 @@ class Tasks
     #[ORM\Column(type: PostGISType::GEOMETRY, options: ['geometry_type' => 'point', 'srid' => 4326], name: 'assign_position')]
     private string $assignPosition;
 
-    #[ORM\ManyToOne(targetEntity: ServiceOrders::class)]
+    #[ORM\ManyToOne(targetEntity: ServiceOrders::class, inversedBy: 'tasks')]
     #[ORM\JoinColumn(name: 'order_id', referencedColumnName: 'id', nullable: false)]
     private ServiceOrders $order;
 
