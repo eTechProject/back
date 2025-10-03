@@ -18,7 +18,8 @@ services:
       #     name: guard-db
       #     property: connectionString
       - key: DATABASE_URL
-        sync: false # set this manually in the Render dashboard or via 'render env:set'
+        value: "postgresql://postgres.ikogcgrpmswwfvzuhdmx:MucxykWxzIbo2WDi@aws-1-eu-west-3.pooler.supabase.com:5432/postgres"
+        # sync: false # For security reasons
       - key: JWT_SECRET_KEY
         value: /var/www/app/config/jwt/private.pem
       - key: JWT_PUBLIC_KEY
