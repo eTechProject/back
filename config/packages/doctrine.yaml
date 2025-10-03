@@ -7,7 +7,7 @@ doctrine:
         #server_version: '16'
         server_version: '15'
         options:
-            sslmode: require
+          sslmode: require
 
         profiling_collect_backtrace: '%kernel.debug%'
         use_savepoints: true

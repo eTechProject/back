@@ -17,7 +17,7 @@
 ###< symfony/framework-bundle ###
 
 # Track migrations for deployment
-/migrations/
+!/migrations/
 
 ###> phpunit/phpunit ###
 /phpunit.xml
