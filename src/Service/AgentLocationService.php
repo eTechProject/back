@@ -13,6 +13,7 @@ use App\Enum\NotificationTarget;
 use App\Enum\NotificationType;
 use App\Enum\Reason;
 use App\Enum\Status;
+use App\Message\RecordLocationMessage;
 use App\Repository\AgentLocationsRawRepository;
 use App\Repository\AgentLocationSignificantRepository;
 use App\Repository\AgentsRepository;
@@ -79,6 +80,34 @@ class AgentLocationService
             'data' => $responseDTO,
             'timestamp' => (new \DateTimeImmutable())->format(\DateTimeInterface::ATOM)
         ];
+    }
+
+    /**
+     * Create RecordLocationMessage from request content for queue dispatch
+     * 
+     * @param string $encryptedUserId The encrypted user ID (linked to the agent)
+     * @param string $requestContent Raw JSON request content
+     * @return RecordLocationMessage Message ready for queue dispatch
+     * @throws \InvalidArgumentException If validation fails
+     */
+    public function createLocationMessage(string $encryptedUserId, string $requestContent): RecordLocationMessage
+    {
+        // Deserialize and validate request
+        $recordLocationDTO = $this->deserializeAndValidateRequest($requestContent);
+
+        // Create message with validated data
+        return new RecordLocationMessage(
+            encryptedUserId: $encryptedUserId,
+            longitude: $recordLocationDTO->longitude,
+            latitude: $recordLocationDTO->latitude,
+            accuracy: $recordLocationDTO->accuracy,
+            speed: $recordLocationDTO->speed,
+            batteryLevel: $recordLocationDTO->batteryLevel,
+            isSignificant: $recordLocationDTO->isSignificant,
+            reason: $recordLocationDTO->reason,
+            taskId: $recordLocationDTO->taskId,
+            requestedAt: new \DateTimeImmutable()
+        );
     }
 
     /**

@@ -12,6 +12,24 @@ framework:
                 retry_strategy:
                     max_retries: 3
                     multiplier: 2
+                    
+            # Dedicated transport for location recording
+            location_queue:
+                dsn: '%env(MESSENGER_TRANSPORT_DSN)%'
+                options:
+                    # RabbitMQ specific options
+                    exchange:
+                        name: location_exchange
+                        type: direct
+                    queues:
+                        location_queue:
+                            binding_keys: [location.record]
+                retry_strategy:
+                    max_retries: 5
+                    delay: 1000
+                    multiplier: 2
+                    max_delay: 30000
+                    
             failed: 'doctrine://default?queue_name=failed'
             sync: 'sync://'
 
@@ -24,6 +42,9 @@ framework:
             Symfony\Component\Mailer\Messenger\SendEmailMessage: sync
             Symfony\Component\Notifier\Message\ChatMessage: async
             Symfony\Component\Notifier\Message\SmsMessage: async
+
+            # Route location messages to dedicated high-performance queue
+            App\Message\RecordLocationMessage: location_queue
 
             # Route your messages to the transports
             # 'App\Message\YourMessage': async
