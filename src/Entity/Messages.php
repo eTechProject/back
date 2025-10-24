@@ -5,6 +5,8 @@ namespace App\Entity;
 use App\Repository\MessagesRepository;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
+use Doctrine\Common\Collections\ArrayCollection;
+use Doctrine\Common\Collections\Collection;
 use App\Entity\User;
 use App\Entity\ServiceOrders;
 
@@ -33,6 +35,14 @@ class Messages
     #[ORM\ManyToOne(targetEntity: User::class)]
     #[ORM\JoinColumn(nullable: false)]
     private User $receiver;
+
+    #[ORM\OneToMany(targetEntity: MessageAttachment::class, mappedBy: 'message', cascade: ['persist', 'remove'])]
+    private Collection $attachments;
+
+    public function __construct()
+    {
+        $this->attachments = new ArrayCollection();
+    }
 
     public function getId(): ?int
     {
@@ -93,5 +103,47 @@ class Messages
     {
         $this->receiver = $receiver;
         return $this;
+    }
+
+    /**
+     * @return Collection<int, MessageAttachment>
+     */
+    public function getAttachments(): Collection
+    {
+        return $this->attachments;
+    }
+
+    public function addAttachment(MessageAttachment $attachment): static
+    {
+        if (!$this->attachments->contains($attachment)) {
+            $this->attachments->add($attachment);
+            $attachment->setMessage($this);
+        }
+
+        return $this;
+    }
+
+    public function removeAttachment(MessageAttachment $attachment): static
+    {
+        if ($this->attachments->removeElement($attachment)) {
+            // Set the owning side to null (unless already changed)
+            if ($attachment->getMessage() === $this) {
+                $attachment->setMessage(null);
+            }
+        }
+
+        return $this;
+    }
+
+    public function hasAttachments(): bool
+    {
+        return !$this->attachments->isEmpty();
+    }
+
+    public function getImageAttachments(): array
+    {
+        return $this->attachments->filter(function(MessageAttachment $attachment) {
+            return $attachment->isImage();
+        })->toArray();
     }
 }

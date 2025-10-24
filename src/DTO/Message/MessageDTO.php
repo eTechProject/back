@@ -10,5 +10,6 @@ class MessageDTO
         public string $receiver_id,
         public string $content,
         public string $sent_at,
+        public array $attachments = [],
     ) {}
 }

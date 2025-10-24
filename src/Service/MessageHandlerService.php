@@ -3,7 +3,9 @@
 namespace App\Service;
 
 use App\DTO\Message\MessageDTO;
+use App\DTO\Message\MessageAttachmentDTO;
 use App\Entity\Messages;
+use App\Entity\MessageAttachment;
 use App\Entity\User;
 use App\Service\CryptService;
 use App\Service\MessageService;
@@ -47,10 +49,10 @@ class MessageHandlerService
         return null;
     }
 
-    public function createMessageResponse(array $data): JsonResponse
+    public function createMessageResponse(array $data, array $files = []): JsonResponse
     {
         try {
-            $message = $this->messageService->createMessage($data);
+            $message = $this->messageService->createMessage($data, $files);
             $messageDTO = $this->createMessageDTO($message);
 
             return new JsonResponse([
@@ -149,13 +151,34 @@ class MessageHandlerService
 
     private function createMessageDTO($message): MessageDTO
     {
+        $attachments = [];
+        foreach ($message->getAttachments() as $attachment) {
+            $attachments[] = $this->createAttachmentDTO($attachment);
+        }
+
         return new MessageDTO(
             encryptedId: $this->cryptService->encryptId((string) $message->getId(), \App\Enum\EntityType::MESSAGE->value),
             order_id: $this->cryptService->encryptId((string) $message->getOrder()->getId(), \App\Enum\EntityType::SERVICE_ORDER->value),
             sender_id: $this->cryptService->encryptId((string) $message->getSender()->getId(), \App\Enum\EntityType::USER->value),
             receiver_id: $this->cryptService->encryptId((string) $message->getReceiver()->getId(), \App\Enum\EntityType::USER->value),
             content: $message->getContent(),
-            sent_at: $message->getSentAt()->format('Y-m-d H:i:s')
+            sent_at: $message->getSentAt()->format('Y-m-d H:i:s'),
+            attachments: $attachments
+        );
+    }
+
+    private function createAttachmentDTO(MessageAttachment $attachment): MessageAttachmentDTO
+    {
+        return new MessageAttachmentDTO(
+            id: $this->cryptService->encryptId((string) $attachment->getId(), \App\Enum\EntityType::MESSAGE->value),
+            filename: $attachment->getFilename(),
+            originalFilename: $attachment->getOriginalFilename(),
+            mimeType: $attachment->getMimeType(),
+            attachmentType: $attachment->getAttachmentType(),
+            fileSize: $attachment->getFileSize(),
+            formattedFileSize: $attachment->getFormattedFileSize(),
+            uploadedAt: $attachment->getUploadedAt()->format('Y-m-d H:i:s'),
+            downloadUrl: '/messages/attachments/' . $this->cryptService->encryptId((string) $attachment->getId(), \App\Enum\EntityType::MESSAGE->value)
         );
     }
 
@@ -200,6 +223,21 @@ class MessageHandlerService
 
         // Formatage : CRYPTER LES IDs ICI
         $messageData = array_map(function (Messages $m) {
+            $attachments = [];
+            foreach ($m->getAttachments() as $attachment) {
+                $attachments[] = [
+                    'id' => $this->cryptService->encryptId((string) $attachment->getId(), \App\Enum\EntityType::MESSAGE->value),
+                    'filename' => $attachment->getFilename(),
+                    'originalFilename' => $attachment->getOriginalFilename(),
+                    'mimeType' => $attachment->getMimeType(),
+                    'attachmentType' => $attachment->getAttachmentType(),
+                    'fileSize' => $attachment->getFileSize(),
+                    'formattedFileSize' => $attachment->getFormattedFileSize(),
+                    'uploadedAt' => $attachment->getUploadedAt()->format('Y-m-d H:i:s'),
+                    'downloadUrl' => '/messages/attachments/' . $this->cryptService->encryptId((string) $attachment->getId(), \App\Enum\EntityType::MESSAGE->value)
+                ];
+            }
+
             return [
                 'id' => $this->cryptService->encryptId((string) $m->getId(), \App\Enum\EntityType::MESSAGE->value),
                 'order_id' => $this->cryptService->encryptId((string) ($m->getOrder()?->getId()), \App\Enum\EntityType::SERVICE_ORDER->value),
@@ -207,6 +245,7 @@ class MessageHandlerService
                 'receiver_id' => $this->cryptService->encryptId((string) ($m->getReceiver()?->getId()), \App\Enum\EntityType::USER->value),
                 'content' => $m->getContent(),
                 'sent_at' => $m->getSentAt()?->format('Y-m-d H:i:s'),
+                'attachments' => $attachments,
             ];
         }, $messages);
 

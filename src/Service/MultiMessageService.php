@@ -21,14 +21,23 @@ class MultiMessageService
     /**
      * Traite une requête de message multiple et retourne la réponse
      */
-    public function handleMultiMessageRequest(MultiMessageRequestDTO $dto): JsonResponse
+    public function handleMultiMessageRequest(MultiMessageRequestDTO $dto, array $files = []): JsonResponse
     {
         try {
             // Déchiffrer les IDs
             $decryptedData = $this->decryptRequestData($dto);
             
-            // Traiter l'envoi multiple
-            $result = $this->messageService->createMultipleMessages($decryptedData);
+            // Log files if present
+            if (!empty($files)) {
+                $this->logger->info('Multi-message with files', [
+                    'file_count' => count($files),
+                    'sender_id' => $decryptedData['sender_id'] ?? null,
+                    'receiver_count' => count($decryptedData['receiver_ids'] ?? [])
+                ]);
+            }
+            
+            // Traiter l'envoi multiple avec les fichiers
+            $result = $this->messageService->createMultipleMessages($decryptedData, $files);
             
             // Créer la réponse
             $responseDTO = new MultiMessageResponseDTO(
