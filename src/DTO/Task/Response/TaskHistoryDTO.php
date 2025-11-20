@@ -14,5 +14,7 @@ class TaskHistoryDTO
         public string $orderId,
         public string $orderDescription,
         public ?array $assignPosition,
+        public string $agentId,
+        public string $agentName,
     ) {}
 }

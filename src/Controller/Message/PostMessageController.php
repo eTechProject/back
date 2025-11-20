@@ -10,23 +10,57 @@ use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use App\Entity\User;
+use Psr\Log\LoggerInterface;
 
 #[Route('/api/messages', name: 'api_messages_post', methods: ['POST'])]
 class PostMessageController extends AbstractController
 {
     public function __construct(
         private readonly MessageHandlerService $messageHandler,
-        private readonly CryptService $cryptService
+        private readonly CryptService $cryptService,
+        private readonly LoggerInterface $logger
     ) {}
 
     public function __invoke(Request $request): JsonResponse
     {
-        $data = json_decode($request->getContent(), true);
-        if (!$data) {
-            return $this->json([
-                'status' => 'error',
-                'message' => 'JSON invalide'
-            ], 400);
+        // Handle both JSON and form-data requests
+        $contentType = $request->headers->get('Content-Type', '');
+        
+        if (str_contains($contentType, 'multipart/form-data')) {
+            // Form data request (with potential files)
+            $data = $request->request->all();
+            $files = $request->files->get('files', []);
+            
+            // Debug logging
+            $this->logger->info('Multipart request received', [
+                'data_keys' => array_keys($data),
+                'files_count' => count($files),
+                'all_files_structure' => array_keys($request->files->all()),
+                'content_type' => $contentType
+            ]);
+            
+            if (!empty($files)) {
+                foreach ($files as $index => $file) {
+                    if ($file) {
+                        $this->logger->info("File $index details", [
+                            'name' => $file->getClientOriginalName(),
+                            'size' => $file->getSize(),
+                            'mime' => $file->getMimeType(),
+                            'is_valid' => $file->isValid()
+                        ]);
+                    }
+                }
+            }
+        } else {
+            // JSON request (backward compatibility)
+            $data = json_decode($request->getContent(), true);
+            $files = [];
+            if (!$data) {
+                return $this->json([
+                    'status' => 'error',
+                    'message' => 'JSON invalide'
+                ], 400);
+            }
         }
 
         /** @var User $user */
@@ -94,7 +128,7 @@ class PostMessageController extends AbstractController
         }
 
         try {
-            return $this->messageHandler->createMessageResponse($data);
+            return $this->messageHandler->createMessageResponse($data, $files);
         } catch (\Exception $e) {
             return $this->json([
                 'status' => 'error',

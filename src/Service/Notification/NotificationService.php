@@ -29,7 +29,8 @@ class NotificationService
         string $message,
         NotificationType $type = NotificationType::INFO,
         NotificationTarget $cible = NotificationTarget::ALL,
-        ?User $user = null
+        ?User $user = null,
+        bool $reloadMap = false
     ): Notification {
         $notification = new Notification();
         $notification->setTitre($titre);
@@ -49,7 +50,7 @@ class NotificationService
 
         // Publier en temps réel si disponible
         if ($this->notificationPublisher) {
-            $this->notificationPublisher->publishNotification($notification);
+            $this->notificationPublisher->publishNotification($notification, $reloadMap);
         }
 
         return $notification;

@@ -3,6 +3,7 @@
 namespace App\Service;
 
 use App\Entity\Messages;
+use App\Entity\MessageAttachment;
 use App\Repository\ServiceOrdersRepository;
 use App\Repository\UserRepository;
 use App\Repository\TasksRepository;
@@ -10,10 +11,12 @@ use App\Enum\UserRole;
 use App\Enum\EntityType;
 use App\Service\CryptService;
 use App\Service\TimeService;
+use App\Service\FileUploadService;
 use Doctrine\ORM\EntityManagerInterface;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Mercure\HubInterface;
 use Symfony\Component\Mercure\Update;
+use Symfony\Component\HttpFoundation\File\UploadedFile;
 
 class MessageService
 {
@@ -28,6 +31,7 @@ class MessageService
         private LoggerInterface $logger,
         private CryptService $cryptService,
         private TimeService $timeService,
+        private FileUploadService $fileUploadService,
         MercureQueueService $mercureQueueService = null
     ) {
         $this->mercureQueueService = $mercureQueueService;
@@ -39,7 +43,7 @@ class MessageService
      * @throws \InvalidArgumentException si validation échoue
      * @throws \RuntimeException si publication Mercure échoue
      */
-    public function createMessage(array $data): Messages
+    public function createMessage(array $data, array $files = []): Messages
     {
         // 1. Validation des données d'entrée
         $validatedData = $this->validateMessageData($data);
@@ -53,7 +57,12 @@ class MessageService
         // 4. Création et persistance du message
         $message = $this->createAndPersistMessage($entities, $validatedData['content']);
         
-        // 5. Publication Mercure
+        // 5. Traitement des fichiers attachés
+        if (!empty($files)) {
+            $this->processAttachments($message, $files);
+        }
+        
+        // 6. Publication Mercure
         $this->publishMercureUpdate($message, $entities['order'], $entities['sender'], $entities['receiver'], $validatedData['content']);
 
         return $message;
@@ -158,6 +167,34 @@ class MessageService
     }
 
     /**
+     * Traite les fichiers attachés au message
+     */
+    private function processAttachments(Messages $message, array $files): void
+    {
+        foreach ($files as $file) {
+            if ($file instanceof UploadedFile && $file->isValid()) {
+                try {
+                    $attachment = $this->fileUploadService->uploadFile($file, $message);
+                    $message->addAttachment($attachment);
+                    $this->em->persist($attachment);
+                } catch (\Exception $e) {
+                    $this->logger->error('Erreur lors du téléchargement de fichier', [
+                        'message_id' => $message->getId(),
+                        'filename' => $file->getClientOriginalName(),
+                        'error' => $e->getMessage()
+                    ]);
+                    throw new \RuntimeException('Erreur lors du téléchargement du fichier: ' . $file->getClientOriginalName());
+                }
+            }
+        }
+        
+        // Flush les attachments
+        if (!empty($files)) {
+            $this->em->flush();
+        }
+    }
+
+    /**
      * Publie les mises à jour Mercure pour un nouveau message
      * Inclut des tentatives de réessai et une gestion d'erreurs améliorée
      */
@@ -209,6 +246,22 @@ class MessageService
         $receiver,
         string $content
     ): array {
+        // Prepare attachments data for Mercure payload
+        $attachments = [];
+        foreach ($message->getAttachments() as $attachment) {
+            $attachments[] = [
+                'id' => $this->cryptService->encryptId((string) $attachment->getId(), EntityType::MESSAGE->value),
+                'filename' => $attachment->getFilename(),
+                'originalFilename' => $attachment->getOriginalFilename(),
+                'mimeType' => $attachment->getMimeType(),
+                'attachmentType' => $attachment->getAttachmentType(),
+                'fileSize' => $attachment->getFileSize(),
+                'formattedFileSize' => $attachment->getFormattedFileSize(),
+                'uploadedAt' => $this->timeService->formatForApi($attachment->getUploadedAt()),
+                'downloadUrl' => '/messages/attachments/' . $this->cryptService->encryptId((string) $attachment->getId(), EntityType::MESSAGE->value)
+            ];
+        }
+
         $payload = [
             'id' => $this->cryptService->encryptId((string) $message->getId(), EntityType::MESSAGE->value),
             'order_id' => $this->cryptService->encryptId((string) $order->getId(), EntityType::SERVICE_ORDER->value),
@@ -218,12 +271,17 @@ class MessageService
             'receiver_name' => $receiver->getName(),
             'content' => $content,
             'sent_at' => $this->timeService->formatForApi($message->getSentAt()),
+            'attachments' => $attachments,
         ];
 
         $this->logger->debug('Payload Mercure préparé avec IDs cryptés', [
             'message_id' => $message->getId(),
             'order_id' => $order->getId(),
+            'attachments_count' => count($attachments),
             'encrypted_payload' => array_map(function($value) {
+                if (is_array($value)) {
+                    return '[array with ' . count($value) . ' items]';
+                }
                 return is_string($value) && strlen($value) > 50 ? substr($value, 0, 20) . '...' : $value;
             }, $payload)
         ]);
@@ -452,6 +510,21 @@ class MessageService
     private function transformMessagesToArray(array $messages): array
     {
         return array_map(function (Messages $message) {
+            $attachments = [];
+            foreach ($message->getAttachments() as $attachment) {
+                $attachments[] = [
+                    'id' => $this->cryptService->encryptId((string) $attachment->getId(), EntityType::MESSAGE->value),
+                    'filename' => $attachment->getFilename(),
+                    'originalFilename' => $attachment->getOriginalFilename(),
+                    'mimeType' => $attachment->getMimeType(),
+                    'attachmentType' => $attachment->getAttachmentType(),
+                    'fileSize' => $attachment->getFileSize(),
+                    'formattedFileSize' => $attachment->getFormattedFileSize(),
+                    'uploadedAt' => $this->timeService->formatForApi($attachment->getUploadedAt()),
+                    'downloadUrl' => '/messages/attachments/' . $this->cryptService->encryptId((string) $attachment->getId(), EntityType::MESSAGE->value)
+                ];
+            }
+
             return [
                 'id' => $this->cryptService->encryptId((string) $message->getId(), EntityType::MESSAGE->value),
                 'order_id' => $this->cryptService->encryptId((string) $message->getOrder()->getId(), EntityType::SERVICE_ORDER->value),
@@ -459,6 +532,7 @@ class MessageService
                 'receiver_id' => $this->cryptService->encryptId((string) $message->getReceiver()->getId(), EntityType::USER->value),
                 'content' => $message->getContent(),
                 'sent_at' => $this->timeService->formatForApi($message->getSentAt()),
+                'attachments' => $attachments,
             ];
         }, $messages);
     }
@@ -542,19 +616,21 @@ class MessageService
     }
 
     /**
-     * Crée plusieurs messages vers différents destinataires en même temps.
+     * Crée plusieurs messages identiques vers différents destinataires.
      * Chaque destinataire reçoit le même message comme une conversation distincte.
      *
      * @param array $data Données contenant sender_id, receiver_ids[], order_id, content
+     * @param array $files Fichiers à joindre aux messages (optionnel)
      * @return array Résultat avec compteurs et détails des succès/échecs
      * @throws \InvalidArgumentException si validation échoue
      */
-    public function createMultipleMessages(array $data): array
+    public function createMultipleMessages(array $data, array $files = []): array
     {
         $this->logger->info('Début de création de messages multiples', [
             'sender_id' => $data['sender_id'] ?? null,
             'receiver_count' => count($data['receiver_ids'] ?? []),
-            'order_id' => $data['order_id'] ?? null
+            'order_id' => $data['order_id'] ?? null,
+            'files_count' => count($files)
         ]);
 
         // 1. Validation des données d'entrée pour multi-message
@@ -566,8 +642,8 @@ class MessageService
         // 3. Validation des règles métier communes
         $this->validateCommonBusinessRules($commonEntities['order'], $commonEntities['sender']);
         
-        // 4. Traitement de chaque destinataire
-        $results = $this->processMultipleReceivers($validatedData, $commonEntities);
+        // 4. Traitement de chaque destinataire avec les fichiers
+        $results = $this->processMultipleReceivers($validatedData, $commonEntities, $files);
         
         $this->logger->info('Fin de création de messages multiples', [
             'total_sent' => $results['total_sent'],
@@ -654,7 +730,7 @@ class MessageService
     /**
      * Traite chaque destinataire individuellement
      */
-    private function processMultipleReceivers(array $validatedData, array $commonEntities): array
+    private function processMultipleReceivers(array $validatedData, array $commonEntities, array $files = []): array
     {
         $successfulConversations = [];
         $failedConversations = [];
@@ -694,7 +770,13 @@ class MessageService
                     'receiver' => $receiver
                 ], $validatedData['content']);
 
-                // Publication Mercure
+                // Traiter les fichiers attachés si présents
+                if (!empty($files)) {
+                    $this->processAttachments($message, $files);
+                    $this->em->flush(); // Sauvegarder les attachments
+                }
+
+                // Publication Mercure avec les attachments
                 $this->publishMercureUpdate(
                     $message,
                     $commonEntities['order'],

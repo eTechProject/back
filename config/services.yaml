@@ -4,6 +4,7 @@ parameters:
     mercure_jwt_secret: '%env(MERCURE_JWT_SECRET)%'
     stripe.secret_key: '%env(STRIPE_SECRET_KEY)%'
     stripe.public_key: '%env(STRIPE_PUBLIC_KEY)%'
+    uploads_directory: '%kernel.project_dir%/var/uploads'
 
 services:
     _defaults:
@@ -11,6 +12,7 @@ services:
         autoconfigure: true
         bind:
             $mercureJwtSecret: '%mercure_jwt_secret%'
+            $uploadDirectory: '%uploads_directory%'
 
     App\:
         resource: '../src/'
