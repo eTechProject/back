@@ -207,7 +207,8 @@ class TaskService
             "Vous avez été assigné à une nouvelle mission à la position {$positionText} qui commence le {$assignment['startDate']} et se termine le {$assignment['endDate']}.",
             NotificationType::ASSIGNMENT,
             NotificationTarget::AGENT,
-            $assignment['agent']->getUser()
+            $assignment['agent']->getUser(),
+            true // reloadMap: trigger map reload on frontend
         );
         return $task;
     }
@@ -529,7 +530,9 @@ class TaskService
             endDate: $task->getEndDate()?->format('Y-m-d\TH:i:s\Z'),
             orderId: $this->cryptService->encryptId((string)$task->getOrder()->getId(), EntityType::SERVICE_ORDER->value),
             orderDescription: $task->getOrder()->getDescription() ?? 'Ordre de service',
-            assignPosition: $assignPosition
+            assignPosition: $assignPosition,
+            agentId: $this->cryptService->encryptId((string)$task->getAgent()->getId(), EntityType::AGENT->value),
+            agentName: $task->getAgent()->getUser()->getName()
         );
     }
     public function getTaskByEncryptedId(string $encryptedTaskId): ?Tasks
@@ -555,7 +558,8 @@ class TaskService
             "La mission à la position {$positionText} qui commençait le {$task->getStartDate()->format('Y-m-d H:i:s')} et se terminait le {$task->getEndDate()->format('Y-m-d H:i:s')} a été annulée.",
             NotificationType::ASSIGNMENT,
             NotificationTarget::AGENT,
-            $task->getAgent()->getUser()
+            $task->getAgent()->getUser(),
+            true // reloadMap: trigger map reload on frontend
         );
     }
 }

@@ -12,6 +12,7 @@ use App\Entity\AgentLocationsArchive;
 use App\Enum\Status;
 use App\Enum\TaskType;
 use App\Enum\UserRole;
+use App\Enum\Genre;
 use App\Repository\AgentLocationsArchiveRepository;
 use App\Repository\MessagesRepository;
 use Psr\Log\LoggerInterface;
@@ -137,12 +138,13 @@ class AIReportServiceTest extends TestCase
 
         $agent = $this->createMock(Agents::class);
         $agent->method('getUser')->willReturn($agentUser);
-        $agent->method('getSexe')->willReturn('M');
+        $agent->method('getSexe')->willReturn(Genre::M);
         $agent->method('getAddress')->willReturn('123 Rue Test');
         $agent->method('getProfilePictureUrl')->willReturn('http://example.com/avatar.jpg');
 
         $serviceOrder = $this->createMock(ServiceOrders::class);
         $serviceOrder->method('getClient')->willReturn($client);
+        $serviceOrder->method('getId')->willReturn(1);
 
         $task = $this->createMock(Tasks::class);
         $task->method('getId')->willReturn(1);

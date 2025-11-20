@@ -15,6 +15,7 @@ class NotificationResponseDTO
         public readonly NotificationTarget $cible,
         public readonly bool $isRead,
         public readonly string $createdAt,
-        public readonly ?string $userId = null
+        public readonly ?string $userId = null,
+        public readonly bool $reloadMap = false
     ) {}
 }

@@ -21,12 +21,12 @@ class NotificationPublisher
     /**
      * Publie une notification en temps réel via Mercure
      */
-    public function publishNotification(Notification $notification): void
+    public function publishNotification(Notification $notification, bool $reloadMap = false): void
     {
         try {
             $data = json_encode([
                 'type' => 'notification',
-                'data' => $this->convertToDTO($notification)
+                'data' => $this->convertToDTO($notification, $reloadMap)
             ]);
 
             $topics = ['/notifications'];
@@ -120,7 +120,7 @@ class NotificationPublisher
     /**
      * Convertit une entité Notification en DTO
      */
-    private function convertToDTO(Notification $notification): NotificationResponseDTO
+    private function convertToDTO(Notification $notification, bool $reloadMap = false): NotificationResponseDTO
     {
         return new NotificationResponseDTO(
             id: $this->cryptService->encryptId($notification->getId(), 'notification'),
@@ -130,7 +130,8 @@ class NotificationPublisher
             cible: $notification->getCible(),
             isRead: $notification->isRead(),
             createdAt: $notification->getCreatedAt()->format('Y-m-d H:i:s'),
-            userId: $notification->getUser() ? $this->cryptService->encryptId($notification->getUser()->getId(), 'user') : null
+            userId: $notification->getUser() ? $this->cryptService->encryptId($notification->getUser()->getId(), 'user') : null,
+            reloadMap: $reloadMap
         );
     }
 }
